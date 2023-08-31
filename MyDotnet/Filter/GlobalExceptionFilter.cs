@@ -1,0 +1,33 @@
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Filters;
+using MyDotnet.Domain.Dto;
+using MyDotnet.Helper;
+
+namespace MyDotnet.Filter
+{
+    /// <summary>
+    /// 全局异常错误日志
+    /// </summary>
+    public class GlobalExceptionsFilter : IExceptionFilter
+    {
+        /// <summary>
+        /// 异常捕获
+        /// </summary>
+        /// <param name="context"></param>
+        public void OnException(ExceptionContext context)
+        {
+            LogHelper.logSys.Error(context.Exception);
+
+            context.HttpContext.Response.ContentType = "application/json";
+            context.HttpContext.Response.StatusCode = StatusCodes.Status500InternalServerError;
+
+            var res = new ContentResult();
+            res.Content = JsonHelper.ObjToJson(MessageModel.Fail($"系统错误:{context.Exception.Message}"));
+            context.Result = res;
+
+
+        }
+
+
+    }
+}
