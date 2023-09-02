@@ -146,11 +146,14 @@ namespace MyDotnet.Domain.Dto.System
 
                     #region 通过反射获取程序集类型和类   
 
-                    var jobType = Assembly.GetEntryAssembly().GetTypes()
-                         .Where(t => t.Namespace == tasksQz.AssemblyName && t.Name == tasksQz.ClassName)
-                         .FirstOrDefault();
+                    //var jobType = Assembly.GetEntryAssembly().GetTypes()
+                    //     .Where(t => t.Namespace == tasksQz.AssemblyName && t.Name == tasksQz.ClassName)
+                    //     .FirstOrDefault();
                     //Assembly assembly = Assembly.Load(new AssemblyName(tasksQz.AssemblyName));
                     //Type jobType = assembly.GetType(tasksQz.AssemblyName + "." + tasksQz.ClassName);
+
+                    string className = $"{tasksQz.AssemblyName}.{tasksQz.ClassName}";
+                    Type jobType = Type.GetType(className);
 
                     #endregion
                     //判断任务调度是否开启

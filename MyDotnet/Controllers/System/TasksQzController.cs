@@ -31,7 +31,7 @@ namespace MyDotnet.Controllers.System
             , UnitOfWorkManage unitOfWorkManage
             )
         {
-            tasksQzServices = tasksQzServices;
+            _tasksQzServices = tasksQzServices;
             _tasksLogServices = tasksLogServices;
             _schedulerCenter = schedulerCenter;
             _unitOfWorkManage = unitOfWorkManage;
