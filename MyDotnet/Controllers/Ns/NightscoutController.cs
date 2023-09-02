@@ -595,8 +595,15 @@ namespace MyDotnet.Controllers.Ns
             pushData.info.id = pushWechatID;
             pushData.info.companyCode = pushCompanyCode;
             pushData.info.userID = nightscout.Id.ToString();
-            await _weChatConfigServices.PushCardMsg(pushData);
-            return "推送ns成功";
+            if (nightscout.isBindWeChat)
+            {
+                await _weChatConfigServices.PushCardMsg(pushData);
+                return "推送ns成功";
+            }
+            else
+            {
+                return "用户取消关注";
+            }
         }
         [HttpGet]
         public async Task<MessageModel<object>> GetSummary()
