@@ -94,9 +94,10 @@ namespace MyDotnet.Controllers.WeChat
         [HttpGet]
         public async Task<string> Valid([FromQuery] WeChatValidDto validDto)
         {
-            var result = await Request.BodyReader.ReadAsync();
-            var message = Encoding.UTF8.GetString(result.Buffer);
-            return await _weChatConfigServices.Valid(validDto, message);
+            byte[] postContent = new byte[(int)Request.ContentLength];
+            await Request.Body.ReadAsync(postContent, 0, postContent.Length);
+            string str = Encoding.UTF8.GetString(postContent);
+            return await _weChatConfigServices.Valid(validDto, str);
         }
         /// <summary>
         /// 获取订阅用户

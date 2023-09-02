@@ -61,9 +61,9 @@ namespace MyDotnet.Services.Ns
             }
             log.pid = nightscout.Id;
             log.success = obj.success;
-            await Dal.Db.Insertable<NightscoutLog>(log).ExecuteCommandAsync();
+            await _nightscoutLogServices.Dal.Add(log);
             nightscout.isChina = true;
-            await Dal.Db.Updateable<Nightscout>(nightscout).UpdateColumns(t => new { t.isChina }).ExecuteCommandAsync();
+            await Dal.Update(nightscout, t => new { t.isChina }); 
             client.Dispose();
             request.Dispose();
             response.Dispose();
@@ -108,9 +108,9 @@ namespace MyDotnet.Services.Ns
             }
             log.pid = nightscout.Id;
             log.success = obj.success;
-            await Dal.Db.Insertable<NightscoutLog>(log).ExecuteCommandAsync();
+            await _nightscoutLogServices.Dal.Add(log);
             nightscout.isChina = false;
-            await Dal.Db.Updateable<Nightscout>(nightscout).UpdateColumns(t => new { t.isChina }).ExecuteCommandAsync();
+            await Dal.Update(nightscout, t => new { t.isChina });
             client.Dispose();
             return obj.success;
         }
@@ -218,7 +218,7 @@ namespace MyDotnet.Services.Ns
             {
                 log.content = sb.ToString();
                 log.pid = nightscout.Id;
-                await Dal.Db.Insertable<NightscoutLog>(log).ExecuteCommandAsync();
+                await _nightscoutLogServices.Dal.Add(log);
             }
         }
 
@@ -281,7 +281,7 @@ namespace MyDotnet.Services.Ns
             {
                 log.content = sb.ToString();
                 log.pid = nightscout.Id;
-                await Dal.Db.Insertable<NightscoutLog>(log).ExecuteCommandAsync();
+                await _nightscoutLogServices.Dal.Add(log);
             }
 
 
@@ -342,7 +342,7 @@ namespace MyDotnet.Services.Ns
             {
                 log.content = sb.ToString();
                 log.pid = nightscout.Id;
-                await Dal.Db.Insertable<NightscoutLog>(log).ExecuteCommandAsync();
+                await _nightscoutLogServices.Dal.Add(log);
             }
         }
 
@@ -551,7 +551,7 @@ server {{
                 {
                     log.content = sb.ToString();
                     log.pid = nightscout.Id;
-                    await Dal.Db.Insertable<NightscoutLog>(log).ExecuteCommandAsync();
+                    await _nightscoutLogServices.Dal.Add(log);
                 }
             }
             catch (Exception ex)
