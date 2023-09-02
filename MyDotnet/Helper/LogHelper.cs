@@ -1,5 +1,5 @@
 ﻿using log4net;
-using MyDotnet.Domain.Pars;
+using MyDotnet.Domain.Dto.System;
 
 namespace MyDotnet.Helper
 {

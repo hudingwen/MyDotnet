@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
-using MyDotnet.Domain.Dto;
+using MyDotnet.Domain.Dto.System;
 using MyDotnet.Helper;
 
 namespace MyDotnet.Filter

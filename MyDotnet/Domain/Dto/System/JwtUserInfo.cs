@@ -4,24 +4,25 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MyDotnet.Domain.Pars
+namespace MyDotnet.Domain.Dto.System
 {
     /// <summary>
-    /// 日记录器类型
+    /// JWT用户信息
     /// </summary>
-    public enum LogEnum
+    public class JwtUserInfo
     {
         /// <summary>
-        /// 全局异常日志
+        /// ID
         /// </summary>
-        GlobalInfo,
+        public long Uid { get; set; }
+
         /// <summary>
-        /// 网络请求日志
+        /// Name
         /// </summary>
-        RequestInfo,
+        public string Name { get; set; }
         /// <summary>
-        /// 应用程序日志
+        /// 角色
         /// </summary>
-        AppInfo
+        public List<string> Roles { get; set; }
     }
 }

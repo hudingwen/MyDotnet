@@ -1,7 +1,7 @@
 ﻿using Newtonsoft.Json.Linq;
 using Newtonsoft.Json;
 
-namespace MyDotnet.Domain.Pars
+namespace MyDotnet.Domain.Dto.System
 {
     public class LongToStringConverter : JsonConverter
     {

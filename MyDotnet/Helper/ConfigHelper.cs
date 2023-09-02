@@ -1,6 +1,4 @@
-﻿
-
-namespace MyDotnet.Helper
+﻿namespace MyDotnet.Helper
 {
     /// <summary>
     /// 配置文件帮助类

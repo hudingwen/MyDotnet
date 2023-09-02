@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MyDotnet.Domain.Dto
+namespace MyDotnet.Domain.Dto.System
 {
     /// <summary>
     /// 泛型消息实体

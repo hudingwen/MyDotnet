@@ -1,11 +1,13 @@
 using MyDotnet.Config.Log4NetConfig;
-using MyDotnet.Helper;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Serialization;
 using Newtonsoft.Json;
 using MyDotnet.Filter;
-using MyDotnet.Domain.Pars;
+using MyDotnet.Domain.Dto;
 using MyDotnet.Config.SwaggerConfig;
+using MyDotnet.Helper;
+using MyDotnet.Config.DatabaseConfig;
+using MyDotnet.Domain.Dto.System;
 
 namespace MyDotnet
 {
@@ -54,6 +56,8 @@ namespace MyDotnet
             builder.SetLog4Net();
             //Swagger开启
             builder.SetSwagger();
+            //数据开启
+            builder.SetSqlsugar();
 
 
 
