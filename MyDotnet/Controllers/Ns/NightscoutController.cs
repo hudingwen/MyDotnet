@@ -514,21 +514,17 @@ namespace MyDotnet.Controllers.Ns
         /// <param name="data"></param>
         [HttpGet]
         [AllowAnonymous]
-        public async void Push([FromQuery] BloodInfo data)
+        public async Task<string> Push([FromQuery] BloodInfo data)
         {
             //LogHelper.Info($"进入nightscout");
             //LogHelper.Info($"nightscout原始数据:{JsonConvert.SerializeObject(data)}");
-
-
             if ("bwp".Equals(data.Value3))
             {
-                //LogHelper.Info("bwp跳过");
-                return;
+                return "bwp跳过";
             }
             if ("ns-allclear".Equals(data.Value5))
             {
-                //LogHelper.Info("All Clear跳过");
-                return;
+                return "All Clear跳过";
             }
 
 
@@ -553,7 +549,7 @@ namespace MyDotnet.Controllers.Ns
                 if (nightscout == null || nightscout.IsDeleted)
                 {
                     //LogHelper.Info("nightscout用户未找到");
-                    return;
+                    return "nightscout用户未找到" ;
                 }
                 pushTemplateID = pushTemplateID_Keep;
                 data.Value1 = "血糖持续监测";
@@ -570,7 +566,7 @@ namespace MyDotnet.Controllers.Ns
                 if (nightscout == null || nightscout.IsDeleted)
                 {
                     //LogHelper.Info("nightscout用户未找到");
-                    return;
+                    return "nightscout用户未找到";
                 }
                 pushTemplateID = pushTemplateID_Exception;
                 data.Value1 = data.Value1.Replace(",", " -");
@@ -588,7 +584,7 @@ namespace MyDotnet.Controllers.Ns
             else
             {
                 //LogHelper.Info("暂时跳过其他情况");
-                return;
+                return "暂时跳过其他情况" ;
             }
 
             pushData.cardMsg.url = $"https://{nightscout.url}";
@@ -600,11 +596,7 @@ namespace MyDotnet.Controllers.Ns
             pushData.info.companyCode = pushCompanyCode;
             pushData.info.userID = nightscout.Id.ToString();
             await _weChatConfigServices.PushCardMsg(pushData);
-
-
-            pushData = null;
-            nightscout = null;
-            //LogHelper.Info($"nightscout处理数据处理完成");
+            return "推送ns成功";
         }
         [HttpGet]
         public async Task<MessageModel<object>> GetSummary()

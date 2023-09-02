@@ -4,7 +4,7 @@ using MyDotnet.Repository;
 using MyDotnet.Services;
 using System.Reflection;
 
-namespace MyDotnet.Config.DatabaseConfig
+namespace MyDotnet.Config
 {
     /// <summary>
     /// Sqlsugar配置类
@@ -124,12 +124,11 @@ namespace MyDotnet.Config.DatabaseConfig
             foreach (var item in types)
             {
                 //自定义仓层储注入 
-                if(item.BaseType != null && item.BaseType.IsGenericType  && item.BaseType.GetGenericTypeDefinition() == baseTypeRepository.GetGenericTypeDefinition())
+                if (item.BaseType != null && item.BaseType.IsGenericType && item.BaseType.GetGenericTypeDefinition() == baseTypeRepository.GetGenericTypeDefinition())
                     builder.Services.AddScoped(item);
                 //自定服务层储注入 
                 if (item.BaseType != null && item.BaseType.IsGenericType && item.BaseType.GetGenericTypeDefinition() == baseTypeServices.GetGenericTypeDefinition())
                     builder.Services.AddScoped(item);
-
             }
 
 

@@ -1,21 +1,9 @@
-#See https://aka.ms/customizecontainer to learn how to customize your debug container and how Visual Studio uses this Dockerfile to build your images for faster debugging.
+FROM mcr.microsoft.com/dotnet/sdk:6.0-bullseye-slim
 
-FROM mcr.microsoft.com/dotnet/aspnet:6.0 AS base
+RUN ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
+RUN echo 'Asia/Shanghai' >/etc/timezone
+
 WORKDIR /app
-EXPOSE 80
-
-FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
-WORKDIR /src
-COPY ["MyDotnet.csproj", "."]
-RUN dotnet restore "./MyDotnet.csproj"
-COPY . .
-WORKDIR "/src/."
-RUN dotnet build "MyDotnet.csproj" -c Release -o /app/build
-
-FROM build AS publish
-RUN dotnet publish "MyDotnet.csproj" -c Release -o /app/publish /p:UseAppHost=false
-
-FROM base AS final
-WORKDIR /app
-COPY --from=publish /app/publish .
+COPY . . 
+EXPOSE 9291 
 ENTRYPOINT ["dotnet", "MyDotnet.dll"]

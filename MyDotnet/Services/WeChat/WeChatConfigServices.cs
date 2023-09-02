@@ -191,6 +191,7 @@ namespace MyDotnet.Services.WeChat
             {
                 LogHelper.logApp.Error("公众号异常失败");
                 LogHelper.logApp.Error(ex);
+                objReturn = "公众号异常失败";
             }
             return objReturn;
         }

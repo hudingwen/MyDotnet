@@ -1,13 +1,11 @@
-using MyDotnet.Config.Log4NetConfig;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Serialization;
 using Newtonsoft.Json;
 using MyDotnet.Filter;
 using MyDotnet.Domain.Dto;
-using MyDotnet.Config.SwaggerConfig;
 using MyDotnet.Helper;
-using MyDotnet.Config.DatabaseConfig;
 using MyDotnet.Domain.Dto.System;
+using MyDotnet.Config;
 
 namespace MyDotnet
 {
@@ -23,6 +21,8 @@ namespace MyDotnet
             ConfigHelper.Configuration = builder.Configuration;
             //http上下文
             builder.Services.AddHttpContextAccessor();
+            //开启IHttpClientFactory
+            builder.Services.AddHttpClient();
             //控制器配置
             builder.Services.AddControllers(o =>
             {
@@ -58,28 +58,36 @@ namespace MyDotnet
             builder.SetSwagger();
             //数据开启
             builder.SetSqlsugar();
+            //调度服务
+            builder.SetQuartz();
+            //实体映射
+            builder.SetAutoMapper();
+            //权限开启
+            builder.SetAuth();
+            //初始任务
+            builder.SetHostJob();
 
 
 
 
 
 
-
-           var app = builder.Build();
+            var app = builder.Build();
             // Configure the HTTP request pipeline.
             //使用Swagger
             app.SetSwagger();
             //开启body重复读
-            app.Use((context, next) =>
-            {
-                context.Request.EnableBuffering();
-                return next(context);
-            });
+            //app.Use((context, next) =>
+            //{
+            //    context.Request.EnableBuffering();
+            //    return next(context);
+            //});
             //路由路由匹配(必须在Auth之前调用)
             app.UseRouting();
-            //认证授权
+            //认证
+            app.UseAuthentication();
+            //授权
             app.UseAuthorization();
-            
             //路由端点
             app.UseEndpoints(endpoints =>
             {

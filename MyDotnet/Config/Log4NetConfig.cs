@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
-namespace MyDotnet.Config.Log4NetConfig
+namespace MyDotnet.Config
 {
     /// <summary>
     /// 日志配置

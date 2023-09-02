@@ -1,4 +1,4 @@
-﻿namespace MyDotnet.Config.SwaggerConfig
+﻿namespace MyDotnet.Config
 {
     using Microsoft.AspNetCore.Builder;
     using Microsoft.Extensions.DependencyInjection;
