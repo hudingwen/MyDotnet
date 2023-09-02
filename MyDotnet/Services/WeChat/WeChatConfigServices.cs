@@ -244,7 +244,7 @@ namespace MyDotnet.Services.WeChat
         {
             var ip = _accessor.HttpContext?.Connection?.RemoteIpAddress?.ToString();
             var bindUser = await Dal.Db.Queryable<WeChatSub>().Where(t => t.SubFromPublicAccount == msg.info.id && t.CompanyID == msg.info.companyCode && t.IsUnBind == false && t.SubJobID == msg.info.userID).SingleAsync();
-            if (bindUser != null)
+            if (bindUser == null)
                 throw new Exception("用户不存在或者已经解绑");
             var res = await GetToken(msg.info.id);
             WeChatResponseUserInfo reData = new WeChatResponseUserInfo();
