@@ -6,6 +6,7 @@ using MyDotnet.Domain.Dto;
 using MyDotnet.Helper;
 using MyDotnet.Domain.Dto.System;
 using MyDotnet.Config;
+using System.Text;
 
 namespace MyDotnet
 {
@@ -23,6 +24,8 @@ namespace MyDotnet
             builder.Services.AddHttpContextAccessor();
             //开启IHttpClientFactory
             builder.Services.AddHttpClient();
+            //gb2312支持
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
             //控制器配置
             builder.Services.AddControllers(o =>
             {
