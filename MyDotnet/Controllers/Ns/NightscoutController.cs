@@ -106,13 +106,9 @@ namespace MyDotnet.Controllers.Ns
                 whereExpression = whereExpression.And(t => t.name.Contains(key) || t.url.Contains(key) || t.passwd.Contains(key) || t.status.Contains(key) || t.resource.Contains(key));
             }
             var data = await _nightscoutServices.Dal.QueryPage(whereExpression, page, pageSize);
+              
 
-            var pushWechatID = ConfigHelper.GetValue(new string[] { "nightscout", "pushWechatID" }).ObjToString();
-            var pushCompanyCode = ConfigHelper.GetValue(new string[] { "nightscout", "pushCompanyCode" }).ObjToString();
-            var pushTemplateID_Exception = ConfigHelper.GetValue(new string[] { "nightscout", "pushTemplateID_Exception" }).ObjToString();
-            var pushTemplateID_Keep = ConfigHelper.GetValue(new string[] { "nightscout", "pushTemplateID_Keep" }).ObjToString();
-
-            var bindData = await _wechatsubServices.Dal.Query(t => t.SubFromPublicAccount == pushWechatID && t.IsUnBind == false && t.CompanyID == pushCompanyCode && data.data.Select(i => i.Id.ToString()).ToList().Contains(t.SubJobID));
+            var bindData = await _wechatsubServices.Dal.Query(t => t.SubFromPublicAccount == NsInfo.pushWechatID && t.IsUnBind == false && t.CompanyID == NsInfo.pushCompanyCode && data.data.Select(i => i.Id.ToString()).ToList().Contains(t.SubJobID));
             //isBindWeChat
             foreach (var item in data.data)
             {
@@ -123,9 +119,8 @@ namespace MyDotnet.Controllers.Ns
                 }
             }
 
-
-            var miniAppid = ConfigHelper.GetValue(new string[] { "miniProgram", "appid" }).ObjToString();
-            var bindMini = await _wechatsubServices.Dal.Query(t => t.SubFromPublicAccount == miniAppid && t.IsUnBind == false && t.CompanyID == pushCompanyCode && data.data.Select(i => i.Id.ToString()).ToList().Contains(t.SubJobID));
+             
+            var bindMini = await _wechatsubServices.Dal.Query(t => t.SubFromPublicAccount == NsInfo.miniAppid && t.IsUnBind == false && t.CompanyID == NsInfo.pushCompanyCode && data.data.Select(i => i.Id.ToString()).ToList().Contains(t.SubJobID));
             //isBindWeChat
             foreach (var item in data.data)
             {
@@ -270,8 +265,7 @@ namespace MyDotnet.Controllers.Ns
                     }
                     if (string.IsNullOrEmpty(request.url))
                     {
-                        var templateUrl = ConfigHelper.GetValue(new string[] { "nightscout", "TemplateUrl" }).ObjToString();
-                        request.url = string.Format(templateUrl, GenerateNumber(3) + padName);
+                        request.url = string.Format(NsInfo.templateUrl, GenerateNumber(3) + padName);
                     }
 
 
@@ -466,10 +460,8 @@ namespace MyDotnet.Controllers.Ns
         {
             var data = await _nightscoutServices.Dal.QueryById(id);
             if (!data.isConnection) return MessageModel<WeChatResponseUserInfo>.Fail("实例还未接入微信");
-            if (data == null || data.IsDeleted) return MessageModel<WeChatResponseUserInfo>.Fail("实例不存在");
-            string pushWechatID = ConfigHelper.GetValue(new string[] { "nightscout", "pushWechatID" }).ObjToString();
-            string pushCompanyCode = ConfigHelper.GetValue(new string[] { "nightscout", "pushCompanyCode" }).ObjToString();
-            return await _weChatConfigServices.GetQRBind(new WeChatUserInfo { userID = id.ToString(), companyCode = pushCompanyCode, id = pushWechatID, userNick = data.name });
+            if (data == null || data.IsDeleted) return MessageModel<WeChatResponseUserInfo>.Fail("实例不存在");  
+            return await _weChatConfigServices.GetQRBind(new WeChatUserInfo { userID = id.ToString(), companyCode = NsInfo.pushCompanyCode, id = NsInfo.pushWechatID, userNick = data.name });
         }
         /// <summary>
         /// nightscout取消绑定
@@ -480,10 +472,8 @@ namespace MyDotnet.Controllers.Ns
         public async Task<MessageModel<WeChatResponseUserInfo>> UnbindWeChat(long id)
         {
             var data = await _nightscoutServices.Dal.QueryById(id);
-            if (data == null || data.IsDeleted) return MessageModel<WeChatResponseUserInfo>.Fail("实例不存在");
-            string pushWechatID = ConfigHelper.GetValue(new string[] { "nightscout", "pushWechatID" }).ObjToString();
-            string pushCompanyCode = ConfigHelper.GetValue(new string[] { "nightscout", "pushCompanyCode" }).ObjToString();
-            return await _weChatConfigServices.UnBind(new WeChatUserInfo { userID = id.ToString(), companyCode = pushCompanyCode, id = pushWechatID });
+            if (data == null || data.IsDeleted) return MessageModel<WeChatResponseUserInfo>.Fail("实例不存在"); 
+            return await _weChatConfigServices.UnBind(new WeChatUserInfo { userID = id.ToString(), companyCode = NsInfo.pushCompanyCode, id = NsInfo.pushWechatID });
         }
 
         /// <summary>
@@ -527,17 +517,6 @@ namespace MyDotnet.Controllers.Ns
                 return "All Clear跳过";
             }
 
-
-
-
-            var pushWechatID = ConfigHelper.GetValue(new string[] { "nightscout", "pushWechatID" }).ObjToString();
-            var pushCompanyCode = ConfigHelper.GetValue(new string[] { "nightscout", "pushCompanyCode" }).ObjToString();
-            var pushTemplateID_Exception = ConfigHelper.GetValue(new string[] { "nightscout", "pushTemplateID_Exception" }).ObjToString();
-            var pushTemplateID_Keep = ConfigHelper.GetValue(new string[] { "nightscout", "pushTemplateID_Keep" }).ObjToString();
-
-            var miniAppid = ConfigHelper.GetValue(new string[] { "miniProgram", "appid" }).ObjToString();
-            var miniPath = ConfigHelper.GetValue(new string[] { "miniProgram", "path" }).ObjToString();
-
             var pushTemplateID = string.Empty;
             var pushData = new WeChatCardMsgDataDto();
             pushData.cardMsg = new WeChatCardMsgDetailDto();
@@ -551,7 +530,7 @@ namespace MyDotnet.Controllers.Ns
                     //LogHelper.Info("nightscout用户未找到");
                     return "nightscout用户未找到" ;
                 }
-                pushTemplateID = pushTemplateID_Keep;
+                pushTemplateID = NsInfo.pushTemplateID_Keep;
                 data.Value1 = "血糖持续监测";
                 data.Value2_1 = data.Value2;
 
@@ -568,7 +547,7 @@ namespace MyDotnet.Controllers.Ns
                     //LogHelper.Info("nightscout用户未找到");
                     return "nightscout用户未找到";
                 }
-                pushTemplateID = pushTemplateID_Exception;
+                pushTemplateID = NsInfo.pushTemplateID_Exception;
                 data.Value1 = data.Value1.Replace(",", " -");
                 var ls = data.Value2.Split("\n", StringSplitOptions.RemoveEmptyEntries);
                 if (ls.Length > 1)
@@ -589,11 +568,11 @@ namespace MyDotnet.Controllers.Ns
 
             pushData.cardMsg.url = $"https://{nightscout.url}";
             pushData.cardMsg.template_id = pushTemplateID;
-            pushData.cardMsg.miniprogram = new WeChatCardMsgMiniprogram { appid = miniAppid, pagepath = miniPath };
+            pushData.cardMsg.miniprogram = new WeChatCardMsgMiniprogram { appid = NsInfo.miniAppid, pagepath = NsInfo.miniPath };
 
             pushData.info = new WeChatUserInfo();
-            pushData.info.id = pushWechatID;
-            pushData.info.companyCode = pushCompanyCode;
+            pushData.info.id = NsInfo.pushWechatID;
+            pushData.info.companyCode = NsInfo.pushCompanyCode;
             pushData.info.userID = nightscout.Id.ToString();
 
             await _weChatConfigServices.PushCardMsg(pushData);
@@ -632,9 +611,7 @@ namespace MyDotnet.Controllers.Ns
         [HttpGet]
         public MessageModel<List<NSPlugin>> GetPlugins()
         {
-            var sp = ConfigHelper.GetList<NSPlugin>(new string[] { "nightscout", "plugins" });
-
-            return MessageModel<List<NSPlugin>>.Success("成功", sp);
+            return MessageModel<List<NSPlugin>>.Success("成功", NsInfo.plugins);
         }
 
 
@@ -709,14 +686,10 @@ namespace MyDotnet.Controllers.Ns
         /// <returns></returns>
         [HttpGet]
         public async Task<MessageModel<string>> GetBindQR(long nsid)
-        {
-            var appid = ConfigHelper.GetValue(new string[] { "miniProgram", "appid" }).ObjToString();
-            var secret = ConfigHelper.GetValue(new string[] { "miniProgram", "secret" }).ObjToString();
-            var appEnv = ConfigHelper.GetValue(new string[] { "miniProgram", "env" }).ObjToString();
-            var pushCompanyCode = ConfigHelper.GetValue(new string[] { "nightscout", "pushCompanyCode" }).ObjToString();
+        {   
             string url = $"https://api.weixin.qq.com/cgi-bin/stable_token";
 
-            var weChatToken = new { appid, secret, grant_type = "client_credential" };
+            var weChatToken = new { appid = NsInfo.miniAppid, secret = NsInfo.miniSecret, grant_type = NsInfo.miniGrantType };
 
             var nsInfo = await _nightscoutServices.Dal.QueryById(nsid);
 
@@ -724,11 +697,11 @@ namespace MyDotnet.Controllers.Ns
 
             WeChatQR weChatQR = new WeChatQR
             {
-                QRbindCompanyID = pushCompanyCode,
+                QRbindCompanyID = NsInfo.pushCompanyCode,
                 QRbindJobID = nsInfo.Id.ObjToString(),
                 QRbindJobNick = nsInfo.name,
                 QRcrateTime = DateTime.Now,
-                QRpublicAccount = appid,
+                QRpublicAccount = NsInfo.miniAppid,
                 QRticket = StringHelper.GetGUID()
             };
 
@@ -746,7 +719,7 @@ namespace MyDotnet.Controllers.Ns
 
                     //正式版为 "release"，体验版为 "trial"，开发版为 "develop"
                     var ticket = weChatQR.QRticket;
-                    var jsonBind = JsonHelper.ObjToJson(new { path = $"pages/index/index?ticket={ticket}", env_version = appEnv, width = 128 });
+                    var jsonBind = JsonHelper.ObjToJson(new { path = $"pages/index/index?ticket={ticket}", env_version = NsInfo.miniEnv, width = 128 });
                     using (HttpContent httpContentBind = new StringContent(jsonBind))
                     {
                         var urlBind = $"https://api.weixin.qq.com/wxa/getwxacode?access_token={accessTokenDto.access_token}";
@@ -768,16 +741,13 @@ namespace MyDotnet.Controllers.Ns
         public async Task<MessageModel<string>> BindQR(string ticket, string openid)
         {
 
-            string appid = ConfigHelper.GetValue(new string[] { "miniProgram", "appid" }).ObjToString();
-            var pushCompanyCode = ConfigHelper.GetValue(new string[] { "nightscout", "pushCompanyCode" }).ObjToString();
-
-            var nsInfo = await _weChatConfigServices.Dal.Db.Queryable<WeChatSub>().Where(t => t.SubFromPublicAccount == appid && t.CompanyID == pushCompanyCode && t.SubUserOpenID == openid).FirstAsync();
+            var nsInfo = await _weChatConfigServices.Dal.Db.Queryable<WeChatSub>().Where(t => t.SubFromPublicAccount == NsInfo.miniAppid && t.CompanyID == NsInfo.pushCompanyCode && t.SubUserOpenID == openid).FirstAsync();
             //.Select(t => t.SubJobID)
             // && t.IsUnBind == false
             //if (!string.IsNullOrEmpty(nsid))
             if (nsInfo != null && nsInfo.IsUnBind == false)
             {
-                var tempInfo = await _weChatConfigServices.Dal.Db.Queryable<WeChatQR>().Where(t => t.QRpublicAccount == appid && t.QRticket == ticket && t.QRisUsed == false).FirstAsync();
+                var tempInfo = await _weChatConfigServices.Dal.Db.Queryable<WeChatQR>().Where(t => t.QRpublicAccount == NsInfo.miniAppid && t.QRticket == ticket && t.QRisUsed == false).FirstAsync();
                 if (tempInfo != null)
                 {
                     tempInfo.QRisUsed = true;
@@ -790,10 +760,10 @@ namespace MyDotnet.Controllers.Ns
             }
 
 
-            var ticketInfo = await _weChatConfigServices.Dal.Db.Queryable<WeChatQR>().Where(t => t.QRpublicAccount == appid && t.QRticket == ticket && t.QRisUsed == false).FirstAsync();
+            var ticketInfo = await _weChatConfigServices.Dal.Db.Queryable<WeChatQR>().Where(t => t.QRpublicAccount == NsInfo.miniAppid && t.QRticket == ticket && t.QRisUsed == false).FirstAsync();
             if (ticketInfo == null)
-                return MessageModel<string>.Fail($"没有找到ticket:{ticket},请勿重复使用");
-            var bindInfo = await _weChatConfigServices.Dal.Db.Queryable<WeChatSub>().Where(t => t.SubFromPublicAccount == appid && t.CompanyID == pushCompanyCode && t.SubJobID == ticketInfo.QRbindJobID).FirstAsync();
+                return MessageModel<string>.Fail($"无效的绑定信息,请勿重复使用");
+            var bindInfo = await _weChatConfigServices.Dal.Db.Queryable<WeChatSub>().Where(t => t.SubFromPublicAccount == NsInfo.miniAppid && t.CompanyID == NsInfo.pushCompanyCode && t.SubJobID == ticketInfo.QRbindJobID).FirstAsync();
 
             _unitOfWorkManage.BeginTran();
             try
@@ -802,7 +772,7 @@ namespace MyDotnet.Controllers.Ns
                 {
                     bindInfo = new WeChatSub
                     {
-                        SubFromPublicAccount = appid,
+                        SubFromPublicAccount = NsInfo.miniAppid,
                         SubJobID = ticketInfo.QRbindJobID,
                         SubUserOpenID = openid,
                         CompanyID = ticketInfo.QRbindCompanyID,
@@ -841,9 +811,7 @@ namespace MyDotnet.Controllers.Ns
         [HttpGet]
         public async Task<MessageModel<string>> UnBindQR(string nsid)
         {
-            var appid = ConfigHelper.GetValue(new string[] { "miniProgram", "appid" }).ObjToString();
-            var pushCompanyCode = ConfigHelper.GetValue(new string[] { "nightscout", "pushCompanyCode" }).ObjToString();
-            var bindInfo = await _weChatConfigServices.Dal.Db.Queryable<WeChatSub>().Where(t => t.SubFromPublicAccount == appid && t.SubJobID == nsid && t.CompanyID == pushCompanyCode && t.IsUnBind == false).ToListAsync();
+            var bindInfo = await _weChatConfigServices.Dal.Db.Queryable<WeChatSub>().Where(t => t.SubFromPublicAccount == NsInfo.miniAppid && t.SubJobID == nsid && t.CompanyID == NsInfo.pushCompanyCode && t.IsUnBind == false).ToListAsync();
             if (bindInfo == null || bindInfo.Count == 0)
                 return MessageModel<string>.Fail("没有找到解绑信息");
             foreach (var item in bindInfo)
@@ -863,10 +831,8 @@ namespace MyDotnet.Controllers.Ns
         [AllowAnonymous]
         public async Task<MessageModel<WeChatModel>> CodeLogin(string code)
         {
-            var appid = ConfigHelper.GetValue(new string[] { "miniProgram", "appid" }).ObjToString();
-            var secret = ConfigHelper.GetValue(new string[] { "miniProgram", "secret" }).ObjToString();
-            HttpClient httpClient = new HttpClient();
-            var res = await httpClient.GetStringAsync($"https://api.weixin.qq.com/sns/jscode2session?appid={appid}&secret={secret}&js_code={code}&grant_type=authorization_code");
+             
+            var res = await HttpHelper.GetAsync($"https://api.weixin.qq.com/sns/jscode2session?appid={NsInfo.miniAppid}&secret={NsInfo.miniSecret}&js_code={code}&grant_type=authorization_code");
 
             var data = JsonHelper.JsonToObj<WeChatModel>(res);
             if (data.errcode.Equals(0))
@@ -889,18 +855,9 @@ namespace MyDotnet.Controllers.Ns
         public async Task<MessageModel<SugarDTO>> GetCurBloodSugar(string openid)
         {
             SugarDTO sugarDTO = new SugarDTO();
-            var appid = ConfigHelper.GetValue(new string[] { "miniProgram", "appid" }).ObjToString();
-            var Host = ConfigHelper.GetValue(new string[] { "miniProgram", "Host" }).ObjToString();
-            var Port = ConfigHelper.GetValue(new string[] { "miniProgram", "Port" }).ObjToString();
-            var LoginName = ConfigHelper.GetValue(new string[] { "miniProgram", "LoginName" }).ObjToString();
-            var LoginPasswd = ConfigHelper.GetValue(new string[] { "miniProgram", "LoginPasswd" }).ObjToString();
-            var pushCompanyCode = ConfigHelper.GetValue(new string[] { "nightscout", "pushCompanyCode" }).ObjToString();
 
-            //configuration.GetSection("sayings").Get<string[]>();
-            List<string> sayings = ConfigHelper.GetList<string>(new string[] { "miniProgram", "sayings" });
-            var title = ConfigHelper.GetValue(new string[] { "miniProgram", "title" }).ObjToString();
 
-            var nsid = await _weChatConfigServices.Dal.Db.Queryable<WeChatSub>().Where(t => t.SubFromPublicAccount == appid && t.CompanyID == pushCompanyCode && t.SubUserOpenID == openid && t.IsUnBind == false).Select(t => t.SubJobID).FirstAsync();
+            var nsid = await _weChatConfigServices.Dal.Db.Queryable<WeChatSub>().Where(t => t.SubFromPublicAccount == NsInfo.miniAppid && t.CompanyID == NsInfo.pushCompanyCode && t.SubUserOpenID == openid && t.IsUnBind == false).Select(t => t.SubJobID).FirstAsync();
 
             if (string.IsNullOrEmpty(nsid))
                 return MessageModel<SugarDTO>.Fail("无绑定信息,无法查看血糖");
@@ -909,7 +866,7 @@ namespace MyDotnet.Controllers.Ns
             if (string.IsNullOrEmpty(serviceName))
                 return MessageModel<SugarDTO>.Fail("无血糖信息可供查看,请检查是否绑定NS");
 
-            var grantConnectionMongoString = $"mongodb://{LoginName}:{LoginPasswd}@{Host}:{Port}";
+            var grantConnectionMongoString = $"mongodb://{NsInfo.miniLoginName}:{NsInfo.miniLoginPasswd}@{NsInfo.miniHost}:{NsInfo.miniPort}";
             var client = new MongoClient(grantConnectionMongoString);
             var database = client.GetDatabase(serviceName);
             var collection = database.GetCollection<BsonDocument>("entries"); // 替换为你的集合名称
@@ -930,12 +887,12 @@ namespace MyDotnet.Controllers.Ns
             }
 
             sugarDTO.curBlood = sugers.Count > 0 ? sugers[0] : new EntriesEntity { date_str = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") };
-            sugarDTO.curBlood.title = title;
+            sugarDTO.curBlood.title = NsInfo.title;
             Random rd = new Random();
 
-            if (sayings != null && sayings.Count > 0)
+            if (NsInfo.sayings != null && NsInfo.sayings.Count > 0)
             {
-                sugarDTO.curBlood.saying = sayings[rd.Next(0, sayings.Count)];
+                sugarDTO.curBlood.saying = NsInfo.sayings[rd.Next(0, NsInfo.sayings.Count)];
             }
             else
             {

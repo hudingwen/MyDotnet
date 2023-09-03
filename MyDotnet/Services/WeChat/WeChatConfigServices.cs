@@ -937,7 +937,7 @@ namespace MyDotnet.Services.WeChat
         {
             var ticket = await Dal.Db.Queryable<WeChatQR>().InSingleAsync(weChat.Ticket);
             if (ticket == null || ticket.QRisUsed || !ticket.QRpublicAccount.Equals(weChat.publicAccount))
-                throw new ServiceException("无效的绑定信息");
+                throw new ServiceException("无效的绑定信息，请勿重复扫码");
 
             var bindUser = await Dal.Db.Queryable<WeChatSub>().Where(t => t.SubFromPublicAccount == ticket.QRpublicAccount && t.CompanyID == ticket.QRbindCompanyID && t.SubJobID == ticket.QRbindJobID).SingleAsync();
             bool isNewBind = false;

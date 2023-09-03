@@ -28,18 +28,15 @@ namespace MyDotnet.Services.Ns
 
         public async Task<bool> ResolveDomain(Nightscout nightscout)
         {
-            NightscoutLog log = new NightscoutLog();
-            string cfKey = ConfigHelper.GetValue(new string[] { "cf", "key" }).ObjToString();
-            string cfZoomID = ConfigHelper.GetValue(new string[] { "cf", "zoomID" }).ObjToString();
-            string cfCDN = ConfigHelper.GetValue(new string[] { "cf", "cdn" }).ObjToString();
+            NightscoutLog log = new NightscoutLog(); 
 
             await UnResolveDomain(nightscout);
             var client = new HttpClient();
             //添加
-            var request = new HttpRequestMessage(HttpMethod.Post, $"https://api.cloudflare.com/client/v4/zones/{cfZoomID}/dns_records");
-            request.Headers.Add("Authorization", $"Bearer {cfKey}");
+            var request = new HttpRequestMessage(HttpMethod.Post, $"https://api.cloudflare.com/client/v4/zones/{NsInfo.cfZoomID}/dns_records");
+            request.Headers.Add("Authorization", $"Bearer {NsInfo.cfKey}");
             CFAddMessageInfo cfAdd = new CFAddMessageInfo();
-            cfAdd.content = cfCDN;
+            cfAdd.content = NsInfo.cfCDN;
             cfAdd.name = nightscout.url;
             cfAdd.proxied = false;
             cfAdd.type = "CNAME";
@@ -71,12 +68,10 @@ namespace MyDotnet.Services.Ns
         }
         public async Task<bool> UnResolveDomain(Nightscout nightscout)
         {
-            NightscoutLog log = new NightscoutLog();
-            string cfKey = ConfigHelper.GetValue(new string[] { "cf", "key" }).ObjToString();
-            string cfZoomID = ConfigHelper.GetValue(new string[] { "cf", "zoomID" }).ObjToString();
+            NightscoutLog log = new NightscoutLog(); 
             var client = new HttpClient();
-            var request = new HttpRequestMessage(HttpMethod.Get, $"https://api.cloudflare.com/client/v4/zones/{cfZoomID}/dns_records?type=CNAME&name={nightscout.url}");
-            request.Headers.Add("Authorization", $"Bearer {cfKey}");
+            var request = new HttpRequestMessage(HttpMethod.Get, $"https://api.cloudflare.com/client/v4/zones/{NsInfo.cfZoomID}/dns_records?type=CNAME&name={nightscout.url}");
+            request.Headers.Add("Authorization", $"Bearer {NsInfo.cfKey}");
             var response = await client.SendAsync(request);
             response.EnsureSuccessStatusCode();
             var txt = await response.Content.ReadAsStringAsync();
@@ -86,8 +81,8 @@ namespace MyDotnet.Services.Ns
             if (obj.success && obj.result != null && obj.result.Count == 1)
             {
                 //删除
-                request = new HttpRequestMessage(HttpMethod.Delete, $"https://api.cloudflare.com/client/v4/zones/{cfZoomID}/dns_records/{obj.result[0].id}");
-                request.Headers.Add("Authorization", $"Bearer {cfKey}");
+                request = new HttpRequestMessage(HttpMethod.Delete, $"https://api.cloudflare.com/client/v4/zones/{NsInfo.cfZoomID}/dns_records/{obj.result[0].id}");
+                request.Headers.Add("Authorization", $"Bearer {NsInfo.cfKey}");
                 response = await client.SendAsync(request);
                 txt = await response.Content.ReadAsStringAsync();
                 var obj2 = JsonHelper.JsonToObj<CFMessageInfo>(txt);
@@ -357,26 +352,15 @@ namespace MyDotnet.Services.Ns
                 StringBuilder sb = new StringBuilder();
                 try
                 {
-                    string mongoDB = ConfigHelper.GetValue(new string[] { "nightscout", "mongoDB" }).ObjToString();
-                    int mongoPort = ConfigHelper.GetValue(new string[] { "nightscout", "mongoPort" }).ObjToInt();
-
-                    string path = ConfigHelper.GetValue(new string[] { "nightscout", "path" }).ObjToString();
-                    string MAKER_KEY = ConfigHelper.GetValue(new string[] { "nightscout", "MAKER_KEY" }).ObjToString();
-                    string CUSTOM_TITLE = ConfigHelper.GetValue(new string[] { "nightscout", "CUSTOM_TITLE" }).ObjToString();
-
-                    string cer = ConfigHelper.GetValue(new string[] { "nightscout", "cer" }).ObjToString();
-
-                    string key = ConfigHelper.GetValue(new string[] { "nightscout", "key" }).ObjToString();
-
-                    string pushUrl = ConfigHelper.GetValue(new string[] { "nightscout", "pushUrl" }).ObjToString();
+                     
 
                     var webConfig = @$"
 server {{
     listen 443 ssl http2;    
     server_name {nightscout.url} {nightscout.backupurl};
 
-    ssl_certificate ""/etc/nginx/conf.d/{cer}"";
-    ssl_certificate_key ""/etc/nginx/conf.d/{key}"";
+    ssl_certificate ""/etc/nginx/conf.d/{NsInfo.cer}"";
+    ssl_certificate_key ""/etc/nginx/conf.d/{NsInfo.key}"";
 
     ssl_protocols TLSv1.2 TLSv1.3;
     ssl_ciphers ALL:!DH:!EXPORT:!RC4:+HIGH:+MEDIUM:!eNULL;
@@ -475,17 +459,17 @@ server {{
                             //args.Add($"-v {path}/enclave.js:/opt/app/lib/server/enclave.js");
                             if (nightscout.isConnection)
                             {
-                                args.Add($"-e MAKER_KEY={MAKER_KEY}");
+                                args.Add($"-e MAKER_KEY={NsInfo.MAKER_KEY}");
                                 if (nightscout.isKeepPush)
                                 {
                                     args.Add($"-e KEEP_PUSH='true'");
                                 }
-                                args.Add($"-e PUSH_URL='{pushUrl}'");
+                                args.Add($"-e PUSH_URL='{NsInfo.pushUrl}'");
                             }
                             args.Add($"-e LANGUAGE=zh_cn");
                             args.Add($"-e DISPLAY_UNITS='mmol/L'");
                             args.Add($"-e TIME_FORMAT=24");
-                            args.Add($"-e CUSTOM_TITLE='{CUSTOM_TITLE}'");
+                            args.Add($"-e CUSTOM_TITLE='{NsInfo.CUSTOM_TITLE}'");
                             args.Add($"-e THEME=colors");
 
 
@@ -499,12 +483,12 @@ server {{
                                 }
                                 else
                                 {
-                                    pluginsArr = ConfigHelper.GetList<NSPlugin>(new string[] { "nightscout", "plugins" }).Select(t => t.key).ToList();
+                                    pluginsArr = NsInfo.plugins.Select(t => t.key).ToList();
                                 }
                             }
                             catch (Exception)
                             {
-                                pluginsArr = ConfigHelper.GetList<NSPlugin>(new string[] { "nightscout", "plugins" }).Select(t => t.key).ToList();
+                                pluginsArr = NsInfo.plugins.Select(t => t.key).ToList();
                             }
                             args.Add($"-e SHOW_PLUGINS='{string.Join(" ", pluginsArr)}'");
                             args.Add($"-e ENABLE='{string.Join(" ", pluginsArr)}'");
@@ -516,14 +500,11 @@ server {{
                             args.Add($"-e uid={nightscout.Id}");
 
                             //苹果远程指令
-                            string apKeyID = ConfigHelper.GetValue(new string[] { "appleRemote", "apKeyID" }).ObjToString();
-                            string apKey = ConfigHelper.GetValue(new string[] { "appleRemote", "apKey" }).ObjToString();
-                            string teamID = ConfigHelper.GetValue(new string[] { "appleRemote", "teamID" }).ObjToString();
-                            string env = ConfigHelper.GetValue(new string[] { "appleRemote", "env" }).ObjToString();
-                            args.Add($"-e LOOP_APNS_KEY_ID='{apKeyID}'");
-                            args.Add($"-e LOOP_APNS_KEY='{apKey}'");
-                            args.Add($"-e LOOP_DEVELOPER_TEAM_ID='{teamID}'");
-                            args.Add($"-e LOOP_PUSH_SERVER_ENVIRONMENT='{env}'");
+                            
+                            args.Add($"-e LOOP_APNS_KEY_ID='{NsInfo.apKeyID}'");
+                            args.Add($"-e LOOP_APNS_KEY='{NsInfo.apKey}'");
+                            args.Add($"-e LOOP_DEVELOPER_TEAM_ID='{NsInfo.apTeamID}'");
+                            args.Add($"-e LOOP_PUSH_SERVER_ENVIRONMENT='{NsInfo.apEnv}'");
 
                             //args.Add($"-d nightscout/cgm-remote-monitor:latest");
                             args.Add($"-d mynightscout:latest");
