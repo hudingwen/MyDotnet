@@ -1,4 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using MyDotnet.Domain.Entity.System;
+using MyDotnet.Services;
 using Quartz;
 using Quartz.Spi;
 using System;
@@ -28,10 +30,12 @@ namespace MyDotnet.Domain.Dto.System
         {
             try
             {
-                var serviceScope = _serviceProvider.CreateScope();
-                var job = serviceScope.ServiceProvider.GetService(bundle.JobDetail.JobType) as IJob;
-                return job;
 
+                using (var scope = _serviceProvider.CreateScope())
+                {
+                    var data = scope.ServiceProvider.GetRequiredService(bundle.JobDetail.JobType);
+                    return data as IJob;
+                } 
             }
             catch (Exception)
             {
