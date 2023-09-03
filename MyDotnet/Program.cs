@@ -61,14 +61,16 @@ namespace MyDotnet
             builder.SetSwagger();
             //数据开启
             builder.SetSqlsugar();
-            //调度服务
-            builder.SetQuartz();
             //实体映射
             builder.SetAutoMapper();
             //权限开启
             builder.SetAuth();
+
+
+            //调度服务
+            //builder.SetQuartz();
             //初始任务
-            builder.SetHostJob();
+            //builder.SetHostJob();
 
 
 
