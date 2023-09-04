@@ -24,7 +24,7 @@ namespace MyDotnet
             builder.Services.AddHttpContextAccessor();
             //开启IHttpClientFactory
             builder.Services.AddHttpClient();
-            //gb2312支持
+            //gb2312字符支持
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
             //控制器配置
             builder.Services.AddControllers(o =>

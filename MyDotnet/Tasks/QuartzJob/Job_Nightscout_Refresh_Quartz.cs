@@ -72,10 +72,6 @@ namespace MyDotnet.Tasks.QuartzJob
                         var pushUsers = nsConfig.pushUserIDs.Split(",", StringSplitOptions.RemoveEmptyEntries);
                         if (pushUsers.Length > 0)
                         {
-                            var pushWechatID = ConfigHelper.GetValue(new string[] { "nightscout", "pushWechatID" }).ObjToString();
-                            var pushCompanyCode = ConfigHelper.GetValue(new string[] { "nightscout", "pushCompanyCode" }).ObjToString();
-                            var pushTemplateID = ConfigHelper.GetValue(new string[] { "nightscout", "pushTemplateID_Alert" }).ObjToString();
-                            var frontPage = ConfigHelper.GetValue(new string[] { "nightscout", "FrontPage" }).ObjToString();
                             foreach (var userid in pushUsers)
                             {
                                 var pushData = new WeChatCardMsgDataDto();
@@ -83,11 +79,11 @@ namespace MyDotnet.Tasks.QuartzJob
                                 pushData.cardMsg.keyword1 = $"每周ns重启任务出现失败:{errCount.Count}个";
                                 pushData.cardMsg.keyword2 = string.Join(",", errCount);
                                 pushData.cardMsg.remark = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-                                pushData.cardMsg.url = frontPage;
-                                pushData.cardMsg.template_id = pushTemplateID;
+                                pushData.cardMsg.url = NsInfo.frontPage;
+                                pushData.cardMsg.template_id = NsInfo.pushTemplateID_Alert;
                                 pushData.info = new WeChatUserInfo();
-                                pushData.info.id = pushWechatID;
-                                pushData.info.companyCode = pushCompanyCode;
+                                pushData.info.id = NsInfo.pushWechatID;
+                                pushData.info.companyCode = NsInfo.pushCompanyCode;
                                 pushData.info.userID = userid;
                                 await _weChatConfigServices.PushCardMsg(pushData);
                             }

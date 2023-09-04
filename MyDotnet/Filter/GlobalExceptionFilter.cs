@@ -19,13 +19,12 @@ namespace MyDotnet.Filter
             LogHelper.logSys.Error(context.Exception);
 
             context.HttpContext.Response.ContentType = "application/json";
-            context.HttpContext.Response.StatusCode = StatusCodes.Status500InternalServerError;
+            //context.HttpContext.Response.StatusCode = StatusCodes.Status500InternalServerError;
+            context.HttpContext.Response.StatusCode = StatusCodes.Status200OK;
 
             var res = new ContentResult();
             res.Content = JsonHelper.ObjToJson(MessageModel.Fail($"系统错误:{context.Exception.Message}"));
             context.Result = res;
-
-
         }
 
 

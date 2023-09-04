@@ -25,6 +25,14 @@ namespace MyDotnet.Domain.Dto.Ns
         /// </summary>
         public static string pushTemplateID_Keep = ConfigHelper.GetValue(new string[] { "nightscout", "pushTemplateID_Keep" });
         /// <summary>
+        /// 推送提醒模板
+        /// </summary>
+        public static string pushTemplateID_Alert =  ConfigHelper.GetValue(new string[] { "nightscout", "pushTemplateID_Alert" });
+        /// <summary>
+        /// 推送模板默认地址
+        /// </summary>
+        public static string frontPage = ConfigHelper.GetValue(new string[] { "nightscout", "FrontPage" });
+        /// <summary>
         /// 小程序id
         /// </summary>
         public static string miniAppid = ConfigHelper.GetValue(new string[] { "miniProgram", "appid" });

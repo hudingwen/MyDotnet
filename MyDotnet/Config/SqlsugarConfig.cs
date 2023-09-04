@@ -20,8 +20,9 @@ namespace MyDotnet.Config
 
             //获取主库
             DbConfigHelper.MainDB = ConfigHelper.GetValue(new string[] { "Database", "MainDB" }).ObjToString();
+            //是否多库
             DbConfigHelper.MutiDBEnabled = ConfigHelper.GetValue(new string[] { "Database", "MutiDBEnabled" }).ObjToBool();
-            //获取多库链接
+            //获取数据库链接
             List<MutiDBOperate> listdatabase = ConfigHelper.GetList<MutiDBOperate>(new string[] { "Database", "DBS" });
             listdatabase = listdatabase.Where(t => t.Enabled).ToList();
             var mainDb = listdatabase.Find(t => t.ConnId.Equals(DbConfigHelper.MainDB));
@@ -130,7 +131,6 @@ namespace MyDotnet.Config
                 if (item.BaseType != null && item.BaseType.IsGenericType && item.BaseType.GetGenericTypeDefinition() == baseTypeServices.GetGenericTypeDefinition())
                     builder.Services.AddScoped(item);
             }
-
 
         }
     }

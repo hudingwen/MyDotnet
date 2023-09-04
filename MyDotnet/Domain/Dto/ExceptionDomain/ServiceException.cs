@@ -4,18 +4,18 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MyDotnet.Filter.ExceptionDomain
+namespace MyDotnet.Domain.Dto.ExceptionDomain
 {
     /// <summary>
-    /// 系统异常
+    /// 服务异常
     /// </summary>
-    public class SystemException : Exception
+    public class ServiceException : Exception
     {
         /// <summary>
         /// 异常消息
         /// </summary>
         /// <param name="message"></param>
-        public SystemException(string message) : base(message)
+        public ServiceException(string message) : base(message)
         {
 
         }
@@ -24,7 +24,7 @@ namespace MyDotnet.Filter.ExceptionDomain
         /// </summary>
         /// <param name="message">消息</param>
         /// <param name="ex">异常</param>
-        public SystemException(string message, Exception ex) : base(message, ex)
+        public ServiceException(string message, Exception ex) : base(message, ex)
         {
 
         }

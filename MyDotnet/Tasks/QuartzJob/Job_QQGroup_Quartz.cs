@@ -33,8 +33,8 @@ namespace MyDotnet.Tasks.QuartzJob
                 {
                     var sendMsg = $"[CQ:at,qq=all] \n 28分小游戏,开搞啦开搞啦.北京时间:{DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")}";
                     var groupid = 894466423;
-                    var token = ConfigHelper.GetValue(new string[] { "qqGroupPushToken" }).ObjToString();
-                    var sendUrl = ConfigHelper.GetValue(new string[] { "qqGroupPushUrl" }).ObjToString();
+                    var token = "";
+                    var sendUrl = "";
 
 
                     string requestJson;

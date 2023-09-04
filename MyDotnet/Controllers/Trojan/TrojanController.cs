@@ -211,9 +211,9 @@ namespace MyDotnet.Controllers.Trojan
             var data = await _baseServicesServers.Dal.Query();
             data = data.OrderBy(t => t.servername).ToList();
             var res = new TrojanServerSpliceDto();
-            res.normalApi = ConfigHelper.GetValue(new string[] { "trojan", "normalApi" }).ObjToString();
-            res.clashApi = ConfigHelper.GetValue(new string[] { "trojan", "clashApi" }).ObjToString();
-            res.clashApiBackup = ConfigHelper.GetValue(new string[] { "trojan", "clashApiBackup" }).ObjToString();
+            res.normalApi = TrojanInfo.normalApi;
+            res.clashApi = TrojanInfo.clashApi;
+            res.clashApiBackup = TrojanInfo.clashApiBackup;
             foreach (var item in data)
             {
                 var serverSplice = GetSplice(item, id);

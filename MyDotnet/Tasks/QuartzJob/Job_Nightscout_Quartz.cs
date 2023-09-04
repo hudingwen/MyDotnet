@@ -45,10 +45,7 @@ namespace MyDotnet.Tasks.QuartzJob
                 string pars = data.GetString("JobParam");
                 var nsConfig = JsonHelper.JsonToObj<NightscoutRemindConfig>(pars);
 
-                var pushWechatID = ConfigHelper.GetValue(new string[] { "nightscout", "pushWechatID" }).ObjToString();
-                var pushCompanyCode = ConfigHelper.GetValue(new string[] { "nightscout", "pushCompanyCode" }).ObjToString();
-                var pushTemplateID = ConfigHelper.GetValue(new string[] { "nightscout", "pushTemplateID_Alert" }).ObjToString();
-                var frontPage = ConfigHelper.GetValue(new string[] { "nightscout", "FrontPage" }).ObjToString();
+
                 var nights = await _nightscoutServices.Dal.Query(t => t.status.Equals("已付费"));
 
                 List<string> ls = new List<string>();
@@ -80,10 +77,10 @@ namespace MyDotnet.Tasks.QuartzJob
                             pushData.cardMsg.keyword2 = $"{nightscout.endTime.ToString("yyyy-MM-dd HH:mm:ss")}";
                             pushData.cardMsg.remark = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
                             pushData.cardMsg.url = $"https://{nightscout.url}";
-                            pushData.cardMsg.template_id = pushTemplateID;
+                            pushData.cardMsg.template_id = NsInfo.pushTemplateID_Alert;
                             pushData.info = new WeChatUserInfo();
-                            pushData.info.id = pushWechatID;
-                            pushData.info.companyCode = pushCompanyCode;
+                            pushData.info.id = NsInfo.pushWechatID;
+                            pushData.info.companyCode = NsInfo.pushCompanyCode;
                             pushData.info.userID = nightscout.Id.ToString();
                             await _weChatConfigServices.PushCardMsg(pushData);
                         }
@@ -107,11 +104,11 @@ namespace MyDotnet.Tasks.QuartzJob
                                 pushData.cardMsg.keyword1 = $"有{ls.Count}个客户即将到期或已到期";
                                 pushData.cardMsg.keyword2 = string.Join(",", ls);
                                 pushData.cardMsg.remark = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-                                pushData.cardMsg.url = frontPage;
-                                pushData.cardMsg.template_id = pushTemplateID;
+                                pushData.cardMsg.url = NsInfo.frontPage;
+                                pushData.cardMsg.template_id = NsInfo.pushTemplateID_Alert;
                                 pushData.info = new WeChatUserInfo();
-                                pushData.info.id = pushWechatID;
-                                pushData.info.companyCode = pushCompanyCode;
+                                pushData.info.id = NsInfo.pushWechatID;
+                                pushData.info.companyCode = NsInfo.pushCompanyCode;
                                 pushData.info.userID = userid;
                                 await _weChatConfigServices.PushCardMsg(pushData);
                             }
