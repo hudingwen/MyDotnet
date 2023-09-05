@@ -675,12 +675,12 @@ namespace MyDotnet.Services.WeChat
             else
             {
                 return @$"<xml>
-                                <ToUserName><![CDATA[{weChat.FromUserName}]]></ToUserName>
-                                <FromUserName><![CDATA[{weChat.ToUserName}]]></FromUserName>
-                                <CreateTime>{DateTime.Now.Ticks.ToString()}</CreateTime>
-                                <MsgType><![CDATA[text]]></MsgType>
-                                <Content><![CDATA[我收到了消息=>{(isEvent ? weChat.EventKey : weChat.Content)}]]></Content>
-                                </xml>";
+                        <ToUserName><![CDATA[{weChat.FromUserName}]]></ToUserName>
+                        <FromUserName><![CDATA[{weChat.ToUserName}]]></FromUserName>
+                        <CreateTime>{DateTime.Now.Ticks.ToString()}</CreateTime>
+                        <MsgType><![CDATA[text]]></MsgType>
+                        <Content><![CDATA[我收到了消息=>{(isEvent ? weChat.EventKey : weChat.Content)}]]></Content>
+                        </xml>";
             }
         }
 
@@ -691,14 +691,12 @@ namespace MyDotnet.Services.WeChat
         /// <returns></returns>
         private async Task<string> HandImage(WeChatXMLDto weChat)
         {
-            return await Task.Run(() =>
-            {
-                return @$"<xml><ToUserName><![CDATA[{weChat.FromUserName}]]></ToUserName>
+            await Task.CompletedTask;
+            return @$"<xml><ToUserName><![CDATA[{weChat.FromUserName}]]></ToUserName>
                                 <FromUserName><![CDATA[{weChat.ToUserName}]]></FromUserName>
                                 <CreateTime>{DateTime.Now.Ticks.ToString()}</CreateTime>
                                 <MsgType><![CDATA[text]]></MsgType>
                                 <Content><![CDATA[我收到了图片=>{weChat.PicUrl}]]></Content></xml>";
-            });
         }
         /// <summary>
         /// 处理声音
@@ -707,14 +705,12 @@ namespace MyDotnet.Services.WeChat
         /// <returns></returns>
         private async Task<string> HandVoice(WeChatXMLDto weChat)
         {
-            return await Task.Run(() =>
-            {
-                return @$"<xml><ToUserName><![CDATA[{weChat.FromUserName}]]></ToUserName>
+            await Task.CompletedTask;
+            return @$"<xml><ToUserName><![CDATA[{weChat.FromUserName}]]></ToUserName>
                                 <FromUserName><![CDATA[{weChat.ToUserName}]]></FromUserName>
                                 <CreateTime>{DateTime.Now.Ticks.ToString()}</CreateTime>
                                 <MsgType><![CDATA[text]]></MsgType>
                                 <Content><![CDATA[我收到了声音=>{weChat.MediaId}]]></Content></xml>";
-            });
         }
         /// <summary>
         /// 处理小视频
@@ -723,14 +719,12 @@ namespace MyDotnet.Services.WeChat
         /// <returns></returns>
         private async Task<string> HandShortvideo(WeChatXMLDto weChat)
         {
-            return await Task.Run(() =>
-            {
-                return @$"<xml><ToUserName><![CDATA[{weChat.FromUserName}]]></ToUserName>
+            await Task.CompletedTask;
+            return @$"<xml><ToUserName><![CDATA[{weChat.FromUserName}]]></ToUserName>
                                 <FromUserName><![CDATA[{weChat.ToUserName}]]></FromUserName>
                                 <CreateTime>{DateTime.Now.Ticks.ToString()}</CreateTime>
                                 <MsgType><![CDATA[text]]></MsgType>
                                 <Content><![CDATA[我收到了小视频=>{weChat.MediaId}]]></Content></xml>";
-            });
         }
         /// <summary>
         /// 处理地理位置
@@ -739,14 +733,12 @@ namespace MyDotnet.Services.WeChat
         /// <returns></returns>
         private async Task<string> HandLocation(WeChatXMLDto weChat)
         {
-            return await Task.Run(() =>
-            {
-                return @$"<xml><ToUserName><![CDATA[{weChat.FromUserName}]]></ToUserName>
+            await Task.CompletedTask;
+            return @$"<xml><ToUserName><![CDATA[{weChat.FromUserName}]]></ToUserName>
                                 <FromUserName><![CDATA[{weChat.ToUserName}]]></FromUserName>
                                 <CreateTime>{DateTime.Now.Ticks.ToString()}</CreateTime>
                                 <MsgType><![CDATA[text]]></MsgType>
                                 <Content><![CDATA[我收到了地址位置=>{weChat.Label}]]></Content></xml>";
-            });
         }
         /// <summary>
         /// 处理链接消息
@@ -755,14 +747,12 @@ namespace MyDotnet.Services.WeChat
         /// <returns></returns>
         private async Task<string> HandLink(WeChatXMLDto weChat)
         {
-            return await Task.Run(() =>
-            {
-                return @$"<xml><ToUserName><![CDATA[{weChat.FromUserName}]]></ToUserName>
+            await Task.CompletedTask;
+            return @$"<xml><ToUserName><![CDATA[{weChat.FromUserName}]]></ToUserName>
                                 <FromUserName><![CDATA[{weChat.ToUserName}]]></FromUserName>
                                 <CreateTime>{DateTime.Now.Ticks.ToString()}</CreateTime>
                                 <MsgType><![CDATA[text]]></MsgType>
                                 <Content><![CDATA[我收到了链接=>{weChat.Url}]]></Content></xml>";
-            });
         }
         /// <summary>
         /// 处理事件
@@ -771,7 +761,6 @@ namespace MyDotnet.Services.WeChat
         /// <returns></returns>
         private async Task<string> HandEvent(WeChatXMLDto weChat)
         {
-
             switch (weChat.Event)
             {
                 case "subscribe":
@@ -788,23 +777,17 @@ namespace MyDotnet.Services.WeChat
                     return await EventVIEW(weChat);
                 case "TEMPLATESENDJOBFINISH":
                     //模板消息回执
-                    return await Task.Run(() =>
-                    {
-                        return @$"<xml><ToUserName><![CDATA[{weChat.FromUserName}]]></ToUserName>
+                    return @$"<xml><ToUserName><![CDATA[{weChat.FromUserName}]]></ToUserName>
                                 <FromUserName><![CDATA[{weChat.ToUserName}]]></FromUserName>
                                 <CreateTime>{DateTime.Now.Ticks.ToString()}</CreateTime>
                                 <MsgType><![CDATA[text]]></MsgType>
                                 <Content><![CDATA[模板回执:{weChat.Statuss}]]></Content></xml>";
-                    });
                 default:
-                    return await Task.Run(() =>
-                    {
-                        return @$"<xml><ToUserName><![CDATA[{weChat.FromUserName}]]></ToUserName>
+                    return @$"<xml><ToUserName><![CDATA[{weChat.FromUserName}]]></ToUserName>
                                 <FromUserName><![CDATA[{weChat.ToUserName}]]></FromUserName>
                                 <CreateTime>{DateTime.Now.Ticks.ToString()}</CreateTime>
                                 <MsgType><![CDATA[text]]></MsgType>
                                 <Content><![CDATA[处理失败,没有找到事件类型=>{weChat.Event}]]></Content></xml>";
-                    });
             }
         }
         /// <summary>
@@ -890,21 +873,18 @@ namespace MyDotnet.Services.WeChat
         /// <returns></returns>
         private async Task<string> EventUnsubscribe(WeChatXMLDto weChat)
         {
-            return await Task.Run(async () =>
+            var data = await _weChatSubServices.Dal.Query(t => t.SubFromPublicAccount == weChat.publicAccount && t.SubUserOpenID == weChat.FromUserName && t.IsUnBind == false);
+            foreach (var item in data)
             {
-                var data = await _weChatSubServices.Dal.Query(t => t.SubFromPublicAccount == weChat.publicAccount && t.SubUserOpenID == weChat.FromUserName && t.IsUnBind == false);
-                foreach (var item in data)
-                {
-                    item.IsUnBind = true;
-                    item.SubUserRefTime = DateTime.Now;
-                }
-                await Dal.Db.Updateable<WeChatSub>(data).UpdateColumns(t => new { t.IsUnBind, t.SubUserRefTime }).ExecuteCommandAsync();
-                return @$"<xml><ToUserName><![CDATA[{weChat.FromUserName}]]></ToUserName>
+                item.IsUnBind = true;
+                item.SubUserRefTime = DateTime.Now;
+            }
+            await Dal.Db.Updateable<WeChatSub>(data).UpdateColumns(t => new { t.IsUnBind, t.SubUserRefTime }).ExecuteCommandAsync();
+            return @$"<xml><ToUserName><![CDATA[{weChat.FromUserName}]]></ToUserName>
                                 <FromUserName><![CDATA[{weChat.ToUserName}]]></FromUserName>
                                 <CreateTime>{DateTime.Now.Ticks.ToString()}</CreateTime>
                                 <MsgType><![CDATA[text]]></MsgType>
                                 <Content><![CDATA[我收到了取消关注事件=>{weChat.Event}]]></Content></xml>";
-            });
         }
         /// <summary>
         /// 已关注扫码事件
@@ -998,14 +978,12 @@ namespace MyDotnet.Services.WeChat
         /// <returns></returns>
         private async Task<string> EventLOCATION(WeChatXMLDto weChat)
         {
-            return await Task.Run(() =>
-            {
-                return @$"<xml><ToUserName><![CDATA[{weChat.FromUserName}]]></ToUserName>
+            await Task.CompletedTask;
+            return @$"<xml><ToUserName><![CDATA[{weChat.FromUserName}]]></ToUserName>
                                 <FromUserName><![CDATA[{weChat.ToUserName}]]></FromUserName>
                                 <CreateTime>{DateTime.Now.Ticks.ToString()}</CreateTime>
                                 <MsgType><![CDATA[text]]></MsgType>
                                 <Content><![CDATA[我收到了地理位置事件=>维度:{weChat.Latitude}经度:{weChat.Longitude}位置精度:{weChat.Precision}]]></Content></xml>";
-            });
         }
         /// <summary>
         /// 点击菜单按钮事件
@@ -1023,14 +1001,12 @@ namespace MyDotnet.Services.WeChat
         /// <returns></returns>
         private async Task<string> EventVIEW(WeChatXMLDto weChat)
         {
-            return await Task.Run(() =>
-            {
-                return @$"<xml><ToUserName><![CDATA[{weChat.FromUserName}]]></ToUserName>
+            await Task.CompletedTask;
+            return @$"<xml><ToUserName><![CDATA[{weChat.FromUserName}]]></ToUserName>
                                 <FromUserName><![CDATA[{weChat.ToUserName}]]></FromUserName>
                                 <CreateTime>{DateTime.Now.Ticks.ToString()}</CreateTime>
                                 <MsgType><![CDATA[text]]></MsgType>
                                 <Content><![CDATA[我收到了菜单点击网址事件=>{weChat.EventKey}]]></Content></xml>";
-            });
         }
 
     }
