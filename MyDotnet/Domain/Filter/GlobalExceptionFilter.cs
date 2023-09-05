@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc.Filters;
 using MyDotnet.Domain.Dto.System;
 using MyDotnet.Helper;
 
-namespace MyDotnet.Filter
+namespace MyDotnet.Domain.Filter
 {
     /// <summary>
     /// 全局异常错误日志
@@ -19,7 +19,6 @@ namespace MyDotnet.Filter
             LogHelper.logSys.Error(context.Exception);
 
             context.HttpContext.Response.ContentType = "application/json";
-            //context.HttpContext.Response.StatusCode = StatusCodes.Status500InternalServerError;
             context.HttpContext.Response.StatusCode = StatusCodes.Status200OK;
 
             var res = new ContentResult();

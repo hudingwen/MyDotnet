@@ -1,12 +1,14 @@
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Serialization;
 using Newtonsoft.Json;
-using MyDotnet.Filter;
 using MyDotnet.Domain.Dto;
 using MyDotnet.Helper;
 using MyDotnet.Domain.Dto.System;
 using MyDotnet.Config;
 using System.Text;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
+using MyDotnet.Domain.Filter;
+using MyDotnet.Domain.Middleware;
 
 namespace MyDotnet
 {
@@ -68,25 +70,35 @@ namespace MyDotnet
 
 
             //调度服务
-            //builder.SetQuartz();
+            builder.SetQuartz();
             //初始任务
-            //builder.SetHostJob();
-
-
+            builder.SetHostJob();
+            //开启同步读
+            builder.Services.Configure<KestrelServerOptions>(x => x.AllowSynchronousIO = true)
+                            .Configure<IISServerOptions>(x => x.AllowSynchronousIO = true);
+            //取消请求正文最小数据速率
+            builder.WebHost.UseKestrel(o =>
+            {
+                o.Limits.MinRequestBodyDataRate = null;
+            });
 
 
 
 
             var app = builder.Build();
             // Configure the HTTP request pipeline.
+
+            //开启body重复读
+            app.Use((context, next) =>
+            {
+                context.Request.EnableBuffering();
+                return next(context);
+            });
+            //开启异常中间件
+            app.UseMiddleware<ExceptionHandlerMiddleware>();
+
             //使用Swagger
             app.SetSwagger();
-            //开启body重复读
-            //app.Use((context, next) =>
-            //{
-            //    context.Request.EnableBuffering();
-            //    return next(context);
-            //});
             //路由路由匹配(必须在Auth之前调用)
             app.UseRouting();
             //认证
