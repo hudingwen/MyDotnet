@@ -29,10 +29,10 @@ namespace MyDotnet.Helper
         public async static Task<WeChatApiDto> UploadMediaTemp(string token, string type, string fileName, Stream inputStream)
         {
             var url = $"http://file.api.weixin.qq.com/cgi-bin/media/upload?access_token={token}&type={type}";
+
             using var client = new HttpClient();
             using HttpContent content = new StreamContent(inputStream);
-            var httpResponse = await client.PostAsync(url, content);
-            var txt = await httpResponse.Content.ReadAsStringAsync();
+            var txt = await HttpHelper.PostAsync(url, content);
             return JsonHelper.JsonToObj<WeChatApiDto>(txt);
         }
         /// <summary>

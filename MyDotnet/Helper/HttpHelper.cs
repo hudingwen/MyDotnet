@@ -10,6 +10,7 @@ namespace MyDotnet.Helper
     /// </summary>
     public static class HttpHelper
     {
+        private static HttpClient httpClient = new HttpClient();
         /// <summary>
         /// 发送get请求
         /// </summary>
@@ -17,10 +18,7 @@ namespace MyDotnet.Helper
         /// <returns></returns>
         public static async Task<string> GetAsync(string serviceAddress)
         {
-            using (var httpClient = new HttpClient())
-            {
-                return await httpClient.GetStringAsync(serviceAddress);
-            }
+            return await httpClient.GetStringAsync(serviceAddress);
         }
         /// <summary>
         /// 发送post请求
@@ -33,14 +31,30 @@ namespace MyDotnet.Helper
             using (HttpContent httpContent = new StringContent(requestJson))
             {
                 httpContent.Headers.ContentType = new MediaTypeHeaderValue("application/json");
-                using (var httpClient = new HttpClient())
+                using (var response = await httpClient.PostAsync(serviceAddress, httpContent))
                 {
-                    using (var response = await httpClient.PostAsync(serviceAddress, httpContent))
-                    {
-                        return await response.Content.ReadAsStringAsync();
-                    }
-
+                    return await response.Content.ReadAsStringAsync();
                 }
+            }
+        }
+        public static async Task<string> PostAsync(string serviceAddress, HttpContent httpContent)
+        {
+            try
+            {
+                httpContent.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+                using (var response = await httpClient.PostAsync(serviceAddress, httpContent))
+                {
+                    return await response.Content.ReadAsStringAsync();
+                }
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }
+            finally
+            {
+                httpContent.Dispose();
             }
         }
     }

@@ -14,6 +14,7 @@ using MyDotnet.Services.Ns;
 using MyDotnet.Services.WeChat;
 using SqlSugar;
 using System.Linq.Expressions;
+using System.Net.Http;
 using System.Net.Http.Headers;
 
 namespace MyDotnet.Controllers.Ns
@@ -106,7 +107,7 @@ namespace MyDotnet.Controllers.Ns
                 whereExpression = whereExpression.And(t => t.name.Contains(key) || t.url.Contains(key) || t.passwd.Contains(key) || t.status.Contains(key) || t.resource.Contains(key));
             }
             var data = await _nightscoutServices.Dal.QueryPage(whereExpression, page, pageSize);
-              
+
 
             var bindData = await _wechatsubServices.Dal.Query(t => t.SubFromPublicAccount == NsInfo.pushWechatID && t.IsUnBind == false && t.CompanyID == NsInfo.pushCompanyCode && data.data.Select(i => i.Id.ToString()).ToList().Contains(t.SubJobID));
             //isBindWeChat
@@ -119,7 +120,7 @@ namespace MyDotnet.Controllers.Ns
                 }
             }
 
-             
+
             var bindMini = await _wechatsubServices.Dal.Query(t => t.SubFromPublicAccount == NsInfo.miniAppid && t.IsUnBind == false && t.CompanyID == NsInfo.pushCompanyCode && data.data.Select(i => i.Id.ToString()).ToList().Contains(t.SubJobID));
             //isBindWeChat
             foreach (var item in data.data)
@@ -460,7 +461,7 @@ namespace MyDotnet.Controllers.Ns
         {
             var data = await _nightscoutServices.Dal.QueryById(id);
             if (!data.isConnection) return MessageModel<WeChatResponseUserInfo>.Fail("实例还未接入微信");
-            if (data == null || data.IsDeleted) return MessageModel<WeChatResponseUserInfo>.Fail("实例不存在");  
+            if (data == null || data.IsDeleted) return MessageModel<WeChatResponseUserInfo>.Fail("实例不存在");
             return await _weChatConfigServices.GetQRBind(new WeChatUserInfo { userID = id.ToString(), companyCode = NsInfo.pushCompanyCode, id = NsInfo.pushWechatID, userNick = data.name });
         }
         /// <summary>
@@ -472,7 +473,7 @@ namespace MyDotnet.Controllers.Ns
         public async Task<MessageModel<WeChatResponseUserInfo>> UnbindWeChat(long id)
         {
             var data = await _nightscoutServices.Dal.QueryById(id);
-            if (data == null || data.IsDeleted) return MessageModel<WeChatResponseUserInfo>.Fail("实例不存在"); 
+            if (data == null || data.IsDeleted) return MessageModel<WeChatResponseUserInfo>.Fail("实例不存在");
             return await _weChatConfigServices.UnBind(new WeChatUserInfo { userID = id.ToString(), companyCode = NsInfo.pushCompanyCode, id = NsInfo.pushWechatID });
         }
 
@@ -528,7 +529,7 @@ namespace MyDotnet.Controllers.Ns
                 if (nightscout == null || nightscout.IsDeleted)
                 {
                     //LogHelper.Info("nightscout用户未找到");
-                    return "nightscout用户未找到" ;
+                    return "nightscout用户未找到";
                 }
                 pushTemplateID = NsInfo.pushTemplateID_Keep;
                 data.Value1 = "血糖持续监测";
@@ -563,7 +564,7 @@ namespace MyDotnet.Controllers.Ns
             else
             {
                 //LogHelper.Info("暂时跳过其他情况");
-                return "暂时跳过其他情况" ;
+                return "暂时跳过其他情况";
             }
 
             pushData.cardMsg.url = $"https://{nightscout.url}";
@@ -579,7 +580,7 @@ namespace MyDotnet.Controllers.Ns
             return "推送ns成功";
             //if (nightscout.isBindWeChat)
             //{
-                
+
             //}
             //else
             //{
@@ -686,7 +687,7 @@ namespace MyDotnet.Controllers.Ns
         /// <returns></returns>
         [HttpGet]
         public async Task<MessageModel<string>> GetBindQR(long nsid)
-        {   
+        {
             string url = $"https://api.weixin.qq.com/cgi-bin/stable_token";
 
             var weChatToken = new { appid = NsInfo.miniAppid, secret = NsInfo.miniSecret, grant_type = NsInfo.miniGrantType };
@@ -707,28 +708,24 @@ namespace MyDotnet.Controllers.Ns
 
             await _weChatConfigServices.Dal.Db.Insertable<WeChatQR>(weChatQR).ExecuteCommandAsync();
 
-            string result;
-            using (HttpContent httpContent = new StringContent(JsonHelper.ObjToJson(weChatToken)))
-            {
-                httpContent.Headers.ContentType = new MediaTypeHeaderValue("application/json");
-                using (var httpClient = new HttpClient())
-                {
-                    httpClient.Timeout = new TimeSpan(0, 0, 60);
-                    result = await httpClient.PostAsync(url, httpContent).Result.Content.ReadAsStringAsync();
-                    AccessTokenDto accessTokenDto = JsonHelper.JsonToObj<AccessTokenDto>(result);
 
-                    //正式版为 "release"，体验版为 "trial"，开发版为 "develop"
-                    var ticket = weChatQR.QRticket;
-                    var jsonBind = JsonHelper.ObjToJson(new { path = $"pages/index/index?ticket={ticket}", env_version = NsInfo.miniEnv, width = 128 });
-                    using (HttpContent httpContentBind = new StringContent(jsonBind))
-                    {
-                        var urlBind = $"https://api.weixin.qq.com/wxa/getwxacode?access_token={accessTokenDto.access_token}";
-                        var bindstream = await httpClient.PostAsync(urlBind, httpContentBind).Result.Content.ReadAsByteArrayAsync();
-                        //return File(bindstream, "image/jpeg");
-                        return MessageModel<string>.Success("成功", Convert.ToBase64String(bindstream));
-                    }
-                }
-            }
+            HttpContent httpContent = new StringContent(JsonHelper.ObjToJson(weChatToken));
+
+
+
+            string result = await HttpHelper.PostAsync(url, httpContent);
+            AccessTokenDto accessTokenDto = JsonHelper.JsonToObj<AccessTokenDto>(result);
+
+            //正式版为 "release"，体验版为 "trial"，开发版为 "develop"
+            var ticket = weChatQR.QRticket;
+            var jsonBind = JsonHelper.ObjToJson(new { path = $"pages/index/index?ticket={ticket}", env_version = NsInfo.miniEnv, width = 128 });
+            HttpContent httpContentBind = new StringContent(jsonBind);
+            var urlBind = $"https://api.weixin.qq.com/wxa/getwxacode?access_token={accessTokenDto.access_token}";
+
+            var bindstream = await HttpHelper.PostAsync(urlBind, httpContentBind);
+            //return File(bindstream, "image/jpeg");
+            return MessageModel<string>.Success("成功", bindstream);
+
         }
         /// <summary>
         /// 绑定小程序
@@ -831,7 +828,7 @@ namespace MyDotnet.Controllers.Ns
         [AllowAnonymous]
         public async Task<MessageModel<WeChatModel>> CodeLogin(string code)
         {
-             
+
             var res = await HttpHelper.GetAsync($"https://api.weixin.qq.com/sns/jscode2session?appid={NsInfo.miniAppid}&secret={NsInfo.miniSecret}&js_code={code}&grant_type=authorization_code");
 
             var data = JsonHelper.JsonToObj<WeChatModel>(res);
