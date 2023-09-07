@@ -240,6 +240,7 @@ namespace MyDotnet.Services.WeChat
         /// <returns></returns>
         public async Task<MessageModel<WeChatResponseUserInfo>> PushCardMsg(WeChatCardMsgDataDto msg)
         {
+            
             var ip = _accessor.HttpContext?.Connection?.RemoteIpAddress?.ToString();
             var bindUser = await Dal.Db.Queryable<WeChatSub>().Where(t => t.SubFromPublicAccount == msg.info.id && t.CompanyID == msg.info.companyCode && t.IsUnBind == false && t.SubJobID == msg.info.userID).SingleAsync();
             if (bindUser == null)
@@ -301,6 +302,7 @@ namespace MyDotnet.Services.WeChat
             };
             var pushJson = JsonHelper.ObjToJson(pushData);
             var data = await WeChatHelper.SendCardMsg(res.response.access_token, pushJson);
+            new WeakReference(data);
             reData.usersData = data;
             try
             {
@@ -324,6 +326,8 @@ namespace MyDotnet.Services.WeChat
                 LogHelper.logApp.Error("推送失败");
                 LogHelper.logApp.Error(ex);
             }
+            new WeakReference(reData); 
+            new WeakReference(pushData);
             if (reData.usersData.errcode.Equals(0))
             {
                 return MessageModel<WeChatResponseUserInfo>.Success("卡片消息推送成功", reData);
