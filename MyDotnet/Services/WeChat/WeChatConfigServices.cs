@@ -156,8 +156,7 @@ namespace MyDotnet.Services.WeChat
                         }
                         catch (Exception ex)
                         {
-                            LogHelper.logApp.Error("公众号处理失败");
-                            LogHelper.logApp.Error(ex);
+                            LogHelper.logApp.Error("公众号处理失败", ex);
                             objReturn = @$"<xml><ToUserName><![CDATA[{weChatData.FromUserName}]]></ToUserName>
                                 <FromUserName><![CDATA[{weChatData.ToUserName}]]></FromUserName>
                                 <CreateTime>{DateTime.Now.Ticks.ToString()}</CreateTime>

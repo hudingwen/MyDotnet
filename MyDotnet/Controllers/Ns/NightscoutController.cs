@@ -56,7 +56,17 @@ namespace MyDotnet.Controllers.Ns
             _unitOfWorkManage = unitOfWorkManage;
         }
 
-
+        /// <summary>
+        /// 测试
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet]
+        [AllowAnonymous]
+        public async Task<MessageModel<string>> Test()
+        {
+            await _nightscoutServices.ClearMongoData();
+            return MessageModel<string>.Success("test");
+        }
         /// <summary>
         /// 添加国内解析
         /// </summary>
@@ -709,22 +719,46 @@ namespace MyDotnet.Controllers.Ns
             await _weChatConfigServices.Dal.Db.Insertable<WeChatQR>(weChatQR).ExecuteCommandAsync();
 
 
-            HttpContent httpContent = new StringContent(JsonHelper.ObjToJson(weChatToken));
+            //HttpContent httpContent = new StringContent(JsonHelper.ObjToJson(weChatToken));
+            //string result = await HttpHelper.PostAsync(url, httpContent);
+            //AccessTokenDto accessTokenDto = JsonHelper.JsonToObj<AccessTokenDto>(result);
 
+            ////正式版为 "release"，体验版为 "trial"，开发版为 "develop"
+            //var ticket = weChatQR.QRticket;
+            //var jsonBind = JsonHelper.ObjToJson(new { path = $"pages/index/index?ticket={ticket}", env_version = NsInfo.miniEnv, width = 128 });
+            //HttpContent httpContentBind = new StringContent(jsonBind);
+            //var urlBind = $"https://api.weixin.qq.com/wxa/getwxacode?access_token={accessTokenDto.access_token}";
 
-
-            string result = await HttpHelper.PostAsync(url, httpContent);
-            AccessTokenDto accessTokenDto = JsonHelper.JsonToObj<AccessTokenDto>(result);
-
-            //正式版为 "release"，体验版为 "trial"，开发版为 "develop"
-            var ticket = weChatQR.QRticket;
-            var jsonBind = JsonHelper.ObjToJson(new { path = $"pages/index/index?ticket={ticket}", env_version = NsInfo.miniEnv, width = 128 });
-            HttpContent httpContentBind = new StringContent(jsonBind);
-            var urlBind = $"https://api.weixin.qq.com/wxa/getwxacode?access_token={accessTokenDto.access_token}";
-
-            var bindstream = await HttpHelper.PostAsync(urlBind, httpContentBind);
+            //var bindstream = await HttpHelper.PostAsync(urlBind, httpContentBind);
             //return File(bindstream, "image/jpeg");
-            return MessageModel<string>.Success("成功", bindstream);
+            //return MessageModel<string>.Success("成功", bindstream);
+
+
+
+
+            string result;
+            using (HttpContent httpContent = new StringContent(JsonHelper.ObjToJson(weChatToken)))
+            {
+                httpContent.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+                using (var httpClient = new HttpClient())
+                {
+                    httpClient.Timeout = new TimeSpan(0, 0, 60);
+                    result = await httpClient.PostAsync(url, httpContent).Result.Content.ReadAsStringAsync();
+                    AccessTokenDto accessTokenDto = JsonHelper.JsonToObj<AccessTokenDto>(result);
+
+                    //正式版为 "release"，体验版为 "trial"，开发版为 "develop"
+                    var ticket = weChatQR.QRticket;
+                    var jsonBind = JsonHelper.ObjToJson(new { path = $"pages/index/index?ticket={ticket}", env_version = NsInfo.miniEnv, width = 128 });
+                    using (HttpContent httpContentBind = new StringContent(jsonBind))
+                    {
+                        var urlBind = $"https://api.weixin.qq.com/wxa/getwxacode?access_token={accessTokenDto.access_token}";
+                        var bindstream = await httpClient.PostAsync(urlBind, httpContentBind).Result.Content.ReadAsByteArrayAsync();
+                        //return File(bindstream, "image/jpeg");
+                        return MessageModel<string>.Success("成功", Convert.ToBase64String(bindstream));
+                    }
+                }
+            }
+            
 
         }
         /// <summary>

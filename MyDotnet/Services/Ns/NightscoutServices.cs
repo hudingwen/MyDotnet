@@ -1,4 +1,5 @@
-﻿using MongoDB.Bson;
+﻿using log4net;
+using MongoDB.Bson;
 using MongoDB.Driver;
 using MyDotnet.Domain.Dto.Ns;
 using MyDotnet.Domain.Entity.Ns;
@@ -6,6 +7,7 @@ using MyDotnet.Helper;
 using MyDotnet.Repository;
 using MyDotnet.Services;
 using Renci.SshNet;
+using System;
 using System.Text;
 
 namespace MyDotnet.Services.Ns
@@ -542,5 +544,27 @@ server {{
                 throw;
             }
         }
+        public async Task ClearMongoData()
+        {
+
+
+
+            var client = new MongoClient($"mongodb://{NsInfo.miniLoginName}:{NsInfo.miniLoginPasswd}@{NsInfo.miniHost}:{NsInfo.miniPort}"); // 连接到MongoDB
+            var database = client.GetDatabase("nightscout-template14"); // 获取数据库对象
+            var collection = database.GetCollection<BsonDocument>("entries"); // 替换为你的集合名称
+
+            //Builders<BsonDocument>.Filter.Gt("date", 0) &
+            var flagTime = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
+            flagTime = flagTime.AddMilliseconds(-1).ToUniversalTime();
+            var filter =  Builders<BsonDocument>.Filter.Lte("date", (flagTime - new DateTime(1970, 1, 1, 0, 0, 0, 0)).TotalMilliseconds);
+
+            collection.DeleteMany(filter); // 删除匹配的数据
+            var ls = await collection.Find(filter).ToListAsync();
+
+
+
+        }
     }
+
+    
 }
