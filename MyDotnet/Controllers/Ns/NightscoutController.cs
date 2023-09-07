@@ -55,18 +55,6 @@ namespace MyDotnet.Controllers.Ns
             _wechatsubServices = wechatsubServices;
             _unitOfWorkManage = unitOfWorkManage;
         }
-
-        /// <summary>
-        /// 测试
-        /// </summary>
-        /// <returns></returns>
-        [HttpGet]
-        [AllowAnonymous]
-        public async Task<MessageModel<string>> Test()
-        {
-            await _nightscoutServices.ClearMongoData();
-            return MessageModel<string>.Success("test");
-        }
         /// <summary>
         /// 添加国内解析
         /// </summary>

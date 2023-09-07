@@ -544,23 +544,48 @@ server {{
                 throw;
             }
         }
-        public async Task ClearMongoData()
+        /// <summary>
+        /// 删除上个月及以前的数据
+        /// </summary>
+        /// <returns></returns>
+        public async Task ClearMongoData(Nightscout nightscout)
         {
 
+            try
+            {
+                //Builders<BsonDocument>.Filter.Gt("date", 0) &
+                var flagTime = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
+                flagTime = flagTime.AddMilliseconds(-1).ToUniversalTime();
 
 
-            var client = new MongoClient($"mongodb://{NsInfo.miniLoginName}:{NsInfo.miniLoginPasswd}@{NsInfo.miniHost}:{NsInfo.miniPort}"); // 连接到MongoDB
-            var database = client.GetDatabase("nightscout-template14"); // 获取数据库对象
-            var collection = database.GetCollection<BsonDocument>("entries"); // 替换为你的集合名称
+                var client = new MongoClient($"mongodb://{NsInfo.miniLoginName}:{NsInfo.miniLoginPasswd}@{NsInfo.miniHost}:{NsInfo.miniPort}"); // 连接到MongoDB
+                var database = client.GetDatabase(nightscout.serviceName); // 获取数据库对象
 
-            //Builders<BsonDocument>.Filter.Gt("date", 0) &
-            var flagTime = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
-            flagTime = flagTime.AddMilliseconds(-1).ToUniversalTime();
-            var filter =  Builders<BsonDocument>.Filter.Lte("date", (flagTime - new DateTime(1970, 1, 1, 0, 0, 0, 0)).TotalMilliseconds);
 
-            collection.DeleteMany(filter); // 删除匹配的数据
-            var ls = await collection.Find(filter).ToListAsync();
 
+                var collectionEntries = database.GetCollection<BsonDocument>("entries"); // 替换为你的集合名称
+                var filterEntries = Builders<BsonDocument>.Filter.Lte("date", (flagTime - new DateTime(1970, 1, 1, 0, 0, 0, 0)).TotalMilliseconds);
+                //var ls = await collectionEntries.Find(filterEntries).ToListAsync();
+                collectionEntries.DeleteMany(filterEntries); // 删除匹配的数据
+                                                             
+
+                var collectionDevicestatus = database.GetCollection<BsonDocument>("devicestatus"); // 替换为你的集合名称
+                var filterDevicestatus = Builders<BsonDocument>.Filter.Lte("created_at", flagTime.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"));
+                //var ls = await collectionDevicestatus.Find(filterDevicestatus).ToListAsync();
+                collectionDevicestatus.DeleteMany(filterDevicestatus); // 删除匹配的数据
+
+                var collectionTreatments = database.GetCollection<BsonDocument>("treatments"); // 替换为你的集合名称
+                var filterTreatments = Builders<BsonDocument>.Filter.Lte("created_at", flagTime.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"));
+                //var ls = await collectionTreatments.Find(filterTreatments).ToListAsync();
+                collectionTreatments.DeleteMany(filterTreatments); // 删除匹配的数据
+
+
+                await Task.CompletedTask;
+            }
+            catch (Exception ex)
+            {
+                LogHelper.logApp.Error($"ns用户({nightscout.Id})数据删除失败:{ex.Message}", ex);
+            }
 
 
         }

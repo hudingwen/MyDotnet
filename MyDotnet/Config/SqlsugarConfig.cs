@@ -80,21 +80,21 @@ namespace MyDotnet.Config
             {
                 return new SqlSugar.SqlSugarScope(connectionConfigs, db =>
                 {
-                    DbConfigHelper.listdatabase.ForEach(config =>
+                    connectionConfigs.ForEach(config =>
                     {
-                        var dbProvider = db.GetConnectionScope(config.ConnId);
+                        var dbProvider = db.GetConnectionScope(config.ConfigId);
 
                         // 打印SQL语句
-                        dbProvider.Aop.OnLogExecuting = (sql, pars) =>
-                        {
-                            //var user = InternalHelper.RootServices.GetService<AspNetUser>();
+                        //dbProvider.Aop.OnLogExecuting = (sql, pars) =>
+                        //{
+                        //    //var user = InternalHelper.RootServices.GetService<AspNetUser>();
 
-                            //我可以在这里面写逻辑
-                            //LogHelper.logApp.Info($"【用户ID】:{user.ID}【数据库】：{config.ConnId} 【SQL语句】：{sql} 【SQL参数】：{GetParas(pars)}");
-                            //技巧：AOP中获取IOC对象
-                            //var serviceBuilder = services.BuildServiceProvider();
-                            //var log= serviceBuilder.GetService<ILogger<WeatherForecastController>>();
-                        };
+                        //    //我可以在这里面写逻辑
+                        //    //LogHelper.logApp.Info($"【用户ID】:{user.ID}【数据库】：{config.ConnId} 【SQL语句】：{sql} 【SQL参数】：{GetParas(pars)}");
+                        //    //技巧：AOP中获取IOC对象
+                        //    //var serviceBuilder = services.BuildServiceProvider();
+                        //    //var log= serviceBuilder.GetService<ILogger<WeatherForecastController>>();
+                        //};
                         //// 数据审计
                         //dbProvider.Aop.DataExecuting = SqlSugarAop.DataExecuting;
 
