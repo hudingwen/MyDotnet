@@ -117,6 +117,7 @@ namespace MyDotnet.Services.WeChat
                 throw new ServiceException($"错误代码:{data.errcode} 错误信息:{data.errmsg}");
             return MessageModel<WeChatApiDto>.Success("获取订阅用户成功", data);
         }
+        WeChatXMLDto weChat = null;
         /// <summary>
         /// 微信入口
         /// </summary>
@@ -125,7 +126,7 @@ namespace MyDotnet.Services.WeChat
         /// <returns></returns>
         public async Task<string> Valid(WeChatValidDto validDto, string body)
         {
-            WeChatXMLDto weChatData = null;
+            
             string objReturn = null;
             try
             {
@@ -148,17 +149,17 @@ namespace MyDotnet.Services.WeChat
                     if (string.IsNullOrEmpty(validDto.echoStr))
                     {
                         //非首次验证 
-                        weChatData = XmlHelper.ParseFormByXml<WeChatXMLDto>(body, "xml");
-                        weChatData.publicAccount = validDto.publicAccount;
+                        weChat = XmlHelper.ParseFormByXml<WeChatXMLDto>(body, "xml");
+                        weChat.publicAccount = validDto.publicAccount;
                         try
                         {
-                            objReturn = await HandleWeChat(weChatData);
+                            objReturn = await HandleWeChat();
                         }
                         catch (Exception ex)
                         {
                             LogHelper.logApp.Error("公众号处理失败", ex);
-                            objReturn = @$"<xml><ToUserName><![CDATA[{weChatData.FromUserName}]]></ToUserName>
-                                <FromUserName><![CDATA[{weChatData.ToUserName}]]></FromUserName>
+                            objReturn = @$"<xml><ToUserName><![CDATA[{weChat.FromUserName}]]></ToUserName>
+                                <FromUserName><![CDATA[{weChat.ToUserName}]]></FromUserName>
                                 <CreateTime>{DateTime.Now.Ticks.ToString()}</CreateTime>
                                 <MsgType><![CDATA[text]]></MsgType>
                                 <Content><![CDATA[{ex.Message}]]></Content></xml>";
@@ -577,24 +578,24 @@ namespace MyDotnet.Services.WeChat
         /// </summary>
         /// <param name="weChat"></param>
         /// <returns></returns>
-        public async Task<string> HandleWeChat(WeChatXMLDto weChat)
+        public async Task<string> HandleWeChat()
         {
             switch (weChat.MsgType)
             {
                 case "text":
-                    return await HandText(weChat);
+                    return await HandText();
                 case "image":
-                    return await HandImage(weChat);
+                    return await HandImage();
                 case "voice":
-                    return await HandVoice(weChat);
+                    return await HandVoice();
                 case "shortvideo":
-                    return await HandShortvideo(weChat);
+                    return await HandShortvideo();
                 case "location":
-                    return await HandLocation(weChat);
+                    return await HandLocation();
                 case "link":
-                    return await HandLink(weChat);
+                    return await HandLink();
                 case "event":
-                    return await HandEvent(weChat);
+                    return await HandEvent();
                 default:
                     return @$"<xml><ToUserName><![CDATA[{weChat.FromUserName}]]></ToUserName>
                                 <FromUserName><![CDATA[{weChat.ToUserName}]]></FromUserName>
@@ -608,9 +609,9 @@ namespace MyDotnet.Services.WeChat
         /// </summary>
         /// <param name="weChat"></param>
         /// <returns></returns>
-        private async Task<string> HandText(WeChatXMLDto weChat)
+        private async Task<string> HandText()
         {
-            return await HandleKeyword(weChat);
+            return await HandleKeyword();
 
         }
         /// <summary>
@@ -619,7 +620,7 @@ namespace MyDotnet.Services.WeChat
         /// <param name="weChat"></param>
         /// <param name="isEvent"></param>
         /// <returns></returns>
-        private async Task<string> HandleKeyword(WeChatXMLDto weChat, bool isEvent = false)
+        private async Task<string> HandleKeyword(bool isEvent = false)
         {
             var key = isEvent ? weChat.EventKey : weChat.Content.ObjToString().Trim();
             var findKeys = await _weChatKeywordServices.Dal.Query(t => t.publicAccount.Equals(weChat.publicAccount) && t.key.Equals(key));
@@ -691,7 +692,7 @@ namespace MyDotnet.Services.WeChat
         /// </summary>
         /// <param name="weChat"></param>
         /// <returns></returns>
-        private async Task<string> HandImage(WeChatXMLDto weChat)
+        private async Task<string> HandImage()
         {
             await Task.CompletedTask;
             return @$"<xml><ToUserName><![CDATA[{weChat.FromUserName}]]></ToUserName>
@@ -705,7 +706,7 @@ namespace MyDotnet.Services.WeChat
         /// </summary>
         /// <param name="weChat"></param>
         /// <returns></returns>
-        private async Task<string> HandVoice(WeChatXMLDto weChat)
+        private async Task<string> HandVoice()
         {
             await Task.CompletedTask;
             return @$"<xml><ToUserName><![CDATA[{weChat.FromUserName}]]></ToUserName>
@@ -719,7 +720,7 @@ namespace MyDotnet.Services.WeChat
         /// </summary>
         /// <param name="weChat"></param>
         /// <returns></returns>
-        private async Task<string> HandShortvideo(WeChatXMLDto weChat)
+        private async Task<string> HandShortvideo()
         {
             await Task.CompletedTask;
             return @$"<xml><ToUserName><![CDATA[{weChat.FromUserName}]]></ToUserName>
@@ -733,7 +734,7 @@ namespace MyDotnet.Services.WeChat
         /// </summary>
         /// <param name="weChat"></param>
         /// <returns></returns>
-        private async Task<string> HandLocation(WeChatXMLDto weChat)
+        private async Task<string> HandLocation()
         {
             await Task.CompletedTask;
             return @$"<xml><ToUserName><![CDATA[{weChat.FromUserName}]]></ToUserName>
@@ -747,7 +748,7 @@ namespace MyDotnet.Services.WeChat
         /// </summary>
         /// <param name="weChat"></param>
         /// <returns></returns>
-        private async Task<string> HandLink(WeChatXMLDto weChat)
+        private async Task<string> HandLink()
         {
             await Task.CompletedTask;
             return @$"<xml><ToUserName><![CDATA[{weChat.FromUserName}]]></ToUserName>
@@ -761,22 +762,22 @@ namespace MyDotnet.Services.WeChat
         /// </summary>
         /// <param name="weChat"></param>
         /// <returns></returns>
-        private async Task<string> HandEvent(WeChatXMLDto weChat)
+        private async Task<string> HandEvent()
         {
             switch (weChat.Event)
             {
                 case "subscribe":
-                    return await EventSubscribe(weChat);
+                    return await EventSubscribe();
                 case "unsubscribe":
-                    return await EventUnsubscribe(weChat);
+                    return await EventUnsubscribe();
                 case "SCAN":
-                    return await EventSCAN(weChat);
+                    return await EventSCAN();
                 case "LOCATION":
-                    return await EventLOCATION(weChat);
+                    return await EventLOCATION();
                 case "CLICK":
-                    return await EventCLICK(weChat);
+                    return await EventCLICK();
                 case "VIEW":
-                    return await EventVIEW(weChat);
+                    return await EventVIEW();
                 case "TEMPLATESENDJOBFINISH":
                     //模板消息回执
                     return @$"<xml><ToUserName><![CDATA[{weChat.FromUserName}]]></ToUserName>
@@ -797,11 +798,11 @@ namespace MyDotnet.Services.WeChat
         /// </summary>
         /// <param name="weChat"></param>
         /// <returns></returns>
-        private async Task<string> EventSubscribe(WeChatXMLDto weChat)
+        private async Task<string> EventSubscribe()
         {
             if (weChat.EventKey != null && weChat.EventKey.Contains("bind"))
             {
-                return await QRBind(weChat);
+                return await QRBind();
             }
             else
             {
@@ -873,7 +874,7 @@ namespace MyDotnet.Services.WeChat
         /// </summary>
         /// <param name="weChat"></param>
         /// <returns></returns>
-        private async Task<string> EventUnsubscribe(WeChatXMLDto weChat)
+        private async Task<string> EventUnsubscribe()
         {
             var data = await _weChatSubServices.Dal.Query(t => t.SubFromPublicAccount == weChat.publicAccount && t.SubUserOpenID == weChat.FromUserName && t.IsUnBind == false);
             foreach (var item in data)
@@ -893,11 +894,11 @@ namespace MyDotnet.Services.WeChat
         /// </summary>
         /// <param name="weChat"></param>
         /// <returns></returns>
-        private async Task<string> EventSCAN(WeChatXMLDto weChat)
+        private async Task<string> EventSCAN()
         {
             if (weChat.EventKey != null && weChat.EventKey.Contains("bind"))
             {
-                return await QRBind(weChat);
+                return await QRBind();
             }
             else
             {
@@ -915,7 +916,7 @@ namespace MyDotnet.Services.WeChat
         /// <param name="weChat"></param>
         /// <returns></returns>
 
-        private async Task<string> QRBind(WeChatXMLDto weChat)
+        private async Task<string> QRBind()
         {
             var ticket = await Dal.Db.Queryable<WeChatQR>().InSingleAsync(weChat.Ticket);
             if (ticket == null || ticket.QRisUsed || !ticket.QRpublicAccount.Equals(weChat.publicAccount))
@@ -978,7 +979,7 @@ namespace MyDotnet.Services.WeChat
         /// </summary>
         /// <param name="weChat"></param>
         /// <returns></returns>
-        private async Task<string> EventLOCATION(WeChatXMLDto weChat)
+        private async Task<string> EventLOCATION()
         {
             await Task.CompletedTask;
             return @$"<xml><ToUserName><![CDATA[{weChat.FromUserName}]]></ToUserName>
@@ -992,16 +993,16 @@ namespace MyDotnet.Services.WeChat
         /// </summary>
         /// <param name="weChat"></param>
         /// <returns></returns>
-        private async Task<string> EventCLICK(WeChatXMLDto weChat)
+        private async Task<string> EventCLICK()
         {
-            return await HandleKeyword(weChat, true);
+            return await HandleKeyword(true);
         }
         /// <summary>
         /// 点击菜单网址事件
         /// </summary>
         /// <param name="weChat"></param>
         /// <returns></returns>
-        private async Task<string> EventVIEW(WeChatXMLDto weChat)
+        private async Task<string> EventVIEW()
         {
             await Task.CompletedTask;
             return @$"<xml><ToUserName><![CDATA[{weChat.FromUserName}]]></ToUserName>

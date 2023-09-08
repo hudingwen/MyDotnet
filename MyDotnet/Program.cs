@@ -61,13 +61,12 @@ namespace MyDotnet
             builder.SetLog4Net();
             //Swagger开启
             builder.SetSwagger();
-            //数据开启
-            builder.SetSqlsugar();
             //实体映射
             builder.SetAutoMapper();
             //权限开启
             builder.SetAuth();
-
+            //数据开启
+            builder.SetSqlsugar();
 
             //调度服务
             builder.SetQuartz();

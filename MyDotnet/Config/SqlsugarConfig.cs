@@ -2,6 +2,7 @@
 using MyDotnet.Helper;
 using MyDotnet.Repository;
 using MyDotnet.Services;
+using SqlSugar;
 using System.Reflection;
 
 namespace MyDotnet.Config
@@ -76,9 +77,9 @@ namespace MyDotnet.Config
                 connectionConfigs.Add(config);
             });
             //数据库链接注入
-            builder.Services.AddSingleton<SqlSugar.ISqlSugarClient>(o =>
+            builder.Services.AddSingleton<ISqlSugarClient>(o =>
             {
-                return new SqlSugar.SqlSugarScope(connectionConfigs, db =>
+                return new SqlSugarScope(connectionConfigs, db =>
                 {
                     connectionConfigs.ForEach(config =>
                     {
