@@ -62,7 +62,6 @@ namespace MyDotnet.Helper
             {
                 using (var response = await httpClient.SendAsync(request))
                 {
-                    response.EnsureSuccessStatusCode();
                     return await response.Content.ReadAsStringAsync();
                 }
             }
