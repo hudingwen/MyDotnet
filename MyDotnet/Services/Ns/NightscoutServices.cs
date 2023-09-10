@@ -27,66 +27,83 @@ namespace MyDotnet.Services.Ns
         }
         public BaseServices<NightscoutLog> _nightscoutLogServices { get; set; }
         public BaseServices<NightscoutServer> _nightscoutServerServices { get; set; }
-
+        /// <summary>
+        /// 添加解析
+        /// </summary>
+        /// <param name="nightscout"></param>
+        /// <returns></returns>
         public async Task<bool> ResolveDomain(Nightscout nightscout)
         {
             NightscoutLog log = new NightscoutLog(); 
 
             await UnResolveDomain(nightscout);
-            var client = new HttpClient();
-            //添加
-            var request = new HttpRequestMessage(HttpMethod.Post, $"https://api.cloudflare.com/client/v4/zones/{NsInfo.cfZoomID}/dns_records");
-            request.Headers.Add("Authorization", $"Bearer {NsInfo.cfKey}");
-            CFAddMessageInfo cfAdd = new CFAddMessageInfo();
-            cfAdd.content = NsInfo.cfCDN;
-            cfAdd.name = nightscout.url;
-            cfAdd.proxied = false;
-            cfAdd.type = "CNAME";
-            cfAdd.comment = "自动创建解析";
-            cfAdd.ttl = 1;
-            var content = new StringContent(JsonHelper.ObjToJson(cfAdd), null, "text/plain");
-            request.Content = content;
-            var response = await client.SendAsync(request);
-            response.EnsureSuccessStatusCode();
-            var txt = await response.Content.ReadAsStringAsync();
-            var obj = JsonHelper.JsonToObj<CFMessageInfo>(txt);
-            if (obj.success)
+            if (!NsInfo.defaultCND.Equals(nightscout.cdn))
             {
-                log.content = "添加解析成功";
+                //非默认cdn添加解析
+                string cdnName = string.Empty;
+                switch (nightscout.cdn)
+                {
+                    case "aws":
+                        cdnName = NsInfo.cdnAws;
+                        break;
+                    case "qiniu":
+                        cdnName = NsInfo.cdnQiniu;
+                        break;
+                    case "aliyun":
+                        cdnName = NsInfo.cdnAliyun;
+                        break;
+                    case "qcloud":
+                        cdnName = NsInfo.cdnQclound;
+                        break;
+                }
+                //添加
+                var request = new HttpRequestMessage(HttpMethod.Post, $"https://api.cloudflare.com/client/v4/zones/{NsInfo.cfZoomID}/dns_records");
+                request.Headers.Add("Authorization", $"Bearer {NsInfo.cfKey}");
+                CFAddMessageInfo cfAdd = new CFAddMessageInfo();
+                cfAdd.content = cdnName;
+                cfAdd.name = nightscout.url;
+                cfAdd.proxied = false;
+                cfAdd.type = "CNAME";
+                cfAdd.comment = "自动创建解析";
+                cfAdd.ttl = 1;
+                var content = new StringContent(JsonHelper.ObjToJson(cfAdd), null, "text/plain");
+                request.Content = content;
+                var txt = await HttpHelper.SendAsync(request);
+                var obj = JsonHelper.JsonToObj<CFMessageInfo>(txt);
+                if (obj.success)
+                {
+                    log.content = "添加解析成功";
+                }
+                else
+                {
+                    log.content = "添加解析失败";
+                }
+                log.pid = nightscout.Id;
+                log.success = obj.success;
+                await _nightscoutLogServices.Dal.Add(log);
+                return obj.success;
             }
-            else
-            {
-                log.content = "添加解析失败";
-            }
-            log.pid = nightscout.Id;
-            log.success = obj.success;
-            await _nightscoutLogServices.Dal.Add(log);
-            nightscout.isChina = true;
-            await Dal.Update(nightscout, t => new { t.isChina }); 
-            client.Dispose();
-            request.Dispose();
-            response.Dispose();
-            return obj.success;
+            return true;
         }
+        /// <summary>
+        /// 删除解析
+        /// </summary>
+        /// <param name="nightscout"></param>
+        /// <returns></returns>
         public async Task<bool> UnResolveDomain(Nightscout nightscout)
         {
             NightscoutLog log = new NightscoutLog(); 
-            var client = new HttpClient();
             var request = new HttpRequestMessage(HttpMethod.Get, $"https://api.cloudflare.com/client/v4/zones/{NsInfo.cfZoomID}/dns_records?type=CNAME&name={nightscout.url}");
             request.Headers.Add("Authorization", $"Bearer {NsInfo.cfKey}");
-            var response = await client.SendAsync(request);
-            response.EnsureSuccessStatusCode();
-            var txt = await response.Content.ReadAsStringAsync();
+            var txt = await HttpHelper.SendAsync(request);
             var obj = JsonHelper.JsonToObj<CFMessageListInfo>(txt);
-            request.Dispose();
-            response.Dispose();
+
             if (obj.success && obj.result != null && obj.result.Count == 1)
             {
                 //删除
                 request = new HttpRequestMessage(HttpMethod.Delete, $"https://api.cloudflare.com/client/v4/zones/{NsInfo.cfZoomID}/dns_records/{obj.result[0].id}");
                 request.Headers.Add("Authorization", $"Bearer {NsInfo.cfKey}");
-                response = await client.SendAsync(request);
-                txt = await response.Content.ReadAsStringAsync();
+                txt = await HttpHelper.SendAsync(request);
                 var obj2 = JsonHelper.JsonToObj<CFMessageInfo>(txt);
                 if (obj2.success)
                 {
@@ -96,8 +113,6 @@ namespace MyDotnet.Services.Ns
                 {
                     log.content = "删除解析失败";
                 }
-                request.Dispose();
-                response.Dispose();
             }
             else
             {
@@ -106,9 +121,6 @@ namespace MyDotnet.Services.Ns
             log.pid = nightscout.Id;
             log.success = obj.success;
             await _nightscoutLogServices.Dal.Add(log);
-            nightscout.isChina = false;
-            await Dal.Update(nightscout, t => new { t.isChina });
-            client.Dispose();
             return obj.success;
         }
 

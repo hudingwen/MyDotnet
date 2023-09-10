@@ -55,42 +55,6 @@ namespace MyDotnet.Controllers.Ns
             _wechatsubServices = wechatsubServices;
             _unitOfWorkManage = unitOfWorkManage;
         }
-        /// <summary>
-        /// 添加国内解析
-        /// </summary>
-        /// <returns></returns>
-        [HttpGet]
-        public async Task<MessageModel<string>> ResolveDomain(long id)
-        {
-            var nightscout = await _nightscoutServices.Dal.QueryById(id);
-            var isSuccess = await _nightscoutServices.ResolveDomain(nightscout);
-            if (isSuccess)
-            {
-                return MessageModel<string>.Success("添加国内解析成功");
-            }
-            else
-            {
-                return MessageModel<string>.Fail("添加国内解析失败");
-            }
-        }
-        /// <summary>
-        /// 删除国内解析
-        /// </summary>
-        /// <returns></returns>
-        [HttpGet]
-        public async Task<MessageModel<string>> UnResolveDomain(long id)
-        {
-            var nightscout = await _nightscoutServices.Dal.QueryById(id);
-            var isSuccess = await _nightscoutServices.UnResolveDomain(nightscout);
-            if (isSuccess)
-            {
-                return MessageModel<string>.Success("删除国内解析成功");
-            }
-            else
-            {
-                return MessageModel<string>.Fail("删除国内解析失败");
-            }
-        }
 
         [HttpGet]
         public async Task<MessageModel<PageModel<Nightscout>>> Get(int page = 1, string key = "", int pageSize = 50)
@@ -266,6 +230,10 @@ namespace MyDotnet.Controllers.Ns
                     {
                         request.url = string.Format(NsInfo.templateUrl, GenerateNumber(3) + padName);
                     }
+                    if (string.IsNullOrEmpty(request.cdn))
+                    {
+                        request.cdn = NsInfo.defaultCND;
+                    }
 
 
 
@@ -295,11 +263,14 @@ namespace MyDotnet.Controllers.Ns
                         //第一次默认就启动
                         await _nightscoutServices.InitData(request, nsserver);
                         await _nightscoutServices.RunDocker(request, nsserver);
+                        //添加解析
+                        await _nightscoutServices.ResolveDomain(request);
                     }
                     else
                     {
                         data.msg = "添加失败";
                     }
+
                 }
                 catch (Exception)
                 {
@@ -330,10 +301,15 @@ namespace MyDotnet.Controllers.Ns
                 data.response = request?.Id.ObjToString();
             }
             bool isDiff = false;
+            //是否切换域名
             if (!request.url.Equals(old.url))
             {
-                //域名切换删除加速解析
                 await _nightscoutServices.UnResolveDomain(old);
+            }
+            //是否切换解析
+            if (!request.cdn.Equals(old.cdn))
+            {
+                await _nightscoutServices.ResolveDomain(request);
             }
             if (!request.serverId.Equals(old.serverId))
             {

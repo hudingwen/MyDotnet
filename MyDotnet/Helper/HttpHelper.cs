@@ -49,12 +49,31 @@ namespace MyDotnet.Helper
             }
             catch (Exception)
             {
-
                 throw;
             }
             finally
             {
                 httpContent.Dispose();
+            }
+        }
+        public static async Task<string> SendAsync(HttpRequestMessage request)
+        {
+            try
+            {
+                using (var response = await httpClient.SendAsync(request))
+                {
+                    response.EnsureSuccessStatusCode();
+                    return await response.Content.ReadAsStringAsync();
+                }
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }
+            finally
+            {
+                request.Dispose();
             }
         }
     }

@@ -18,7 +18,6 @@ namespace MyDotnet.Domain.Dto.Ns
         /// <summary>
         /// 推送高低异常消息模板
         /// </summary>
-
         public static readonly string pushTemplateID_Exception = ConfigHelper.GetValue(new string[] { "nightscout", "pushTemplateID_Exception" });
         /// <summary>
         /// 推送持续消息模板
@@ -75,17 +74,14 @@ namespace MyDotnet.Domain.Dto.Ns
         /// <summary>
         /// 小程序名言
         /// </summary>
-
         public static readonly List<string> sayings = ConfigHelper.GetList<string>(new string[] { "miniProgram", "sayings" });
         /// <summary>
         /// 小程序名称
         /// </summary>
-
         public static readonly string title = ConfigHelper.GetValue(new string[] { "miniProgram", "title" });
         /// <summary>
         /// 访问地址模板url
         /// </summary>
-
         public static readonly string templateUrl = ConfigHelper.GetValue(new string[] { "nightscout", "TemplateUrl" });
         /// <summary>
         /// ns的MAKER_KEY
@@ -113,10 +109,35 @@ namespace MyDotnet.Domain.Dto.Ns
         public static readonly string apTeamID = ConfigHelper.GetValue(new string[] { "appleRemote", "teamID" }).ObjToString();
         public static readonly string apEnv = ConfigHelper.GetValue(new string[] { "appleRemote", "env" }).ObjToString();
 
-
+        /// <summary>
+        /// cdf操作key
+        /// </summary>
         public static readonly string cfKey = ConfigHelper.GetValue(new string[] { "cf", "key" }).ObjToString();
+        /// <summary>
+        /// cf操作域名
+        /// </summary>
         public static readonly string cfZoomID = ConfigHelper.GetValue(new string[] { "cf", "zoomID" }).ObjToString();
-        public static readonly string cfCDN = ConfigHelper.GetValue(new string[] { "cf", "cdn" }).ObjToString();
+
+        /// <summary>
+        /// 默认cdn
+        /// </summary>
+        public static readonly string defaultCND = ConfigHelper.GetValue(new string[] { "cf", "defaultCND" }).ObjToString();
+        /// <summary>
+        /// 亚马逊cdn
+        /// </summary>
+        public static readonly string cdnAws = ConfigHelper.GetValue(new string[] { "cf", "cdnAws" }).ObjToString();
+        /// <summary>
+        /// 七牛云cdn
+        /// </summary>
+        public static readonly string cdnQiniu = ConfigHelper.GetValue(new string[] { "cf", "cdnQiniu" }).ObjToString();
+        /// <summary>
+        /// 阿里云cdn
+        /// </summary>
+        public static readonly string cdnAliyun = ConfigHelper.GetValue(new string[] { "cf", "cdnAliyun" }).ObjToString();
+        /// <summary>
+        /// 腾讯云cdn
+        /// </summary>
+        public static readonly string cdnQclound = ConfigHelper.GetValue(new string[] { "cf", "cdnQclound" }).ObjToString();
 
     }
 }

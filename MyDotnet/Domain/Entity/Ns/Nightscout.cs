@@ -119,6 +119,14 @@ namespace MyDotnet.Domain.Entity.Ns
         /// </summary>
         public bool isChina { get; set; }
         /// <summary>
+        /// cdn解析方式
+        /// aws 亚马逊
+        /// qiniu 七牛云
+        /// aliyun 阿里云
+        /// qcloud 腾讯云
+        /// </summary>
+        public string cdn { get; set; }
+        /// <summary>
         /// 金额
         /// </summary>
         public double money { get; set; }
