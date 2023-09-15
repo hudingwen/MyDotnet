@@ -7,6 +7,11 @@ namespace MyDotnet.Domain.Dto.Ns
     /// </summary>
     public static class NsInfo
     {
+
+        /// <summary>
+        /// ns启动docker镜像源
+        /// </summary>
+        public static readonly string image = ConfigHelper.GetValue(new string[] { "nightscout", "image" });
         /// <summary>
         /// 推送公众号id
         /// </summary>

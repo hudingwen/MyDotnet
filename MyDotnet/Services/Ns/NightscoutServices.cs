@@ -521,7 +521,7 @@ server {{
                             args.Add($"-e LOOP_PUSH_SERVER_ENVIRONMENT='{NsInfo.apEnv}'");
 
                             //args.Add($"-d nightscout/cgm-remote-monitor:latest");
-                            args.Add($"-d mynightscout:latest");
+                            args.Add($"-d {NsInfo.image}");
 
                             var cmdStr = string.Join(" ", args);
 
