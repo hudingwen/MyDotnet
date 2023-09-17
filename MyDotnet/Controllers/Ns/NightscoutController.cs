@@ -232,17 +232,12 @@ namespace MyDotnet.Controllers.Ns
                     }
                     if (string.IsNullOrEmpty(request.cdn))
                     {
-                        request.cdn = NsInfo.defaultCND;
+                        request.cdn = NsInfo.defaultCDN;
                     }
-
-
-
-
                 }
 
                 var check = await CheckData(request);
                 if (!check.success) return check;
-
 
                 try
                 {
@@ -301,16 +296,24 @@ namespace MyDotnet.Controllers.Ns
                 data.response = request?.Id.ObjToString();
             }
             bool isDiff = false;
+
             //是否切换域名
             if (!request.url.Equals(old.url))
             {
                 await _nightscoutServices.UnResolveDomain(old);
-            }
-            //是否切换解析
-            if (!request.cdn.Equals(old.cdn))
-            {
                 await _nightscoutServices.ResolveDomain(request);
             }
+            else
+            {
+                //是否切换解析
+                if (!request.cdn.Equals(old.cdn))
+                {
+                    await _nightscoutServices.UnResolveDomain(old);
+                    await _nightscoutServices.ResolveDomain(request);
+                }
+            }
+
+            
             if (!request.serverId.Equals(old.serverId))
             {
                 //不是同一个服务器需要停掉先前服务器
@@ -549,7 +552,7 @@ namespace MyDotnet.Controllers.Ns
             pushData.info.id = NsInfo.pushWechatID;
             pushData.info.companyCode = NsInfo.pushCompanyCode;
             pushData.info.userID = nightscout.Id.ToString();
-            
+
             await _weChatConfigServices.PushCardMsg(pushData);
             new WeakReference(pushData);
             new WeakReference(data);
@@ -637,12 +640,12 @@ namespace MyDotnet.Controllers.Ns
         [HttpGet]
         public async Task<MessageModel<List<NightscoutServer>>> getAllNsServer()
         {
-            var data = await _nightscoutServerServices.Dal.Db.Queryable<NightscoutServer>().Select(t => new NightscoutServer { Id = t.Id, serverName = t.serverName }).ToListAsync();
+            var data = await _nightscoutServerServices.Dal.Db.Queryable<NightscoutServer>().Select(t => new NightscoutServer { Id = t.Id, serverName = t.serverName,holdCount = t.holdCount }).ToListAsync();
 
             var ids = data.Select(tt => tt.Id).ToList();
             var ls = await _nightscoutServerServices.Dal.Db.Queryable<Nightscout>()
             .GroupBy(t => t.serverId)
-                .Where(t => ids.Contains(t.serverId)).Select(t => new { t.serverId, count = SqlFunc.AggregateCount(t.serverId) }).ToListAsync();
+                .Where(t => ids.Contains(t.serverId)).Select(t => new { t.serverId , count = SqlFunc.AggregateCount(t.serverId) }).ToListAsync();
 
             foreach (var item in data)
             {
@@ -724,7 +727,7 @@ namespace MyDotnet.Controllers.Ns
                     }
                 }
             }
-            
+
 
         }
         /// <summary>
@@ -926,6 +929,12 @@ namespace MyDotnet.Controllers.Ns
 
         }
 
+        [HttpGet]
+        public MessageModel<CDNInfoDto> GetCDNList()
+        {
+            CDNInfoDto cDNInfoDto = new CDNInfoDto { CDNList = NsInfo.CDNList, defaultCDN = NsInfo.defaultCDN };
+            return MessageModel<CDNInfoDto>.Success("获取成功",cDNInfoDto);
+        }
         private List<EntriesEntity> HandleSugarList(List<EntriesEntity> sugers, DateTime flagDate)
         {
             List<EntriesEntity> flagList = sugers.Where(t => t.date_now.Date == flagDate).ToList();

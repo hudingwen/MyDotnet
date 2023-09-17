@@ -126,23 +126,11 @@ namespace MyDotnet.Domain.Dto.Ns
         /// <summary>
         /// 默认cdn
         /// </summary>
-        public static readonly string defaultCND = ConfigHelper.GetValue(new string[] { "cf", "defaultCND" }).ObjToString();
+        public static readonly string defaultCDN = ConfigHelper.GetValue(new string[] { "cf", "defaultCDN" }).ObjToString();
         /// <summary>
-        /// 亚马逊cdn
+        /// 可用CDN列表
         /// </summary>
-        public static readonly string cdnAws = ConfigHelper.GetValue(new string[] { "cf", "cdnAws" }).ObjToString();
-        /// <summary>
-        /// 七牛云cdn
-        /// </summary>
-        public static readonly string cdnQiniu = ConfigHelper.GetValue(new string[] { "cf", "cdnQiniu" }).ObjToString();
-        /// <summary>
-        /// 阿里云cdn
-        /// </summary>
-        public static readonly string cdnAliyun = ConfigHelper.GetValue(new string[] { "cf", "cdnAliyun" }).ObjToString();
-        /// <summary>
-        /// 腾讯云cdn
-        /// </summary>
-        public static readonly string cdnQclound = ConfigHelper.GetValue(new string[] { "cf", "cdnQclound" }).ObjToString();
+        public static readonly List<NSCDN> CDNList =  ConfigHelper.GetList<NSCDN>(new string[] { "cf", "CDNList" });
 
     }
 }

@@ -82,6 +82,10 @@ namespace MyDotnet.Domain.Entity.Ns
         /// </summary>
         [SugarColumn(IsIgnore = true)]
         public int count { get; set; }
+        /// <summary>
+        /// 理论最大ns数量
+        /// </summary>
+        public int holdCount { get; set; }
 
     }
 }
