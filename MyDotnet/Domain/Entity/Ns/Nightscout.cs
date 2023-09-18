@@ -130,6 +130,10 @@ namespace MyDotnet.Domain.Entity.Ns
         /// 金额
         /// </summary>
         public double money { get; set; }
+        /// <summary>
+        /// 用户所在地区
+        /// </summary>
+        public string position { get; set; }
 
 
 
