@@ -54,7 +54,7 @@ namespace MyDotnet.Services.Ns
                     cfAdd.proxied = false;
                     cfAdd.type = selectCDN.type;
                     cfAdd.comment = "自动创建解析";
-                    cfAdd.ttl = 1;
+                    cfAdd.ttl = 60;
                     var content = new StringContent(JsonHelper.ObjToJson(cfAdd), null, "text/plain");
                     request.Content = content;
                     var txt = await HttpHelper.SendAsync(request);
@@ -289,7 +289,14 @@ namespace MyDotnet.Services.Ns
             {
                 log.content = sb.ToString();
                 log.pid = nightscout.Id;
-                await _nightscoutLogServices.Dal.Add(log);
+                try
+                {
+                    await _nightscoutLogServices.Dal.Add(log);
+                }
+                catch (Exception ex)
+                {
+                    LogHelper.logSys.Error("ns日志记录失败", ex);
+                }
             }
 
 
@@ -369,7 +376,7 @@ namespace MyDotnet.Services.Ns
 
                     var webConfig = @$"
 server {{
-    listen 443 ssl http2;    
+    listen 443 ssl http2;
     server_name {nightscout.url} {nightscout.backupurl};
 
     ssl_certificate ""/etc/nginx/conf.d/{NsInfo.cer}"";
@@ -384,8 +391,6 @@ server {{
         proxy_set_header   X-Real-IP        $remote_addr;
         proxy_set_header   X-Forwarded-For  $proxy_add_x_forwarded_for;
         proxy_set_header   X-Forwarded-Proto $scheme;
-        proxy_read_timeout 300s;
-        proxy_send_timeout 300s;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection $connection_upgrade;
         proxy_redirect off;
@@ -545,7 +550,14 @@ server {{
                 {
                     log.content = sb.ToString();
                     log.pid = nightscout.Id;
-                    await _nightscoutLogServices.Dal.Add(log);
+                    try
+                    {
+                        await _nightscoutLogServices.Dal.Add(log);
+                    }
+                    catch (Exception ex)
+                    {
+                        LogHelper.logSys.Error("ns日志记录失败", ex);
+                    }
                 }
             }
             catch (Exception ex)

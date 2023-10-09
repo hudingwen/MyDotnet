@@ -68,7 +68,6 @@ namespace MyDotnet.Helper
             }
             catch (Exception)
             {
-
                 throw;
             }
             finally

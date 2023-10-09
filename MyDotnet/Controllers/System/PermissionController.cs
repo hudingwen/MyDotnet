@@ -326,6 +326,7 @@ namespace MyDotnet.Controllers.System
         /// <param name="uid"></param>
         /// <returns></returns>
         [HttpGet]
+        [AllowAnonymous]
         public async Task<MessageModel<NavigationBar>> GetNavigationBar(long uid)
         {
 
@@ -404,6 +405,7 @@ namespace MyDotnet.Controllers.System
         /// <param name="uid"></param>
         /// <returns></returns>
         [HttpGet]
+        [AllowAnonymous]
         public async Task<MessageModel<List<NavigationBarPro>>> GetNavigationBarPro(long uid)
         {
             var data = new MessageModel<List<NavigationBarPro>>();

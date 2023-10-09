@@ -1,6 +1,10 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration.UserSecrets;
+using MyDotnet.Controllers.Ns;
+using MyDotnet.Domain.Dto.Ns;
 using MyDotnet.Domain.Dto.System;
+using MyDotnet.Domain.Entity.Ns;
 using MyDotnet.Domain.Entity.System;
 using MyDotnet.Helper;
 using MyDotnet.Repository;
@@ -133,6 +137,22 @@ namespace MyDotnet.Controllers.Base
             var ls = await _roleModulePermissionServices.Dal.Query();
             return ls;
         }
+
+        /// <summary>
+        /// 自服务层储测试
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet]
+        [AllowAnonymous]
+        public async Task<List<EntriesEntity>> Get8()
+        {
+            var request = new HttpRequestMessage(HttpMethod.Get, $"https://xxx.com/api/v1/entries?count=900");
+            request.Headers.Add("Accept", "application/json");
+            var data = await HttpHelper.SendAsync(request);
+            var ls = JsonHelper.JsonToObj<List<EntriesEntity>>(data);
+            return ls;
+        }
+
 
 
     }
