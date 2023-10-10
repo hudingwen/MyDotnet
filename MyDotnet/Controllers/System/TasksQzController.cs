@@ -457,7 +457,6 @@ namespace MyDotnet.Controllers.System
                         {
                             data.msg = $"{data.msg}=>停止:{ResuleModelStop.msg}=>启动:{ResuleModelStar.msg}";
                             data.response = jobId.ObjToString();
-
                         }
                         else
                         {

@@ -57,7 +57,7 @@ namespace MyDotnet.Controllers.Ns
         }
 
         [HttpGet]
-        public async Task<MessageModel<PageModel<Nightscout>>> Get(int page = 1, string key = "", int pageSize = 50)
+        public async Task<MessageModel<PageModel<Nightscout>>> Get(int page = 1, string key = "",long serverId=0, int pageSize = 50)
         {
 
 
@@ -68,6 +68,8 @@ namespace MyDotnet.Controllers.Ns
                 key = key.Trim();
                 whereExpression = whereExpression.And(t => t.name.Contains(key) || t.url.Contains(key) || t.passwd.Contains(key) || t.status.Contains(key) || t.resource.Contains(key));
             }
+            if (serverId > 0)
+                whereExpression = whereExpression.And(t => t.serverId == serverId);
             var data = await _nightscoutServices.Dal.QueryPage(whereExpression, page, pageSize);
 
 
@@ -393,8 +395,9 @@ namespace MyDotnet.Controllers.Ns
 
             await _nightscoutServices.DeleteData(data, nsserver);
             await _nightscoutServices.InitData(data, nsserver);
-
             await _nightscoutServices.RunDocker(data, nsserver);
+            data.isStop = false;
+            await _nightscoutServices.Dal.Update(data, t => new { t.isStop });
             return MessageModel<string>.Success("刷新成功");
         }
         /// <summary>
@@ -426,6 +429,8 @@ namespace MyDotnet.Controllers.Ns
             var nsserver = await _nightscoutServerServices.Dal.QueryById(data.serverId);
             await _nightscoutServices.StopDocker(data, nsserver);
             await _nightscoutServices.RunDocker(data, nsserver);
+            data.isStop = false;
+            await _nightscoutServices.Dal.Update(data, t => new { t.isStop });
             return MessageModel<string>.Success("刷新成功");
         }
         /// <summary>

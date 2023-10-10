@@ -11,6 +11,9 @@ using Quartz;
 
 namespace MyDotnet.Tasks.QuartzJob
 {
+    /// <summary>
+    /// Nightscout定时清理数据
+    /// </summary>
     public class Job_Nightscout_Clean_Quartz : JobBase, IJob
     {
         public Job_Nightscout_Clean_Quartz(BaseServices<TasksQz> tasksQzServices

@@ -11,6 +11,9 @@ using Quartz;
 
 namespace MyDotnet.Tasks.QuartzJob
 {
+    /// <summary>
+    /// Nightscout到期提醒
+    /// </summary>
     public class Job_Nightscout_Quartz : JobBase, IJob
     {
         public Job_Nightscout_Quartz(BaseServices<TasksQz> tasksQzServices

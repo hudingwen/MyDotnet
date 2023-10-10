@@ -80,7 +80,14 @@ namespace MyDotnet.Services.Ns
             {
                 log.content = "添加默认解析";
             }
-            await _nightscoutLogServices.Dal.Add(log);
+            try
+            {
+                await _nightscoutLogServices.Dal.Add(log);
+            }
+            catch (Exception ex)
+            {
+                LogHelper.logSys.Error("ns日志记录失败", ex);
+            }
             return true;
         }
         /// <summary>
@@ -119,13 +126,21 @@ namespace MyDotnet.Services.Ns
             }
             log.pid = nightscout.Id;
             log.success = obj.success;
-            await _nightscoutLogServices.Dal.Add(log);
+            try
+            {
+                await _nightscoutLogServices.Dal.Add(log);
+            }
+            catch (Exception ex)
+            {
+                LogHelper.logSys.Error("ns日志记录失败", ex);
+            }
             return obj.success;
         }
 
         public async Task InitData(Nightscout nightscout, NightscoutServer nsserver)
         {
             if (string.IsNullOrEmpty(nightscout.serviceName) || string.IsNullOrEmpty(nightscout.url)) return;
+            //获取mongo数据库
             var master = (await _nightscoutServerServices.Dal.Query(t => t.isMongo == true)).FirstOrDefault();
             NightscoutLog log = new NightscoutLog();
             StringBuilder sb = new StringBuilder();
@@ -212,13 +227,12 @@ namespace MyDotnet.Services.Ns
 
                     sshClient.Disconnect();
                 }
-
+                log.success = true;
             }
             catch (Exception ex)
             {
                 sb.AppendLine($"初始化失败:{ex.Message}");
-                LogHelper.logApp.Error(ex.Message);
-                LogHelper.logApp.Error(ex.StackTrace);
+                LogHelper.logApp.Error("初始化失败",ex);
                 log.success = false;
                 throw;
             }
@@ -226,7 +240,14 @@ namespace MyDotnet.Services.Ns
             {
                 log.content = sb.ToString();
                 log.pid = nightscout.Id;
-                await _nightscoutLogServices.Dal.Add(log);
+                try
+                {
+                    await _nightscoutLogServices.Dal.Add(log);
+                }
+                catch (Exception ex)
+                {
+                    LogHelper.logSys.Error("ns日志记录失败", ex);
+                }
             }
         }
 
@@ -348,9 +369,7 @@ namespace MyDotnet.Services.Ns
             {
                 sb.AppendLine($"删除数据错误:{ex.Message}");
                 log.success = false;
-
-                LogHelper.logApp.Error(ex.Message);
-                LogHelper.logApp.Error(ex.StackTrace);
+                LogHelper.logApp.Error("删除实例错误", ex);
                 throw;
             }
             finally
@@ -365,16 +384,199 @@ namespace MyDotnet.Services.Ns
         {
             try
             {
-
                 if (string.IsNullOrEmpty(nightscout.serviceName) || string.IsNullOrEmpty(nightscout.url)) return;
 
                 NightscoutLog log = new NightscoutLog();
                 StringBuilder sb = new StringBuilder();
                 try
                 {
-                     
+                    string webConfig = GetNsWebConfig(nightscout, nsserver);
 
-                    var webConfig = @$"
+                    FileHelper.WriteFile($"/etc/nginx/conf.d/nightscout/{nightscout.Id}.conf", webConfig);
+
+
+
+                    //这儿会有两种安装方式
+                    //一是按服务器的IP+端口部署(ns和nginx在同一服务器)
+                    //二是按本机实例IP+1337端口部署
+
+
+
+                    using (var sshClient = new SshClient(nsserver.serverIp, nsserver.serverPort, nsserver.serverLoginName, nsserver.serverLoginPassword))
+                    {
+                        //创建SSH
+                        sshClient.Connect();
+
+                        using (var cmd = sshClient.CreateCommand(""))
+                        {
+
+
+                            //停止实例
+                            var res = cmd.Execute($"docker stop {nightscout.serviceName}");
+                            sb.AppendLine($"停止实例:{res}");
+
+                            //删除实例
+                            res = cmd.Execute($"docker rm {nightscout.serviceName}");
+                            sb.AppendLine($"删除实例:{res}");
+
+                            //启动实例
+                            string cmdStr = GetNsDockerConfig(nightscout, nsserver);
+                            res = cmd.Execute(cmdStr);
+                            sb.AppendLine($"启动实例:{res}");
+
+                            //刷新nginx
+                            var master = (await _nightscoutServerServices.Dal.Query(t => t.isNginx == true)).FirstOrDefault();
+                            if (master != null)
+                            {
+                                using (var sshMasterClient = new SshClient(master.serverIp, master.serverPort, master.serverLoginName, master.serverLoginPassword))
+                                {
+                                    sshMasterClient.Connect();
+                                    using (var cmdMaster = sshMasterClient.CreateCommand(""))
+                                    {
+                                        var resMaster = cmdMaster.Execute("docker exec -t nginxserver nginx -s reload");
+                                        sb.AppendLine($"刷新域名:{resMaster}");
+                                    }
+                                    sshMasterClient.Disconnect();
+                                }
+                            }
+                            else
+                            {
+                                sb.AppendLine("没有找到nginx服务器");
+                            }
+                        }
+
+                        sshClient.Disconnect();
+                    }
+                    log.success = true;
+                }
+                catch (Exception ex)
+                {
+                    sb.AppendLine($"启动实例错误:{ex.Message}");
+                    log.success = false;
+                    throw;
+                }
+                finally
+                {
+                    log.content = sb.ToString();
+                    log.pid = nightscout.Id;
+                    try
+                    {
+                        await _nightscoutLogServices.Dal.Add(log);
+                    }
+                    catch (Exception ex)
+                    {
+                        LogHelper.logSys.Error("ns日志记录失败", ex);
+                        LogHelper.logSys.Error($"ns日志记录失败:{log.content}-{log.pid}");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                LogHelper.logApp.Error("启动实例错误", ex);
+                throw;
+            }
+        }
+        /// <summary>
+        /// 获取ns容器配置
+        /// </summary>
+        /// <param name="nightscout"></param>
+        /// <param name="nsserver"></param>
+        /// <returns></returns>
+        public string GetNsDockerConfig(Nightscout nightscout, NightscoutServer nsserver)
+        {
+            List<string> args = new List<string>();
+            if (nightscout.exposedPort > 0)
+            {
+                //外网
+                args.Add($"docker run -m 100m --cpus=1 --restart=always -p {nightscout.exposedPort}:1337 --name {nightscout.serviceName}");
+            }
+            else
+            {
+                //内网
+                args.Add($"docker run -m 100m --cpus=1 --restart=always --net mynet --ip {nightscout.instanceIP} --name {nightscout.serviceName}");
+            }
+            args.Add($"-e TZ=Asia/Shanghai");
+            args.Add($"-e NODE_ENV=production");
+            args.Add($"-e INSECURE_USE_HTTP='true'");
+
+            //数据库链接
+            var connectionMongoString = $"mongodb://{nsserver.mongoLoginName}:{nsserver.mongoLoginPassword}@{nsserver.mongoIp}:{nsserver.mongoPort}/{nightscout.serviceName}";
+
+            args.Add($"-e MONGO_CONNECTION={connectionMongoString}");
+            args.Add($"-e API_SECRET={nightscout.passwd}");
+            //args.Add($"-v {path}/logo2.png:/opt/app/static/images/logo2.png");
+            //args.Add($"-v {path}/boluswizardpreview.js:/opt/app/lib/plugins/boluswizardpreview.js");
+            //args.Add($"-v {path}/sandbox.js:/opt/app/lib/sandbox.js");
+            //args.Add($"-v {path}/constants.json:/opt/app/lib/constants.json");
+            //args.Add($"-v {path}/zh_CN.json:/opt/app/translations/zh_CN.json");
+            //args.Add($"-v {path}/maker.js:/opt/app/lib/plugins/maker.js");
+            //args.Add($"-v {path}/hashauth.js:/opt/app/lib/client/hashauth.js");
+            //args.Add($"-v {path}/enclave.js:/opt/app/lib/server/enclave.js");
+            if (nightscout.isConnection)
+            {
+                args.Add($"-e MAKER_KEY={NsInfo.MAKER_KEY}");
+                if (nightscout.isKeepPush)
+                {
+                    args.Add($"-e KEEP_PUSH='true'");
+                }
+                args.Add($"-e PUSH_URL='{NsInfo.pushUrl}'");
+            }
+            args.Add($"-e LANGUAGE=zh_cn");
+            args.Add($"-e DISPLAY_UNITS='mmol/L'");
+            args.Add($"-e TIME_FORMAT=24");
+            args.Add($"-e CUSTOM_TITLE='{NsInfo.CUSTOM_TITLE}'");
+            args.Add($"-e THEME=colors");
+
+
+            List<string> pluginsArr;
+            try
+            {
+                var pluginsNights = JsonHelper.JsonToObj<List<string>>(nightscout.plugins.ObjToString());
+                if (pluginsNights != null && pluginsNights.Count > 0)
+                {
+                    pluginsArr = pluginsNights;
+                }
+                else
+                {
+                    pluginsArr = NsInfo.plugins.Select(t => t.key).ToList();
+                }
+            }
+            catch (Exception)
+            {
+                pluginsArr = NsInfo.plugins.Select(t => t.key).ToList();
+            }
+            args.Add($"-e SHOW_PLUGINS='{string.Join(" ", pluginsArr)}'");
+            args.Add($"-e ENABLE='{string.Join(" ", pluginsArr)}'");
+
+            //args.Add($"-e SHOW_PLUGINS='careportal basal dbsize rawbg iob maker cob bridge bwp cage iage sage boluscalc pushover treatmentnotify mmconnect loop pump profile food openaps bage alexa override cors'");
+            //args.Add($"-e ENABLE='careportal basal dbsize rawbg iob maker cob bridge bwp cage iage sage boluscalc pushover treatmentnotify mmconnect loop pump profile food openaps bage alexa override cors'");
+
+            args.Add($"-e AUTH_DEFAULT_ROLES=readable");
+            args.Add($"-e uid={nightscout.Id}");
+
+            //苹果远程指令
+
+            args.Add($"-e LOOP_APNS_KEY_ID='{NsInfo.apKeyID}'");
+            args.Add($"-e LOOP_APNS_KEY='{NsInfo.apKey}'");
+            args.Add($"-e LOOP_DEVELOPER_TEAM_ID='{NsInfo.apTeamID}'");
+            args.Add($"-e LOOP_PUSH_SERVER_ENVIRONMENT='{NsInfo.apEnv}'");
+
+            //args.Add($"-d nightscout/cgm-remote-monitor:latest");
+            args.Add($"-d {NsInfo.image}");
+
+            var cmdStr = string.Join(" ", args);
+            return cmdStr;
+        }
+
+        /// <summary>
+        /// 获取ns网站代理配置
+        /// </summary>
+        /// <param name="nightscout"></param>
+        /// <param name="nsserver"></param>
+        /// <returns></returns>
+        public string GetNsWebConfig(Nightscout nightscout, NightscoutServer nsserver)
+        {
+            return @$"
 server {{
     listen 443 ssl http2;
     server_name {nightscout.url} {nightscout.backupurl};
@@ -400,173 +602,8 @@ server {{
     
 }}
 ";
-                    FileHelper.WriteFile($"/etc/nginx/conf.d/nightscout/{nightscout.Id}.conf", webConfig);
-
-
-
-                    //这儿会有两种安装方式
-                    //一是按服务器的IP+端口部署(ns和nginx在同一服务器)
-                    //二是按本机实例IP+1337端口部署
-
-
-
-                    using (var sshClient = new SshClient(nsserver.serverIp, nsserver.serverPort, nsserver.serverLoginName, nsserver.serverLoginPassword))
-                    {
-                        //创建SSH
-                        sshClient.Connect();
-
-                        using (var cmd = sshClient.CreateCommand(""))
-                        {
-                            //刷新nginx
-
-                            var master = (await _nightscoutServerServices.Dal.Query(t => t.isNginx == true)).FirstOrDefault();
-                            if (master != null)
-                            {
-                                using (var sshMasterClient = new SshClient(master.serverIp, master.serverPort, master.serverLoginName, master.serverLoginPassword))
-                                {
-                                    sshMasterClient.Connect();
-                                    using (var cmdMaster = sshMasterClient.CreateCommand(""))
-                                    {
-                                        var resMaster = cmdMaster.Execute("docker exec -t nginxserver nginx -s reload");
-                                        sb.AppendLine($"刷新域名:{resMaster}");
-                                    }
-                                    sshMasterClient.Disconnect();
-                                }
-                            }
-                            else
-                            {
-                                sb.AppendLine("没有找到nginx服务器");
-                            }
-
-                            //停止实例
-                            var res = cmd.Execute($"docker stop {nightscout.serviceName}");
-                            sb.AppendLine($"停止实例:{res}");
-
-                            //删除实例
-                            res = cmd.Execute($"docker rm {nightscout.serviceName}");
-                            sb.AppendLine($"删除实例:{res}");
-
-                            //启动实例
-                            List<string> args = new List<string>();
-                            if (nightscout.exposedPort > 0)
-                            {
-                                //外网
-                                args.Add($"docker run -m 100m --cpus=1 --restart=always --net mynet -p {nightscout.exposedPort}:1337 --name {nightscout.serviceName}");
-                            }
-                            else
-                            {
-                                //内网
-                                args.Add($"docker run -m 100m --cpus=1 --restart=always --net mynet --ip {nightscout.instanceIP} --name {nightscout.serviceName}");
-                            }
-                            args.Add($"-e TZ=Asia/Shanghai");
-                            args.Add($"-e NODE_ENV=production");
-                            args.Add($"-e INSECURE_USE_HTTP='true'");
-
-                            //数据库链接
-                            var connectionMongoString = $"mongodb://{nsserver.mongoLoginName}:{nsserver.mongoLoginPassword}@{nsserver.mongoIp}:{nsserver.mongoPort}/{nightscout.serviceName}";
-
-                            args.Add($"-e MONGO_CONNECTION={connectionMongoString}");
-                            args.Add($"-e API_SECRET={nightscout.passwd}");
-                            //args.Add($"-v {path}/logo2.png:/opt/app/static/images/logo2.png");
-                            //args.Add($"-v {path}/boluswizardpreview.js:/opt/app/lib/plugins/boluswizardpreview.js");
-                            //args.Add($"-v {path}/sandbox.js:/opt/app/lib/sandbox.js");
-                            //args.Add($"-v {path}/constants.json:/opt/app/lib/constants.json");
-                            //args.Add($"-v {path}/zh_CN.json:/opt/app/translations/zh_CN.json");
-                            //args.Add($"-v {path}/maker.js:/opt/app/lib/plugins/maker.js");
-                            //args.Add($"-v {path}/hashauth.js:/opt/app/lib/client/hashauth.js");
-                            //args.Add($"-v {path}/enclave.js:/opt/app/lib/server/enclave.js");
-                            if (nightscout.isConnection)
-                            {
-                                args.Add($"-e MAKER_KEY={NsInfo.MAKER_KEY}");
-                                if (nightscout.isKeepPush)
-                                {
-                                    args.Add($"-e KEEP_PUSH='true'");
-                                }
-                                args.Add($"-e PUSH_URL='{NsInfo.pushUrl}'");
-                            }
-                            args.Add($"-e LANGUAGE=zh_cn");
-                            args.Add($"-e DISPLAY_UNITS='mmol/L'");
-                            args.Add($"-e TIME_FORMAT=24");
-                            args.Add($"-e CUSTOM_TITLE='{NsInfo.CUSTOM_TITLE}'");
-                            args.Add($"-e THEME=colors");
-
-
-                            List<string> pluginsArr;
-                            try
-                            {
-                                var pluginsNights = JsonHelper.JsonToObj<List<string>>(nightscout.plugins.ObjToString());
-                                if (pluginsNights != null && pluginsNights.Count > 0)
-                                {
-                                    pluginsArr = pluginsNights;
-                                }
-                                else
-                                {
-                                    pluginsArr = NsInfo.plugins.Select(t => t.key).ToList();
-                                }
-                            }
-                            catch (Exception)
-                            {
-                                pluginsArr = NsInfo.plugins.Select(t => t.key).ToList();
-                            }
-                            args.Add($"-e SHOW_PLUGINS='{string.Join(" ", pluginsArr)}'");
-                            args.Add($"-e ENABLE='{string.Join(" ", pluginsArr)}'");
-
-                            //args.Add($"-e SHOW_PLUGINS='careportal basal dbsize rawbg iob maker cob bridge bwp cage iage sage boluscalc pushover treatmentnotify mmconnect loop pump profile food openaps bage alexa override cors'");
-                            //args.Add($"-e ENABLE='careportal basal dbsize rawbg iob maker cob bridge bwp cage iage sage boluscalc pushover treatmentnotify mmconnect loop pump profile food openaps bage alexa override cors'");
-
-                            args.Add($"-e AUTH_DEFAULT_ROLES=readable");
-                            args.Add($"-e uid={nightscout.Id}");
-
-                            //苹果远程指令
-                            
-                            args.Add($"-e LOOP_APNS_KEY_ID='{NsInfo.apKeyID}'");
-                            args.Add($"-e LOOP_APNS_KEY='{NsInfo.apKey}'");
-                            args.Add($"-e LOOP_DEVELOPER_TEAM_ID='{NsInfo.apTeamID}'");
-                            args.Add($"-e LOOP_PUSH_SERVER_ENVIRONMENT='{NsInfo.apEnv}'");
-
-                            //args.Add($"-d nightscout/cgm-remote-monitor:latest");
-                            args.Add($"-d {NsInfo.image}");
-
-                            var cmdStr = string.Join(" ", args);
-
-                            res = cmd.Execute(cmdStr);
-                            sb.AppendLine($"启动实例:{res}");
-                        }
-
-                        sshClient.Disconnect();
-                    }
-                    log.success = true;
-                }
-                catch (Exception ex)
-                {
-                    sb.AppendLine($"启动实例错误:{ex.Message}");
-                    log.success = false;
-                    LogHelper.logApp.Error(ex.Message);
-                    LogHelper.logApp.Error(ex.StackTrace);
-
-                    throw;
-                }
-                finally
-                {
-                    log.content = sb.ToString();
-                    log.pid = nightscout.Id;
-                    try
-                    {
-                        await _nightscoutLogServices.Dal.Add(log);
-                    }
-                    catch (Exception ex)
-                    {
-                        LogHelper.logSys.Error("ns日志记录失败", ex);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                LogHelper.logApp.Error(ex.Message);
-                LogHelper.logApp.Error(ex.StackTrace);
-                throw;
-            }
         }
+
         /// <summary>
         /// 删除上个月及以前的数据
         /// </summary>

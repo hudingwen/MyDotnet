@@ -8,9 +8,14 @@ using MyDotnet.Services;
 using MyDotnet.Services.Ns;
 using MyDotnet.Services.WeChat;
 using Quartz;
+using Renci.SshNet;
+using System.Text;
 
 namespace MyDotnet.Tasks.QuartzJob
 {
+    /// <summary>
+    /// Nightscout定时刷新
+    /// </summary>
     public class Job_Nightscout_Refresh_Quartz : JobBase, IJob
     {
         public Job_Nightscout_Refresh_Quartz(BaseServices<TasksQz> tasksQzServices
@@ -49,52 +54,133 @@ namespace MyDotnet.Tasks.QuartzJob
                 var nsConfig = JsonHelper.JsonToObj<NightscoutRemindConfig>(pars);
 
                 var nights = await _nightscoutServices.Dal.Query();
-                List<string> errCount = new List<string>();
-                foreach (var nightscout in nights)
-                {
-                    try
-                    {
-                        if (nightscout.isStop) continue;
-                        var nsserver = await _nightscoutServerServices.Dal.QueryById(nightscout.serverId);
-                        await _nightscoutServices.StopDocker(nightscout, nsserver);
-                        await _nightscoutServices.RunDocker(nightscout, nsserver);
-                    }
-                    catch (Exception ex)
-                    {
-                        errCount.Add(nightscout.name);
-                        LogHelper.logSys.Error($"{nightscout.name}-重启实例失败:{ex.Message}", ex);
-                    }
-                }
-                if (errCount.Count > 0)
-                {
-                    try
-                    {
-                        var pushUsers = nsConfig.pushUserIDs.Split(",", StringSplitOptions.RemoveEmptyEntries);
-                        if (pushUsers.Length > 0)
-                        {
-                            foreach (var userid in pushUsers)
-                            {
-                                var pushData = new WeChatCardMsgDataDto();
-                                pushData.cardMsg = new WeChatCardMsgDetailDto();
-                                pushData.cardMsg.keyword1 = $"每周ns重启任务出现失败:{errCount.Count}个";
-                                pushData.cardMsg.keyword2 = string.Join(",", errCount);
-                                pushData.cardMsg.remark = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-                                pushData.cardMsg.url = NsInfo.frontPage;
-                                pushData.cardMsg.template_id = NsInfo.pushTemplateID_Alert;
-                                pushData.info = new WeChatUserInfo();
-                                pushData.info.id = NsInfo.pushWechatID;
-                                pushData.info.companyCode = NsInfo.pushCompanyCode;
-                                pushData.info.userID = userid;
-                                await _weChatConfigServices.PushCardMsg(pushData);
-                            }
+                var servers = await _nightscoutServerServices.Dal.Query();
 
+                //刷新nginx
+                var master = (await _nightscoutServerServices.Dal.Query(t => t.isNginx == true)).FirstOrDefault();
+                if (master != null)
+                {
+                    using (var sshMasterClient = new SshClient(master.serverIp, master.serverPort, master.serverLoginName, master.serverLoginPassword))
+                    { 
+                        //创建SSH
+                        sshMasterClient.Connect();
+                        using (var cmdMaster = sshMasterClient.CreateCommand(""))
+                        {
+                           
+                            List<string> errCount = new List<string>();
+                            foreach (var nsserver in servers)
+                            {
+                                //根据每个服务器进行重启服务
+                                try
+                                {
+                                    using (var sshClient = new SshClient(nsserver.serverIp, nsserver.serverPort, nsserver.serverLoginName, nsserver.serverLoginPassword))
+                                    {
+                                        //创建SSH
+                                        sshClient.Connect();
+                                        using (var cmd = sshClient.CreateCommand(""))
+                                        {
+
+                                            var findNs = nights.Where(t => t.serverId == nsserver.Id).ToList();
+                                            foreach (var nightscout in findNs)
+                                            {
+                                                NightscoutLog log = new NightscoutLog();
+                                                StringBuilder sb = new StringBuilder();
+                                                try
+                                                {
+                                                    if (nightscout.isStop) continue;
+                                                    //删除域名
+                                                    FileHelper.FileDel($"/etc/nginx/conf.d/nightscout/{nightscout.Id}.conf");
+                                                    //停止实例
+                                                    var res = cmd.Execute($"docker stop {nightscout.serviceName}");
+                                                    sb.AppendLine($"停止实例:{res}");
+                                                    //删除实例
+                                                    res = cmd.Execute($"docker rm {nightscout.serviceName}");
+                                                    sb.AppendLine($"删除实例:{res}");
+                                                    //启动实例
+                                                    string cmdStr = _nightscoutServices.GetNsDockerConfig(nightscout, nsserver);
+                                                    res = cmd.Execute(cmdStr);
+                                                    sb.AppendLine($"启动实例:{res}");
+                                                    //添加域名
+                                                    string webConfig = _nightscoutServices.GetNsWebConfig(nightscout, nsserver);
+                                                    FileHelper.WriteFile($"/etc/nginx/conf.d/nightscout/{nightscout.Id}.conf", webConfig);
+                                                    //刷新域名
+                                                    var resMaster = cmdMaster.Execute("docker exec -t nginxserver nginx -s reload");
+                                                    sb.AppendLine($"刷新域名:{resMaster}");
+                                                    log.success = true;
+                                                }
+                                                catch (Exception ex)
+                                                {
+                                                    log.success = false;
+                                                    errCount.Add(nightscout.name);
+                                                    LogHelper.logSys.Error($"{nightscout.name}-重启实例失败:{ex.Message}", ex);
+                                                    sb.AppendLine($"实例异常:{ex.Message}");
+                                                }
+                                                finally
+                                                {
+                                                    log.content = sb.ToString();
+                                                    log.pid = nightscout.Id;
+                                                    try
+                                                    {
+                                                        await _nightscoutLogServices.Dal.Add(log);
+                                                    }
+                                                    catch (Exception ex)
+                                                    {
+                                                        LogHelper.logSys.Error("ns日志记录失败", ex);
+                                                        LogHelper.logSys.Error($"ns日志记录失败:{log.content}-{log.pid}");
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                catch (Exception ex)
+                                {
+                                    LogHelper.logSys.Error($"ns服务器:{nsserver.serverName}重启出现异常", ex);
+                                    errCount.Add($"{nsserver.serverName}");
+                                }
+                            }
+                            if (errCount.Count > 0)
+                            {
+                                try
+                                {
+                                    var pushUsers = nsConfig.pushUserIDs.Split(",", StringSplitOptions.RemoveEmptyEntries);
+                                    if (pushUsers.Length > 0)
+                                    {
+                                        foreach (var userid in pushUsers)
+                                        {
+                                            var pushData = new WeChatCardMsgDataDto();
+                                            pushData.cardMsg = new WeChatCardMsgDetailDto();
+                                            pushData.cardMsg.keyword1 = $"每周ns重启任务出现失败:{errCount.Count}个";
+                                            pushData.cardMsg.keyword2 = string.Join(",", errCount);
+                                            pushData.cardMsg.remark = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+                                            pushData.cardMsg.url = NsInfo.frontPage;
+                                            pushData.cardMsg.template_id = NsInfo.pushTemplateID_Alert;
+                                            pushData.info = new WeChatUserInfo();
+                                            pushData.info.id = NsInfo.pushWechatID;
+                                            pushData.info.companyCode = NsInfo.pushCompanyCode;
+                                            pushData.info.userID = userid;
+                                            await _weChatConfigServices.PushCardMsg(pushData);
+                                        }
+                                        LogHelper.logApp.InfoFormat($"每周ns重启任务出现失败:{errCount.Count}个");
+                                        LogHelper.logApp.InfoFormat($"失败名单:{string.Join(",", errCount)}");
+                                    }
+                                }
+                                catch (Exception ex)
+                                {
+                                    LogHelper.logSys.Error($"推送失败,{ex.Message}", ex);
+                                }
+                            }
                         }
-                    }
-                    catch (Exception ex)
-                    {
-                        LogHelper.logSys.Error($"推送失败,{ex.Message}", ex);
+                        sshMasterClient.Disconnect();
                     }
                 }
+                else
+                {
+                    LogHelper.logApp.InfoFormat($"每周ns重启任务出现失败:没有找到nginx服务器");
+                }
+               
+               
+                
             }
         }
     }

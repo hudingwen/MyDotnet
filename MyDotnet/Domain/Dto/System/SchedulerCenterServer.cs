@@ -225,7 +225,7 @@ namespace MyDotnet.Domain.Dto.System
             }
         }
         /// <summary>
-        /// 暂停一个指定的计划任务
+        /// 停止一个指定的计划任务
         /// </summary>
         /// <returns></returns>
         public async Task<MessageModel<string>> StopScheduleJobAsync(TasksQz sysSchedule)
