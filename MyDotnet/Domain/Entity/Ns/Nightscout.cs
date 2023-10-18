@@ -134,6 +134,10 @@ namespace MyDotnet.Domain.Entity.Ns
         /// 用户所在地区
         /// </summary>
         public string position { get; set; }
+        /// <summary>
+        /// 分账情况
+        /// </summary>
+        public string accountStatus { get; set; }
 
 
 

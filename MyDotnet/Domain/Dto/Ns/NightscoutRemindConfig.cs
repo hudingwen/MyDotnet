@@ -11,5 +11,6 @@
         public string pushUserIDs { get; set; }
         public int preDays { get; set; }
         public int afterDays { get; set; }
+        public long serverId { get; set; }
     }
 }

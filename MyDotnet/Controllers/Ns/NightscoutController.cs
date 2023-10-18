@@ -36,6 +36,8 @@ namespace MyDotnet.Controllers.Ns
 
         public BaseServices<NightscoutServer> _nightscoutServerServices;
 
+        public BaseServices<NightscoutBanner> _nightscoutBannerServices;
+
         public BaseServices<WeChatSub> _wechatsubServices;
 
         public UnitOfWorkManage _unitOfWorkManage;
@@ -45,6 +47,7 @@ namespace MyDotnet.Controllers.Ns
             , BaseServices<NightscoutLog> nightscoutLogServices
             , BaseServices<NightscoutServer> nightscoutServerServices
             , BaseServices<WeChatSub> wechatsubServices
+            , BaseServices<NightscoutBanner> nightscoutBannerServices
             , UnitOfWorkManage unitOfWorkManage
             )
         {
@@ -53,6 +56,7 @@ namespace MyDotnet.Controllers.Ns
             _nightscoutLogServices = nightscoutLogServices;
             _nightscoutServerServices = nightscoutServerServices;
             _wechatsubServices = wechatsubServices;
+            _nightscoutBannerServices = nightscoutBannerServices;
             _unitOfWorkManage = unitOfWorkManage;
         }
 
@@ -66,7 +70,7 @@ namespace MyDotnet.Controllers.Ns
             if (!(string.IsNullOrEmpty(key) || string.IsNullOrWhiteSpace(key)))
             {
                 key = key.Trim();
-                whereExpression = whereExpression.And(t => t.name.Contains(key) || t.url.Contains(key) || t.passwd.Contains(key) || t.status.Contains(key) || t.resource.Contains(key));
+                whereExpression = whereExpression.And(t => t.name.Contains(key) || t.url.Contains(key) || t.passwd.Contains(key) || t.status.Contains(key) || t.resource.Contains(key) || t.accountStatus.Contains(key));
             }
             if (serverId > 0)
                 whereExpression = whereExpression.And(t => t.serverId == serverId);
@@ -248,7 +252,7 @@ namespace MyDotnet.Controllers.Ns
                     var id = await _nightscoutServices.Dal.Add(request);
                     request.Id = id;
                     await _nightscoutServerServices.Dal.Update(nsserver);
-                    await _nightscoutServerServices.Dal.Db.Updateable<NightscoutServer>().SetColumns("curServiceSerial", nsserver.curServiceSerial).Where(t => t.Id > 0).ExecuteCommandAsync();
+                    await _nightscoutServerServices.Dal.Db.Updateable<NightscoutServer>().SetColumns(t=>t.curServiceSerial, nsserver.curServiceSerial).Where(t => t.Id > 0).ExecuteCommandAsync();
                     _unitOfWorkManage.CommitTran();
 
                     data.success = id > 0;
@@ -590,8 +594,16 @@ namespace MyDotnet.Controllers.Ns
                  name = it.resource
              })
              .ToListAsync();
+            var account = await _nightscoutServices.Dal.Db.Queryable<Nightscout>()
+             .GroupBy(it => it.accountStatus)
+             .Select(it => new
+             {
+                 count = SqlFunc.AggregateCount(it.Id),
+                 name = it.accountStatus
+             })
+             .ToListAsync();
 
-            return MessageModel<object>.Success("获取成功", new { status, resource });
+            return MessageModel<object>.Success("获取成功", new { status, resource, account });
         }
         [HttpGet]
         public MessageModel<List<NSPlugin>> GetPlugins()
@@ -614,19 +626,11 @@ namespace MyDotnet.Controllers.Ns
             var data = await _nightscoutServerServices.Dal.QueryPage(whereExpression, page, pageSize);
             return MessageModel<PageModel<NightscoutServer>>.Success("获取成功", data);
         }
-        [HttpDelete]
-        public async Task<MessageModel<string>> delNsServer(long id)
+        [HttpPut]
+        public async Task<MessageModel<string>> delNsServer([FromBody]string[] ids)
         {
-            var data = new MessageModel<string>();
-            var model = await _nightscoutServerServices.Dal.QueryById(id);
-            model.IsDeleted = true;
-            data.success = await _nightscoutServerServices.Dal.Update(model);
-            if (data.success)
-            {
-                data.msg = "删除成功";
-                data.response = model?.Id.ObjToString();
-            }
-            return data;
+            await _nightscoutServerServices.Dal.DeleteByIds(ids);
+            return MessageModel<string>.Success("删除成功");
         }
         [HttpPut]
         public async Task<MessageModel<string>> updateNsServer([FromBody] NightscoutServer request)
@@ -634,7 +638,7 @@ namespace MyDotnet.Controllers.Ns
             var data = await _nightscoutServerServices.Dal.QueryById(request.Id);
             if (data == null) MessageModel<string>.Fail("要更新的数据不存在");
             var id = await _nightscoutServerServices.Dal.Update(request);
-            return MessageModel<string>.Success("添加成功", id.ObjToString());
+            return MessageModel<string>.Success("更新成功", id.ObjToString());
         }
         [HttpPost]
         public async Task<MessageModel<string>> addNsServer([FromBody] NightscoutServer request)
@@ -642,6 +646,60 @@ namespace MyDotnet.Controllers.Ns
             var id = await _nightscoutServerServices.Dal.Add(request);
             return MessageModel<string>.Success("添加成功", id.ObjToString());
         }
+
+
+
+
+        [HttpGet]
+        public async Task<MessageModel<PageModel<NightscoutBanner>>> getNsBanner(int page = 1, string key = "", int pageSize = 50)
+        {
+            Expression<Func<NightscoutBanner, bool>> whereExpression = a => true;
+
+            if (!(string.IsNullOrEmpty(key) || string.IsNullOrWhiteSpace(key)))
+            {
+                key = key.Trim();
+                whereExpression = whereExpression.And(t => t.title.Contains(key) || t.content.Contains(key));
+            }
+            var data = await _nightscoutBannerServices.Dal.QueryPage(whereExpression, page, pageSize);
+            return MessageModel<PageModel<NightscoutBanner>>.Success("获取成功", data);
+        }
+        [HttpPut]
+        public async Task<MessageModel<string>> delNsBanner([FromBody] List<string> ids)
+        {
+            await _nightscoutBannerServices.Dal.DeleteByIds(ids.ToArray());
+            return MessageModel<string>.Success("删除成功");
+        }
+        [HttpPut]
+        public async Task<MessageModel<string>> updateNsBanner([FromBody] NightscoutBanner request)
+        {
+            var data = await _nightscoutBannerServices.Dal.QueryById(request.Id);
+            if (data == null) MessageModel<string>.Fail("要更新的数据不存在");
+            var id = await _nightscoutBannerServices.Dal.Update(request);
+            return MessageModel<string>.Success("更新成功", id.ObjToString());
+        }
+        [HttpPost]
+        public async Task<MessageModel<string>> addNsBanner([FromBody] NightscoutBanner request)
+        {
+            var id = await _nightscoutBannerServices.Dal.Add(request);
+            return MessageModel<string>.Success("添加成功", id.ObjToString());
+        }
+        [HttpPost]
+        public async Task<MessageModel<string>> enableAllBanner()
+        {
+            await _nightscoutBannerServices.Dal.Db.Updateable<NightscoutBanner>().SetColumns(t=>t.Enabled, true).Where(t => t.Id > 0).ExecuteCommandAsync();
+            return MessageModel<string>.Success("更新成功");
+        }
+        [HttpPost]
+        public async Task<MessageModel<string>> disableAllBanner()
+        {
+            await _nightscoutBannerServices.Dal.Db.Updateable<NightscoutBanner>().SetColumns(t => t.Enabled, false).Where(t => t.Id > 0).ExecuteCommandAsync();
+            return MessageModel<string>.Success("更新成功");
+        }
+
+
+
+
+
         [HttpGet]
         public async Task<MessageModel<List<NightscoutServer>>> getAllNsServer()
         {
@@ -895,9 +953,10 @@ namespace MyDotnet.Controllers.Ns
             sugarDTO.curBlood.title = NsInfo.title;
             Random rd = new Random();
 
-            if (NsInfo.sayings != null && NsInfo.sayings.Count > 0)
+            var sayings = await _nightscoutBannerServices.Dal.Query(t => t.Enabled==true);
+            if (sayings != null && sayings.Count > 0)
             {
-                sugarDTO.curBlood.saying = NsInfo.sayings[rd.Next(0, NsInfo.sayings.Count)];
+                sugarDTO.curBlood.saying = sayings[rd.Next(0, sayings.Count)].content;
             }
             else
             {
