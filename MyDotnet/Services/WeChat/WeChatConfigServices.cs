@@ -972,7 +972,7 @@ namespace MyDotnet.Services.WeChat
                                 <FromUserName><![CDATA[{weChat.ToUserName}]]></FromUserName>
                                 <CreateTime>{DateTime.Now.Ticks.ToString()}</CreateTime>
                                 <MsgType><![CDATA[text]]></MsgType>
-                                <Content><![CDATA[恭喜您！{(string.IsNullOrEmpty(ticket.QRbindJobNick) ? ticket.QRbindJobID : ticket.QRbindJobNick)}，绑定成功！]]></Content></xml>";
+                                <Content><![CDATA[恭喜您！{(string.IsNullOrEmpty(ticket.QRbindJobNick) ? ticket.QRbindJobID : ticket.QRbindJobNick)}，绑定成功！请勿重复扫码绑定！]]></Content></xml>";
         }
         /// <summary>
         /// 上报位置地理事件
