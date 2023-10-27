@@ -5,12 +5,10 @@
     /// </summary>
     public class NightscoutRemindConfig
     {
-        public string pushWechatID { get; set; }
-        public string pushCompanyCode { get; set; }
-        public string pushTemplateID { get; set; }
         public string pushUserIDs { get; set; }
         public int preDays { get; set; }
         public int afterDays { get; set; }
         public long serverId { get; set; }
+        public bool isOnlyRefreshNginx { get; set; }
     }
 }

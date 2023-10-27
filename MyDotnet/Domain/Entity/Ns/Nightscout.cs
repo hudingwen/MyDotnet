@@ -94,6 +94,12 @@ namespace MyDotnet.Domain.Entity.Ns
 
         public bool isBindMini { get; set; }
         /// <summary>
+        /// 小程序访问地址
+        /// </summary>
+        [SugarColumn(IsIgnore = true)]
+
+        public string miniUrl { get; set; }
+        /// <summary>
         /// 启用插件
         /// </summary>
         [SugarColumn(Length = 500, IsNullable = true)]

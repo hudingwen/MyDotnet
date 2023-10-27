@@ -77,13 +77,13 @@ namespace MyDotnet.Domain.Dto.Ns
         /// </summary>
         public static readonly List<NSPlugin> plugins = ConfigHelper.GetList<NSPlugin>(new string[] { "nightscout", "plugins" });
         /// <summary>
-        /// 小程序名言
-        /// </summary>
-        public static readonly List<string> sayings = ConfigHelper.GetList<string>(new string[] { "miniProgram", "sayings" });
-        /// <summary>
         /// 小程序名称
         /// </summary>
         public static readonly string title = ConfigHelper.GetValue(new string[] { "miniProgram", "title" });
+        /// <summary>
+        /// 小程序url
+        /// </summary>
+        public static readonly string miniProgramUrl = ConfigHelper.GetValue(new string[] { "miniProgram", "url" });
         /// <summary>
         /// 访问地址模板url
         /// </summary>

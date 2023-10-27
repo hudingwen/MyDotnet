@@ -78,7 +78,7 @@ namespace MyDotnet.Controllers.Ns
 
 
             var bindData = await _wechatsubServices.Dal.Query(t => t.SubFromPublicAccount == NsInfo.pushWechatID && t.IsUnBind == false && t.CompanyID == NsInfo.pushCompanyCode && data.data.Select(i => i.Id.ToString()).ToList().Contains(t.SubJobID));
-            //isBindWeChat
+            //绑定微信检测
             foreach (var item in data.data)
             {
                 var find = bindData.Find(t => t.SubJobID.Equals(item.Id.ToString()));
@@ -90,13 +90,14 @@ namespace MyDotnet.Controllers.Ns
 
 
             var bindMini = await _wechatsubServices.Dal.Query(t => t.SubFromPublicAccount == NsInfo.miniAppid && t.IsUnBind == false && t.CompanyID == NsInfo.pushCompanyCode && data.data.Select(i => i.Id.ToString()).ToList().Contains(t.SubJobID));
-            //isBindWeChat
+            //绑定小程序检测
             foreach (var item in data.data)
             {
                 var find = bindMini.Find(t => t.SubJobID.Equals(item.Id.ToString()));
                 if (find != null)
                 {
                     item.isBindMini = true;
+                    item.miniUrl = $"{NsInfo.miniProgramUrl}?openid={find.SubUserOpenID}";
                 }
             }
             return new MessageModel<PageModel<Nightscout>>()
