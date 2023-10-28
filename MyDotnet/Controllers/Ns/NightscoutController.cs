@@ -61,19 +61,25 @@ namespace MyDotnet.Controllers.Ns
         }
 
         [HttpGet]
-        public async Task<MessageModel<PageModel<Nightscout>>> Get(int page = 1, string key = "",long serverId=0, int pageSize = 50)
+        public async Task<MessageModel<PageModel<Nightscout>>> Get(int page = 1, string key = "",long serverId=0,string cdn ="", int pageSize = 50)
         {
 
 
             Expression<Func<Nightscout, bool>> whereExpression = a => true;
+            key = key.ObjToString().Trim();
 
-            if (!(string.IsNullOrEmpty(key) || string.IsNullOrWhiteSpace(key)))
+            if (!string.IsNullOrEmpty(key))
             {
-                key = key.Trim();
-                whereExpression = whereExpression.And(t => t.name.Contains(key) || t.url.Contains(key) || t.passwd.Contains(key) || t.status.Contains(key) || t.resource.Contains(key) || t.accountStatus.Contains(key));
+                whereExpression = whereExpression.And(t => t.name.Contains(key) || t.url.Contains(key) || t.status.Contains(key) || t.resource.Contains(key) || t.accountStatus.Contains(key) || t.position.Contains(key));
+            }
+            if (!string.IsNullOrEmpty(cdn))
+            {
+                whereExpression = whereExpression.And(t => t.cdn == cdn);
             }
             if (serverId > 0)
+            {
                 whereExpression = whereExpression.And(t => t.serverId == serverId);
+            }
             var data = await _nightscoutServices.Dal.QueryPage(whereExpression, page, pageSize);
 
 
@@ -344,6 +350,13 @@ namespace MyDotnet.Controllers.Ns
                     nsserver.curInstanceIp = string.Format(nsserver.instanceIpTemplate, nsserver.curInstanceIpSerial);
                     request.instanceIP = nsserver.curInstanceIp;
                 }
+                var check2 = await CheckData(request);
+                if (!check2.success)
+                {
+                    check.msg = $"数据更新成功,但是服务器迁移失败,请手动处理!{check.msg}";
+                    return check;
+                }
+
                 _unitOfWorkManage.BeginTran();
                 try
                 {
