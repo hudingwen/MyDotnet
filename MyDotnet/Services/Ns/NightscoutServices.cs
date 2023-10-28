@@ -276,11 +276,11 @@ namespace MyDotnet.Services.Ns
                                 sshMasterClient.Connect();
                                 using (var cmdMaster = sshMasterClient.CreateCommand(""))
                                 {
-                                    Thread.Sleep(1000);
+                                    Thread.Sleep(2000);
                                     var resMaster = cmdMaster.Execute("docker exec -t nginxserver nginx -s stop");
-                                    Thread.Sleep(3000);
+                                    Thread.Sleep(2000);
                                     resMaster += cmdMaster.Execute("docker exec -t nginxserver nginx -s reload");
-                                    Thread.Sleep(1000);
+                                    Thread.Sleep(2000);
 
                                     sb.AppendLine($"刷新域名:{resMaster}");
                                 }
@@ -438,11 +438,11 @@ namespace MyDotnet.Services.Ns
                                     sshMasterClient.Connect();
                                     using (var cmdMaster = sshMasterClient.CreateCommand(""))
                                     {
-                                        Thread.Sleep(1000);
+                                        Thread.Sleep(2000);
                                         var resMaster = cmdMaster.Execute("docker exec -t nginxserver nginx -s stop");
-                                        Thread.Sleep(3000);
+                                        Thread.Sleep(2000);
                                         resMaster += cmdMaster.Execute("docker exec -t nginxserver nginx -s reload");
-                                        Thread.Sleep(1000);
+                                        Thread.Sleep(2000);
 
                                         sb.AppendLine($"刷新域名:{resMaster}");
                                     }
