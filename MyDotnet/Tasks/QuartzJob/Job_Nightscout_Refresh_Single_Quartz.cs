@@ -108,7 +108,9 @@ namespace MyDotnet.Tasks.QuartzJob
                                         string webConfig = _nightscoutServices.GetNsWebConfig(nightscout, nsserver);
                                         FileHelper.WriteFile($"/etc/nginx/conf.d/nightscout/{nightscout.Id}.conf", webConfig);
                                         //刷新域名
-                                        var resMaster = cmdMaster.Execute("docker exec -t nginxserver nginx -s reload");
+                                        var resMaster = cmdMaster.Execute("docker exec -t nginxserver nginx -s stop");
+                                        resMaster += cmdMaster.Execute("docker exec -t nginxserver nginx -s reload");
+
                                         sb.AppendLine($"刷新域名:{resMaster}");
                                         log.success = true;
                                     }
