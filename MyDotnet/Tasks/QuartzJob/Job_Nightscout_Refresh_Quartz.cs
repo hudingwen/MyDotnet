@@ -73,6 +73,7 @@ namespace MyDotnet.Tasks.QuartzJob
 
                     List<string> errCount = new List<string>();
                     StringBuilder sb = new StringBuilder();
+                    int reloadCount = 0;
                     foreach (var nsserver in servers)
                     {
                         //根据每个服务器进行重启服务
@@ -109,12 +110,15 @@ namespace MyDotnet.Tasks.QuartzJob
                                             string webConfig = _nightscoutServices.GetNsWebConfig(nightscout, nsserver);
                                             FileHelper.WriteFile($"/etc/nginx/conf.d/nightscout/{nightscout.Id}.conf", webConfig);
                                             //刷新域名
-                                            Thread.Sleep(2000);
-                                            var resMaster = cmdMaster.Execute("docker exec -t nginxserver nginx -s stop");
-                                            Thread.Sleep(2000);
-                                            resMaster += cmdMaster.Execute("docker exec -t nginxserver nginx -s reload");
-                                            Thread.Sleep(2000);
-
+                                            var resMaster = cmdMaster.Execute("docker exec -t nginxserver nginx -s reload");
+                                            reloadCount = reloadCount + 1;
+                                            Thread.Sleep(1000);
+                                            if (reloadCount >= 5)
+                                            {
+                                                resMaster += cmdMaster.Execute("docker exec -t nginxserver nginx -s stop");
+                                                reloadCount = 0;
+                                                Thread.Sleep(1000);
+                                            }
                                             sb.AppendLine($"刷新域名:{resMaster}");
                                             log.success = true;
                                         }
