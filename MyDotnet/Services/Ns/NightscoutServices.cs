@@ -578,7 +578,7 @@ namespace MyDotnet.Services.Ns
         {
             return @$"
 server {{
-    listen 443 ssl http2;
+    listen 443 ssl ;
     server_name {nightscout.url} {nightscout.backupurl};
 
     ssl_certificate ""/etc/nginx/conf.d/{NsInfo.cer}"";
