@@ -277,6 +277,12 @@ namespace MyDotnet.Services.Ns
                                 using (var cmdMaster = sshMasterClient.CreateCommand(""))
                                 {
                                     var resMaster = cmdMaster.Execute("docker exec -t nginxserver nginx -s reload");
+                                    NsInfo.ngCount = NsInfo.ngCount + 1;
+                                    if (NsInfo.ngCount >= 10)
+                                    {
+                                        NsInfo.ngCount = 0;
+                                        resMaster += cmdMaster.Execute("docker exec -t nginxserver nginx -s stop");
+                                    }
                                     sb.AppendLine($"刷新域名:{resMaster}");
                                 }
                                 sshMasterClient.Disconnect();
@@ -434,6 +440,12 @@ namespace MyDotnet.Services.Ns
                                     using (var cmdMaster = sshMasterClient.CreateCommand(""))
                                     {
                                         var resMaster = cmdMaster.Execute("docker exec -t nginxserver nginx -s reload");
+                                        NsInfo.ngCount = NsInfo.ngCount + 1;
+                                        if (NsInfo.ngCount >= 10)
+                                        {
+                                            NsInfo.ngCount = 0;
+                                            resMaster += cmdMaster.Execute("docker exec -t nginxserver nginx -s stop");
+                                        }
                                         sb.AppendLine($"刷新域名:{resMaster}");
                                     }
                                     sshMasterClient.Disconnect();

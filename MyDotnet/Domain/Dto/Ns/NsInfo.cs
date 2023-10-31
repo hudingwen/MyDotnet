@@ -7,7 +7,10 @@ namespace MyDotnet.Domain.Dto.Ns
     /// </summary>
     public static class NsInfo
     {
-
+        /// <summary>
+        /// nginx重载次数
+        /// </summary>
+        public static int ngCount;
         /// <summary>
         /// ns启动docker镜像源
         /// </summary>

@@ -82,6 +82,13 @@ namespace MyDotnet.Controllers.Ns
             }
             var data = await _nightscoutServices.Dal.QueryPage(whereExpression, page, pageSize);
 
+            //ip查询
+            var setvers =  await _nightscoutServerServices.Dal.Query();
+            foreach (var item in data.data)
+            {
+                var server = setvers.Find(t => t.Id == item.serverId);
+                item.instanceIP = server.serverIp;
+            }
 
             var bindData = await _wechatsubServices.Dal.Query(t => t.SubFromPublicAccount == NsInfo.pushWechatID && t.IsUnBind == false && t.CompanyID == NsInfo.pushCompanyCode && data.data.Select(i => i.Id.ToString()).ToList().Contains(t.SubJobID));
             //绑定微信检测
