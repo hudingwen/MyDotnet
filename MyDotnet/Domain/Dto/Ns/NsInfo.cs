@@ -92,6 +92,10 @@ namespace MyDotnet.Domain.Dto.Ns
         /// </summary>
         public static readonly string templateUrl = ConfigHelper.GetValue(new string[] { "nightscout", "TemplateUrl" });
         /// <summary>
+        /// 泛域名
+        /// </summary>
+        public static readonly string genericUrl = ConfigHelper.GetValue(new string[] { "nightscout", "GenericUrl" });
+        /// <summary>
         /// ns的MAKER_KEY
         /// </summary>
         public static readonly string MAKER_KEY = ConfigHelper.GetValue(new string[] { "nightscout", "MAKER_KEY" });

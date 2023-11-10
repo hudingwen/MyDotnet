@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
+using MyDotnet.Domain.Dto.ExceptionDomain;
 using MyDotnet.Domain.Dto.System;
 using MyDotnet.Helper;
 
@@ -22,8 +23,16 @@ namespace MyDotnet.Domain.Filter
             context.HttpContext.Response.StatusCode = StatusCodes.Status200OK;
 
             var res = new ContentResult();
-            res.Content = JsonHelper.ObjToJson(MessageModel.Fail($"系统错误:{context.Exception.Message}"));
-            context.Result = res;
+            if (context.Exception is ServiceException)
+            {
+                res.Content = JsonHelper.ObjToJson(MessageModel.Fail($"业务异常:{context.Exception.Message}"));
+                context.Result = res;
+            }
+            else
+            {
+                res.Content = JsonHelper.ObjToJson(MessageModel.Fail($"系统错误:{context.Exception.Message}"));
+                context.Result = res;
+            }
         }
 
 

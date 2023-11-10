@@ -1,8 +1,10 @@
 ﻿using log4net;
 using MongoDB.Bson;
 using MongoDB.Driver;
+using MyDotnet.Domain.Dto.ExceptionDomain;
 using MyDotnet.Domain.Dto.Ns;
 using MyDotnet.Domain.Entity.Ns;
+using MyDotnet.Domain.Entity.System;
 using MyDotnet.Helper;
 using MyDotnet.Repository;
 using MyDotnet.Services;
@@ -20,13 +22,110 @@ namespace MyDotnet.Services.Ns
         public NightscoutServices(BaseRepository<Nightscout> baseRepository
             , BaseServices<NightscoutLog> nightscoutLogServices
             , BaseServices<NightscoutServer> nightscoutServerServices
+            , BaseServices<Dict> dictService
             ) : base(baseRepository)
         {
             _nightscoutLogServices = nightscoutLogServices;
             _nightscoutServerServices = nightscoutServerServices;
+            _dictService = dictService;
         }
+        public BaseServices<Dict> _dictService { get; set; }
         public BaseServices<NightscoutLog> _nightscoutLogServices { get; set; }
         public BaseServices<NightscoutServer> _nightscoutServerServices { get; set; }
+
+        /// <summary>
+        /// 修改默认cdn
+        /// </summary>
+        /// <param name="cdnCode"></param>
+        /// <returns></returns>
+        public async Task ChangeCDN(string cdnCode)
+        {
+           
+            var defaultCDN = await _dictService.Dal.QueryById("defaultCDN");
+            if (!defaultCDN.content.Equals(cdnCode))
+            {
+                //删除
+                NightscoutLog log = new NightscoutLog();
+
+                var request = new HttpRequestMessage(HttpMethod.Get, $"https://api.cloudflare.com/client/v4/zones/{NsInfo.cfZoomID}/dns_records?name={NsInfo.genericUrl}");
+                request.Headers.Add("Authorization", $"Bearer {NsInfo.cfKey}");
+                var findtxt = await HttpHelper.SendAsync(request);
+                var findInfo = JsonHelper.JsonToObj<CFMessageListInfo>(findtxt);
+
+                bool isDelete = false;
+                if (findInfo.success && findInfo.result != null && findInfo.result.Count == 1)
+                {
+                    //删除
+                    request = new HttpRequestMessage(HttpMethod.Delete, $"https://api.cloudflare.com/client/v4/zones/{NsInfo.cfZoomID}/dns_records/{findInfo.result[0].id}");
+                    request.Headers.Add("Authorization", $"Bearer {NsInfo.cfKey}");
+                    var deleteTxt = await HttpHelper.SendAsync(request);
+                    var deleteInfo = JsonHelper.JsonToObj<CFMessageInfo>(deleteTxt);
+                    LogHelper.logApp.Info($"删除先前域名解析-日志:{JsonHelper.ObjToJson(deleteInfo)}");
+                    LogHelper.logApp.Info($"删除先前域名解析-数据:{JsonHelper.ObjToJson(findInfo)}");
+                    isDelete = true;
+                }
+
+                //添加
+                var selectCDN = NsInfo.CDNList.Find(t => t.key.Equals(cdnCode));
+                if (selectCDN != null)
+                {
+                    //添加
+                    request = new HttpRequestMessage(HttpMethod.Post, $"https://api.cloudflare.com/client/v4/zones/{NsInfo.cfZoomID}/dns_records");
+                    request.Headers.Add("Authorization", $"Bearer {NsInfo.cfKey}");
+                    CFAddMessageInfo cfAdd = new CFAddMessageInfo();
+                    cfAdd.content = selectCDN.value;
+                    cfAdd.name = NsInfo.genericUrl;
+                    cfAdd.proxied = false;
+                    cfAdd.type = selectCDN.type;
+                    cfAdd.comment = "自动创建解析";
+                    cfAdd.ttl = 60;
+                    var content = new StringContent(JsonHelper.ObjToJson(cfAdd), null, "text/plain");
+                    request.Content = content;
+                    var txt = await HttpHelper.SendAsync(request);
+                    var obj = JsonHelper.JsonToObj<CFMessageInfo>(txt);
+
+                    if (!obj.success)
+                    {
+                        //不成功就还原之前删除的
+                        if (isDelete)
+                        {
+                            request = new HttpRequestMessage(HttpMethod.Post, $"https://api.cloudflare.com/client/v4/zones/{NsInfo.cfZoomID}/dns_records");
+                            request.Headers.Add("Authorization", $"Bearer {NsInfo.cfKey}");
+                            cfAdd = new CFAddMessageInfo();
+                            cfAdd.content = findInfo.result[0].content;
+                            cfAdd.name = NsInfo.genericUrl;
+                            cfAdd.proxied = false;
+                            cfAdd.type = findInfo.result[0].type;
+                            cfAdd.comment = "自动创建解析";
+                            cfAdd.ttl = 60;
+                            content = new StringContent(JsonHelper.ObjToJson(cfAdd), null, "text/plain");
+                            request.Content = content;
+                            txt = await HttpHelper.SendAsync(request);
+                            obj = JsonHelper.JsonToObj<CFMessageInfo>(txt);
+                        }
+                        throw new ServiceException($"添加失败!{JsonHelper.ObjToJson(obj)}");
+                    }
+                    else
+                    {
+                        //更新所有ns的cdn
+                        
+                        await Dal.Db.Updateable<Nightscout>().SetColumns(t => t.cdn, cdnCode).Where(t => t.cdn == defaultCDN.content).ExecuteCommandAsync();
+                        defaultCDN.content = cdnCode;
+                        await _dictService.Dal.Update(defaultCDN);
+                    }
+                }
+                else
+                {
+                    throw new ServiceException("未找到对应的CDN!");
+                }
+            }
+            else
+            {
+                throw new ServiceException("无需修改!");
+            }
+
+        }
+    
         /// <summary>
         /// 添加解析
         /// </summary>
@@ -38,7 +137,9 @@ namespace MyDotnet.Services.Ns
             log.success = true;
 
             await UnResolveDomain(nightscout);
-            if (!NsInfo.defaultCDN.Equals(nightscout.cdn))
+
+            var defaultCDN = await _dictService.Dal.QueryById("defaultCDN");
+            if (!defaultCDN.content.Equals(nightscout.cdn))
             {
                 //非默认cdn添加解析 
 
@@ -98,7 +199,7 @@ namespace MyDotnet.Services.Ns
         public async Task<bool> UnResolveDomain(Nightscout nightscout)
         {
             NightscoutLog log = new NightscoutLog();
-            //type=CNAME&
+
             var request = new HttpRequestMessage(HttpMethod.Get, $"https://api.cloudflare.com/client/v4/zones/{NsInfo.cfZoomID}/dns_records?name={nightscout.url}");
             request.Headers.Add("Authorization", $"Bearer {NsInfo.cfKey}");
             var txt = await HttpHelper.SendAsync(request);
@@ -661,6 +762,8 @@ server {{
 
 
         }
+
+        
     }
 
     

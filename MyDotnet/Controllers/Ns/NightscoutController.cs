@@ -6,6 +6,7 @@ using MyDotnet.Domain.Dto.Ns;
 using MyDotnet.Domain.Dto.System;
 using MyDotnet.Domain.Dto.WeChat;
 using MyDotnet.Domain.Entity.Ns;
+using MyDotnet.Domain.Entity.System;
 using MyDotnet.Domain.Entity.WeChat;
 using MyDotnet.Helper;
 using MyDotnet.Repository;
@@ -27,7 +28,7 @@ namespace MyDotnet.Controllers.Ns
     [Authorize(Permissions.Name)]
     public class NightscoutController : Controller
     {
-
+        public BaseServices<Dict> _dictService;
         public NightscoutServices _nightscoutServices;
 
         public WeChatConfigServices _weChatConfigServices;
@@ -48,9 +49,11 @@ namespace MyDotnet.Controllers.Ns
             , BaseServices<NightscoutServer> nightscoutServerServices
             , BaseServices<WeChatSub> wechatsubServices
             , BaseServices<NightscoutBanner> nightscoutBannerServices
+            , BaseServices<Dict> dictService
             , UnitOfWorkManage unitOfWorkManage
             )
         {
+            _dictService = dictService;
             _nightscoutServices = nightscoutServices;
             _weChatConfigServices = weChatConfigServices;
             _nightscoutLogServices = nightscoutLogServices;
@@ -58,6 +61,14 @@ namespace MyDotnet.Controllers.Ns
             _wechatsubServices = wechatsubServices;
             _nightscoutBannerServices = nightscoutBannerServices;
             _unitOfWorkManage = unitOfWorkManage;
+        }
+
+        
+        [HttpGet]
+        public async Task<MessageModel<string>> ChangeCDN(string cdnCode)
+        {
+            await _nightscoutServices.ChangeCDN(cdnCode);
+            return MessageModel<string>.Success("切换解析成功");
         }
 
         [HttpGet]
@@ -252,7 +263,8 @@ namespace MyDotnet.Controllers.Ns
                     }
                     if (string.IsNullOrEmpty(request.cdn))
                     {
-                        request.cdn = NsInfo.defaultCDN;
+                        var defaultCDN = await _dictService.Dal.QueryById("defaultCDN");
+                        request.cdn = defaultCDN.content;
                     }
                 }
 
@@ -1015,9 +1027,10 @@ namespace MyDotnet.Controllers.Ns
         }
 
         [HttpGet]
-        public MessageModel<CDNInfoDto> GetCDNList()
+        public async Task<MessageModel<CDNInfoDto>> GetCDNList()
         {
-            CDNInfoDto cDNInfoDto = new CDNInfoDto { CDNList = NsInfo.CDNList, defaultCDN = NsInfo.defaultCDN };
+            var defaultCDN = await _dictService.Dal.QueryById("defaultCDN");
+            CDNInfoDto cDNInfoDto = new CDNInfoDto { CDNList = NsInfo.CDNList, defaultCDN = defaultCDN.content };
             return MessageModel<CDNInfoDto>.Success("获取成功",cDNInfoDto);
         }
         private List<EntriesEntity> HandleSugarList(List<EntriesEntity> sugers, DateTime flagDate)
