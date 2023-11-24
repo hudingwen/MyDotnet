@@ -16,6 +16,10 @@ namespace MyDotnet.Controllers.WeChat
     public partial class WeChatSubController : Controller
     {
         public BaseServices<WeChatSub> baseServicesWeChatSub { get; set; }
+        public WeChatSubController(BaseServices<WeChatSub> _baseServicesWeChatSub)
+        {
+            baseServicesWeChatSub = _baseServicesWeChatSub;
+        }
 
         /// <summary>
         /// 获取
