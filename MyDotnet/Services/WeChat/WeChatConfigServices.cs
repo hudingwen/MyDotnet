@@ -252,58 +252,81 @@ namespace MyDotnet.Services.WeChat
             reData.id = msg.info.id;
 
 
-            var pushData = new WeChatPushCardMsgDto
+            string pushJson;
+            if (msg.isNewVersion)
             {
-                template_id = msg.cardMsg.template_id,
-                url = msg.cardMsg.url,
-                touser = bindUser.SubUserOpenID,
-                miniprogram = new WeChatCardMsgMiniprogram
+                //新版
+
+                //老版本
+                var pushData = new WeChatPushCardMsgNewDto
                 {
-                    appid = msg.cardMsg.miniprogram?.appid,
-                    pagepath = msg.cardMsg.miniprogram?.pagepath
-                },
-                data = new WeChatPushCardMsgDetailDto
+                    template_id = msg.cardMsg.template_id,
+                    url = msg.cardMsg.url,
+                    touser = bindUser.SubUserOpenID,
+                    miniprogram = new WeChatCardMsgMiniprogram
+                    {
+                        appid = msg.cardMsg.miniprogram?.appid,
+                        pagepath = msg.cardMsg.miniprogram?.pagepath
+                    },
+                    data = msg.newMsg
+                };
+                pushJson = JsonHelper.ObjToJson(pushData);
+            }
+            else
+            {
+                //老版本
+                var pushData = new WeChatPushCardMsgDto
                 {
-                    first = new WeChatPushCardMsgValueColorDto
+                    template_id = msg.cardMsg.template_id,
+                    url = msg.cardMsg.url,
+                    touser = bindUser.SubUserOpenID,
+                    miniprogram = new WeChatCardMsgMiniprogram
                     {
-                        value = msg.cardMsg.first,
-                        color = msg.cardMsg.color1
+                        appid = msg.cardMsg.miniprogram?.appid,
+                        pagepath = msg.cardMsg.miniprogram?.pagepath
                     },
-                    keyword1 = new WeChatPushCardMsgValueColorDto
+                    data = new WeChatPushCardMsgDetailDto
                     {
-                        value = msg.cardMsg.keyword1,
-                        color = msg.cardMsg.color1
-                    },
-                    keyword2 = new WeChatPushCardMsgValueColorDto
-                    {
-                        value = msg.cardMsg.keyword2,
-                        color = msg.cardMsg.color2
-                    },
-                    keyword3 = new WeChatPushCardMsgValueColorDto
-                    {
-                        value = msg.cardMsg.keyword3,
-                        color = msg.cardMsg.color3
-                    },
-                    keyword4 = new WeChatPushCardMsgValueColorDto
-                    {
-                        value = msg.cardMsg.keyword4,
-                        color = msg.cardMsg.color4
-                    },
-                    keyword5 = new WeChatPushCardMsgValueColorDto
-                    {
-                        value = msg.cardMsg.keyword5,
-                        color = msg.cardMsg.color5
-                    },
-                    remark = new WeChatPushCardMsgValueColorDto
-                    {
-                        value = msg.cardMsg.remark,
-                        color = msg.cardMsg.colorRemark
+                        first = new WeChatPushCardMsgValueColorDto
+                        {
+                            value = msg.cardMsg.first,
+                            color = msg.cardMsg.color1
+                        },
+                        keyword1 = new WeChatPushCardMsgValueColorDto
+                        {
+                            value = msg.cardMsg.keyword1,
+                            color = msg.cardMsg.color1
+                        },
+                        keyword2 = new WeChatPushCardMsgValueColorDto
+                        {
+                            value = msg.cardMsg.keyword2,
+                            color = msg.cardMsg.color2
+                        },
+                        keyword3 = new WeChatPushCardMsgValueColorDto
+                        {
+                            value = msg.cardMsg.keyword3,
+                            color = msg.cardMsg.color3
+                        },
+                        keyword4 = new WeChatPushCardMsgValueColorDto
+                        {
+                            value = msg.cardMsg.keyword4,
+                            color = msg.cardMsg.color4
+                        },
+                        keyword5 = new WeChatPushCardMsgValueColorDto
+                        {
+                            value = msg.cardMsg.keyword5,
+                            color = msg.cardMsg.color5
+                        },
+                        remark = new WeChatPushCardMsgValueColorDto
+                        {
+                            value = msg.cardMsg.remark,
+                            color = msg.cardMsg.colorRemark
+                        }
                     }
-                }
-            };
-            var pushJson = JsonHelper.ObjToJson(pushData);
+                };
+                pushJson = JsonHelper.ObjToJson(pushData);
+            }
             var data = await WeChatHelper.SendCardMsg(res.response.access_token, pushJson);
-            new WeakReference(data);
             reData.usersData = data;
             try
             {
@@ -327,15 +350,13 @@ namespace MyDotnet.Services.WeChat
                 LogHelper.logApp.Error("推送失败");
                 LogHelper.logApp.Error(ex);
             }
-            new WeakReference(reData); 
-            new WeakReference(pushData);
             if (reData.usersData.errcode.Equals(0))
             {
                 return MessageModel<WeChatResponseUserInfo>.Success("卡片消息推送成功", reData);
             }
             else
             {
-                return MessageModel<WeChatResponseUserInfo>.Fail("卡片消息推送失败", reData);
+                return MessageModel<WeChatResponseUserInfo>.Fail($"卡片消息推送失败=>{reData?.usersData?.errmsg}", reData);
             }
         }
         /// <summary>

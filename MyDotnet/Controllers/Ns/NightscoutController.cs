@@ -596,8 +596,6 @@ namespace MyDotnet.Controllers.Ns
             pushData.info.userID = nightscout.Id.ToString();
 
             await _weChatConfigServices.PushCardMsg(pushData);
-            new WeakReference(pushData);
-            new WeakReference(data);
             return "推送ns成功";
             //if (nightscout.isBindWeChat)
             //{
