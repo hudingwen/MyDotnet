@@ -49,7 +49,7 @@ namespace MyDotnet.Controllers.WeChat
         [HttpPost]
         public async Task<MessageModel<string>> Post([FromBody] WeChatCompany obj)
         {
-            await _baseWeChatCompanyServices.Dal.Add(obj);
+            await _baseWeChatCompanyServices.Dal.Db.Insertable(obj).ExecuteCommandAsync();
             return new MessageModel<string> { success = true };
         }
         /// <summary>

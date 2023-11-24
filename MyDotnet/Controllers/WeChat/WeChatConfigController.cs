@@ -50,7 +50,7 @@ namespace MyDotnet.Controllers.WeChat
         [HttpPost]
         public async Task<MessageModel<string>> Post([FromBody] WeChatConfig obj)
         {
-            await _baseServicesWeChatConfig.Dal.Add(obj);
+            await _baseServicesWeChatConfig.Dal.Db.Insertable(obj).ExecuteCommandAsync();
             return new MessageModel<string> { success = true };
         }
         /// <summary>
