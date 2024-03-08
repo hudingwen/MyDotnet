@@ -22,5 +22,8 @@
         public object dataType { get; set; }
         public object utcOffset { get; set; }
         public object created_at { get; set; }
+        public object rssi { get; set; }
+        public object index { get; set; }
+        public object trend { get; set; }
     }
 }

@@ -49,13 +49,17 @@ namespace MyDotnet.Tasks.QuartzJob
             {
                 var nights = await _nightscoutServices.Dal.Query();
                 var servers = await _nightscoutServerServices.Dal.Query();
+                nights = nights.Where(t => t.isStop == false).ToList();
+
+                int i = 1;
                 foreach (var server in servers)
                 {
                     var serverNights = nights.FindAll(t => t.serverId == server.Id);
                     foreach (var nightscout in serverNights)
                     {
-                        if(nightscout.isStop) continue;
+                        LogHelper.logApp.Info($"正在检索第{i}个,总计:{nights.Count}个");
                         await _nightscoutServices.StopLongTimeNoUseNs(nightscout, server);
+                        i++;
                         Thread.Sleep(1000);
                     }
                     
