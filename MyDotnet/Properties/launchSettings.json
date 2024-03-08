@@ -1,0 +1,15 @@
+{
+  "profiles": {
+    "MyDotnet": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "launchUrl": "",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "dotnetRunMessages": true,
+      "applicationUrl": "http://localhost:9291"
+    }
+  },
+  "$schema": "https://json.schemastore.org/launchsettings.json"
+}
