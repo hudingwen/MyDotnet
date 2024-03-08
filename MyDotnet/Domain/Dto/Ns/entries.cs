@@ -25,5 +25,6 @@
         public object rssi { get; set; }
         public object index { get; set; }
         public object trend { get; set; }
+        public object battery { get; set; }
     }
 }

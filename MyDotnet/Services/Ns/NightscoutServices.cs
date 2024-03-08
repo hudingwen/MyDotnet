@@ -2,6 +2,7 @@
 using MongoDB.Bson;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
+using MyDotnet.Controllers.Ns;
 using MyDotnet.Domain.Dto.ExceptionDomain;
 using MyDotnet.Domain.Dto.Ns;
 using MyDotnet.Domain.Dto.System;
@@ -865,9 +866,16 @@ server {{
                 var client = new MongoClient($"mongodb://{nsserver.mongoLoginName}:{nsserver.mongoLoginPassword}@{nsserver.mongoIp}:{nsserver.mongoPort}");
                 var database = client.GetDatabase(nightscout.serviceName); // 获取数据库对象 
 
-                var collectionEntries = database.GetCollection<entries>("entries");
-                var result = collectionEntries.Find(FilterDefinition<entries>.Empty).SortByDescending(t => t.date).FirstOrDefault();
-                if (result == null)
+                var collectionEntries = database.GetCollection<BsonDocument>("entries"); 
+
+                // 创建过滤条件，排序方式为倒序
+                var filter = Builders<BsonDocument>.Filter.Empty;
+                var sort = Builders<BsonDocument>.Sort.Descending("date");
+                var projection = Builders<BsonDocument>.Projection.Include("date").Include("sgv").Include("dateString").Exclude("_id");
+                // 查询并获取第一条数据
+                var result = await collectionEntries.Find(filter).Sort(sort).Limit(1).Project(projection).ToListAsync();
+                var sugers = JsonHelper.JsonToObj<List<entries>>(result.ToJson()).FirstOrDefault();
+                if (sugers == null)
                 {
                     //没有数据的情况
                     var lastDate = nightscout.lastUpdateTime == null ? nightscout.startTime : nightscout.lastUpdateTime.Value;
@@ -884,7 +892,7 @@ server {{
                 {
                     //有数据的情况
 
-                    var lastUpdateTime = result.dateString.ObjToDate();
+                    var lastUpdateTime = sugers.dateString.ObjToDate();
                     //超过期限停止实例
                     if ((DateTime.Now - lastUpdateTime).TotalDays >= outDays)
                     {
