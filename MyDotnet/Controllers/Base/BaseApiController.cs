@@ -26,7 +26,24 @@ namespace MyDotnet.Controllers.Base
                 response = data,
             };
         }
-        
+        /// <summary>
+        /// 返回失败
+        /// </summary>
+        /// <param name="msg"></param>
+        /// <param name="status"></param>
+        /// <returns></returns>
+        [NonAction]
+        public MessageModel<string> Success(string msg = "成功")
+        {
+            return new MessageModel<string>()
+            {
+                success = true,
+                status = 200,
+                msg = msg,
+                response = null,
+            };
+        }
+
         /// <summary>
         /// 返回失败
         /// </summary>

@@ -21,7 +21,7 @@
 
 	<ItemGroup>
 		<PackageReference Include="AutoMapper" Version="13.0.1" />
-		<PackageReference Include="log4net" Version="2.0.15" />
+		<PackageReference Include="log4net" Version="2.0.16" />
 		<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="6.0.27" />
 		<PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="6.0.27" />
 		<PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.0" />
@@ -29,7 +29,8 @@
 		<PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" Version="6.35.0" />
 		<PackageReference Include="MongoDB.Driver" Version="2.24.0" />
 		<PackageReference Include="Quartz" Version="3.8.1" />
-		<PackageReference Include="SqlSugarCore" Version="5.1.4.143" />
+		<PackageReference Include="SixLabors.ImageSharp.Drawing" Version="2.1.2" />
+		<PackageReference Include="SqlSugarCore" Version="5.1.4.146" />
 		<PackageReference Include="SSH.NET" Version="2024.0.0" />
 		<PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
 		<PackageReference Include="Swashbuckle.AspNetCore.Filters" Version="8.0.1" />
@@ -37,6 +38,15 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<None Update="ComFile\fonts\Candara.ttf">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+		<None Update="ComFile\fonts\impact.ttf">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+		<None Update="ComFile\fonts\monbaiti.ttf">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
 		<None Update="Dockerfile">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
