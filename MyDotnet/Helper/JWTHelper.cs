@@ -1,4 +1,5 @@
-﻿using MyDotnet.Domain.Dto.System;
+﻿using MyDotnet.Config;
+using MyDotnet.Domain.Dto.System;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 
@@ -26,8 +27,8 @@ namespace MyDotnet.Helper
                 new Claim(JwtRegisteredClaimNames.Jti, jwtUserInfo.Uid.ToString()), //JWT ID
                 new Claim(ClaimTypes.Name,jwtUserInfo.Name.ObjToString()), //JWT ID
                 new Claim(JwtRegisteredClaimNames.Iat, $"{new DateTimeOffset(DateTime.Now).ToUnixTimeSeconds()}"),//JWT的发布时间
-                new Claim(JwtRegisteredClaimNames.Exp,$"{new DateTimeOffset(DateTime.Now.AddSeconds(3600)).ToUnixTimeSeconds()}"),//JWT到期时间
-                new Claim(ClaimTypes.Expiration,$"{new DateTimeOffset(DateTime.Now.AddSeconds(3600)).ToUnixTimeSeconds()}"),//JWT到期时间
+                new Claim(JwtRegisteredClaimNames.Exp,$"{new DateTimeOffset(DateTime.Now.AddSeconds(3600*AuthConfig.expire)).ToUnixTimeSeconds()}"),//JWT到期时间
+                new Claim(ClaimTypes.Expiration,$"{new DateTimeOffset(DateTime.Now.AddSeconds(3600*AuthConfig.expire)).ToUnixTimeSeconds()}"),//JWT到期时间
                 new Claim(JwtRegisteredClaimNames.Iss,iss), //颁发者
                 new Claim(JwtRegisteredClaimNames.Aud,aud)//使用者
             };

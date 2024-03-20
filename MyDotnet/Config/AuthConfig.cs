@@ -14,16 +14,18 @@ namespace MyDotnet.Config
     /// </summary>
     public static class AuthConfig
     {
+
+        //读取配置文件
+        public static readonly string secret = ConfigHelper.GetValue(new string[] { "Audience", "Secret" });//密钥
+        public static readonly string issuer = ConfigHelper.GetValue(new string[] { "Audience", "Issuer" });//发行人
+        public static readonly string audience = ConfigHelper.GetValue(new string[] { "Audience", "Audience" });//订阅人
+        public static readonly int expire = ConfigHelper.GetValue(new string[] { "Audience", "Expire" }).ObjToInt();//token过期时间单位/小时
         /// <summary>
         /// 认证授权配置
         /// </summary>
         /// <param name="services"></param>
         public static void SetAuth(this WebApplicationBuilder builder)
         {
-            //读取配置文件
-            var secret = ConfigHelper.GetValue(new string[] { "Audience", "Secret" });//密钥
-            var issuer = ConfigHelper.GetValue(new string[] { "Audience", "Issuer" });//发行人
-            var audience = ConfigHelper.GetValue(new string[] { "Audience", "Audience" });//订阅人
 
             var keyByteArray = Encoding.UTF8.GetBytes(secret);
             var signingKey = new SymmetricSecurityKey(keyByteArray);
