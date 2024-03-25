@@ -746,7 +746,7 @@ EOF
             //苹果远程指令
             var appleRemote = await _dicService.GetDicData(AppleRemote.KEY);
             args.Add($"-e LOOP_APNS_KEY_ID='{appleRemote.Find(t => AppleRemote.apKeyID.Equals(t.code)).content}'");
-            args.Add($"-e LOOP_APNS_KEY='{appleRemote.Find(t => AppleRemote.apKey.Equals(t.code)).content}'");
+            args.Add($"-e LOOP_APNS_KEY=$'{appleRemote.Find(t => AppleRemote.apKey.Equals(t.code)).content}'");
             args.Add($"-e LOOP_DEVELOPER_TEAM_ID='{appleRemote.Find(t => AppleRemote.apTeamID.Equals(t.code)).content}'");
             args.Add($"-e LOOP_PUSH_SERVER_ENVIRONMENT='{appleRemote.Find(t => AppleRemote.apEnv.Equals(t.code)).content}'");
 
