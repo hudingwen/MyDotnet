@@ -722,8 +722,11 @@ EOF
             //args.Add($"-e SHOW_PLUGINS='careportal basal dbsize rawbg iob maker cob bridge bwp cage iage sage boluscalc pushover treatmentnotify mmconnect loop pump profile food openaps bage alexa override cors'");
             //args.Add($"-e ENABLE='careportal basal dbsize rawbg iob maker cob bridge bwp cage iage sage boluscalc pushover treatmentnotify mmconnect loop pump profile food openaps bage alexa override cors'");
 
-            args.Add($"-e AUTH_DEFAULT_ROLES=readable");
-
+            if(nightscout.isNeedPassword)
+                args.Add($"-e AUTH_DEFAULT_ROLES=denied");
+            else
+                args.Add($"-e AUTH_DEFAULT_ROLES=readable");
+            
 
 
             var defaultNsVersion = await _dicService.GetDic(DicTypeList.defaultNsVersion);

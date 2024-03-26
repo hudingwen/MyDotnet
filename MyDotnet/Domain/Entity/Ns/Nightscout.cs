@@ -164,5 +164,9 @@ namespace MyDotnet.Domain.Entity.Ns
         /// 最后血糖更新时间
         /// </summary>
         public DateTime? lastUpdateTime { get; set; }
+        /// <summary>
+        /// 是否需要密码查看血糖
+        /// </summary>
+        public bool isNeedPassword { get; set; }
     }
 }
