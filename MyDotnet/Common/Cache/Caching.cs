@@ -224,7 +224,7 @@ public class Caching : ICaching
 	{
 		_cache.Set(cacheKey, GetBytes(value),
 			expire == null
-				? new DistributedCacheEntryOptions() {AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(6)}
+				? new DistributedCacheEntryOptions() {AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5)}
 				: new DistributedCacheEntryOptions() {AbsoluteExpirationRelativeToNow = expire});
 
 		AddCacheKey(cacheKey);
@@ -239,7 +239,7 @@ public class Caching : ICaching
 	public async Task SetAsync<T>(string cacheKey, T value)
 	{
 		await _cache.SetAsync(cacheKey, Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(value)),
-			new DistributedCacheEntryOptions() {AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(6)});
+			new DistributedCacheEntryOptions() {AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5)});
 
 		await AddCacheKeyAsync(cacheKey);
 	}
@@ -274,7 +274,7 @@ public class Caching : ICaching
 	public void SetString(string cacheKey, string value, TimeSpan? expire = null)
 	{
 		if (expire == null)
-			_cache.SetString(cacheKey, value, new DistributedCacheEntryOptions() {AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(6)});
+			_cache.SetString(cacheKey, value, new DistributedCacheEntryOptions() {AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5) });
 		else
 			_cache.SetString(cacheKey, value, new DistributedCacheEntryOptions() {AbsoluteExpirationRelativeToNow = expire});
 
@@ -289,7 +289,7 @@ public class Caching : ICaching
 	/// <returns></returns>
 	public async Task SetStringAsync(string cacheKey, string value)
 	{
-		await _cache.SetStringAsync(cacheKey, value, new DistributedCacheEntryOptions() {AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(6)});
+		await _cache.SetStringAsync(cacheKey, value, new DistributedCacheEntryOptions() {AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5) });
 
 		await AddCacheKeyAsync(cacheKey);
 	}
