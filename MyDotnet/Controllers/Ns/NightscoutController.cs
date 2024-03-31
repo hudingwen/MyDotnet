@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Bson;
 using MongoDB.Driver;
+using MongoDB.Driver.Linq;
 using MyDotnet.Common.Cache;
 using MyDotnet.Domain.Dto.Ns;
 using MyDotnet.Domain.Dto.System;
@@ -16,6 +17,7 @@ using MyDotnet.Services.Ns;
 using MyDotnet.Services.System;
 using MyDotnet.Services.WeChat;
 using SqlSugar;
+using System.Diagnostics;
 using System.Linq.Expressions;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -1134,7 +1136,7 @@ namespace MyDotnet.Controllers.Ns
             if (string.IsNullOrEmpty(nsid))
                 return MessageModel<SugarDTO>.Fail("无绑定信息,无法查看血糖");
             var longNsid = nsid.ObjToLong();
-            var ns = await _weChatConfigServices.Dal.Db.Queryable<Nightscout>().Where(t => t.Id == longNsid).Select(t => new { t.serviceName,t.serverId }).FirstAsync();
+            var ns = await _weChatConfigServices.Dal.Db.Queryable<Nightscout>().Where(t => t.Id == longNsid).Select(t => new { t.serviceName,t.serverId,t.probeStartTime }).FirstAsync();
             if (ns ==null)
                 return MessageModel<SugarDTO>.Fail("无血糖信息可供查看,请检查是否绑定NS");
 
@@ -1147,7 +1149,7 @@ namespace MyDotnet.Controllers.Ns
 
             //var filter = Builders<MongoDB.Bson.BsonDocument>.Filter.Empty; // 获取所有数据.Eq("name", "John");
             var filter = Builders<BsonDocument>.Filter.Gt("sgv", 0);
-            var projection = Builders<BsonDocument>.Projection.Include("date").Include("sgv").Include("direction").Exclude("_id");
+            var projection = Builders<BsonDocument>.Projection.Include("date").Include("sgv").Include("direction").Include("utcOffset").Exclude("_id");
 
 
             var ls = await collection.Find(filter).Sort(Builders<BsonDocument>.Sort.Descending("_id")).Limit(900).Project(projection).ToListAsync();
@@ -1160,10 +1162,42 @@ namespace MyDotnet.Controllers.Ns
                 FormatDate(item);
             }
 
-            sugarDTO.curBlood = sugers.Count > 0 ? sugers[0] : new EntriesEntity { date_str = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") };
-            
+            if (sugers.Count > 0)
+            {
+                sugarDTO.curBlood = sugers[0];
+                if (sugarDTO.curBlood.date_step > 5 || sugarDTO.curBlood.date_step < 0)
+                {
+                    DateTime utcTime = DateTime.Now.AddMinutes(1).ToUniversalTime();
+                    TimeSpan timeSpan = utcTime - new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Local);
+                    sugarDTO.curBlood.nextRefreshTime = timeSpan.TotalMilliseconds;
+                }
+                else
+                {
+                    DateTime utcTime = DateTime.Now.AddMinutes(5 - sugarDTO.curBlood.date_step.Value).ToUniversalTime();
+                    TimeSpan timeSpan = utcTime - new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Local);
+                    sugarDTO.curBlood.nextRefreshTime = timeSpan.TotalMilliseconds;
+                }
+            }
+            else
+            {
+                sugarDTO.curBlood = new EntriesEntity { date_str = DateTime.Now };
 
-            
+                DateTime utcTime = DateTime.Now.AddMinutes(1).ToUniversalTime();
+                TimeSpan timeSpan = utcTime - new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Local);
+                sugarDTO.curBlood.nextRefreshTime = timeSpan.TotalMilliseconds;
+            }
+
+
+            sugarDTO.curBlood.probeStartTime = ns.probeStartTime;
+            if(sugarDTO.curBlood.probeStartTime != null)
+            {
+                var useProbe = DateTime.Now - sugarDTO.curBlood.probeStartTime.Value;
+                sugarDTO.curBlood.probeUseDays = useProbe.Days;
+                sugarDTO.curBlood.probeUseHours = useProbe.Hours;
+                sugarDTO.curBlood.probeUseMinutes = useProbe.Minutes;
+            }
+
+
             sugarDTO.curBlood.title = miniPro.Find(t => t.code.Equals(NSminiProgram.title)).content;
             Random rd = new Random();
 
@@ -1176,38 +1210,59 @@ namespace MyDotnet.Controllers.Ns
             {
                 sugarDTO.curBlood.saying = "每一次在控制血糖上的成功都是向自己付出的最好回报。";
             }
+            if (sugers.Count > 0)
             {
-                //今天
-                var flagDate = DateTime.Now.Date;
-                sugarDTO.day0 = HandleSugarList(sugers, flagDate);
+                var upto = sugers.Where(t => t.sgv_str != null && t.sgv_str.Value > 3.9 && t.sgv_str.Value < 10).ToList().Count();
+                var total = sugers.Where(t => t.sgv_str != null).Count();
+                var percent = Math.Round(1.0 * 100 * upto / total, 0);
+                sugarDTO.curBlood.percent = percent;
 
-                if (sugarDTO.day0.Count > 0)
-                {
-                    var upto = sugarDTO.day0.Where(t => t.sgv_str != null && t.sgv_str.Value > 3.9 && t.sgv_str.Value < 10).ToList().Count();
-                    var total = sugarDTO.day0.Where(t => t.sgv_str != null).Count();
-                    var percent = Math.Round(1.0 * 100 * upto / total, 0);
-                    sugarDTO.curBlood.percent = percent;
-                }
-                else
-                {
-                    sugarDTO.curBlood.percent = 0;
-                }
+                
             }
+            else
             {
-                //昨天
-                var flagDate = DateTime.Now.Date.AddDays(-1);
-                sugarDTO.day1 = HandleSugarList(sugers, flagDate);
+                sugarDTO.curBlood.percent = 0;
             }
-            {
-                //前天
-                var flagDate = DateTime.Now.Date.AddDays(-2);
-                sugarDTO.day2 = HandleSugarList(sugers, flagDate);
-            }
+            //添加标识
+            sugarDTO.day0 = HandleSugarList(sugers, sugarDTO);
             return MessageModel<SugarDTO>.Success("", sugarDTO);
 
         }
 
+        /// <summary>
+        /// 更新小程序使用探头时间
+        /// </summary>
+        /// <param name="openid"></param>
+        /// <param name="time"></param>
+        /// <returns></returns>
+
         [HttpGet]
+        [AllowAnonymous]
+        public async Task<MessageModel<SugarDTO>> UpdateMyProbeStartTime(string openid,DateTime? time)
+        {
+            var miniPro = await _dictService.GetDicData(NSminiProgram.KEY);
+            var miniAppid = miniPro.Find(t => t.code.Equals(NSminiProgram.appid)).content;
+
+            var nsInfo = await _dictService.GetDicData(NsInfo.KEY);
+            var pushCompanyCode = nsInfo.Find(t => t.code.Equals(NsInfo.pushCompanyCode)).content;
+
+
+            var nsid = await _weChatConfigServices.Dal.Db.Queryable<WeChatSub>().Where(t => t.SubFromPublicAccount == miniAppid && t.CompanyID == pushCompanyCode && t.SubUserOpenID == openid && t.IsUnBind == false).Select(t => t.SubJobID).FirstAsync();
+
+            if (string.IsNullOrEmpty(nsid))
+                return MessageModel<SugarDTO>.Fail("无绑定信息,无法查看血糖");
+            var longNsid = nsid.ObjToLong();
+            var ns = await _weChatConfigServices.Dal.Db.Queryable<Nightscout>().Where(t => t.Id == longNsid).Select(t => new { t.Id }).FirstAsync();
+            if (ns == null)
+                return MessageModel<SugarDTO>.Fail("无血糖信息可供查看,请检查是否绑定NS");
+
+
+            await _weChatConfigServices.Dal.Db.Updateable<Nightscout>().SetColumns(t => t.probeStartTime, time).Where(t => t.Id == ns.Id).ExecuteCommandAsync();
+
+            return MessageModel<SugarDTO>.Success("成功成功");
+        }
+
+            [HttpGet]
         public async Task<MessageModel<CDNInfoDto>> GetCDNList()
         {
             var defaultCDN = await _dictService.GetDic(DicTypeList.defaultCDN);
@@ -1216,37 +1271,97 @@ namespace MyDotnet.Controllers.Ns
             CDNInfoDto cDNInfoDto = new CDNInfoDto { CDNList = cdnList.Select(t => new NSCDN { key = t.code, name = t.name, type = t.content, value = t.content2 }).ToList(), defaultCDN = defaultCDN.content };
             return MessageModel<CDNInfoDto>.Success("获取成功", cDNInfoDto);
         }
-        private List<EntriesEntity> HandleSugarList(List<EntriesEntity> sugers, DateTime flagDate)
+        private List<EntriesEntity> HandleSugarList(List<EntriesEntity> sugers, SugarDTO sugarDTO)
         {
-            List<EntriesEntity> flagList = sugers.Where(t => t.date_now.Date == flagDate).ToList();
-            //flagList.Reverse();
-
-            var ls = new List<EntriesEntity>();
-            ls.Add(new EntriesEntity { date = (decimal)(flagDate.AddHours(0).AddHours(-8) - new DateTime(1970, 1, 1, 0, 0, 0, 0)).TotalMilliseconds, isMask = true });
-            ls.Add(new EntriesEntity { date = (decimal)(flagDate.AddHours(3).AddHours(-8) - new DateTime(1970, 1, 1, 0, 0, 0, 0)).TotalMilliseconds, isMask = true });
-            ls.Add(new EntriesEntity { date = (decimal)(flagDate.AddHours(6).AddHours(-8) - new DateTime(1970, 1, 1, 0, 0, 0, 0)).TotalMilliseconds, isMask = true });
-            ls.Add(new EntriesEntity { date = (decimal)(flagDate.AddHours(9).AddHours(-8) - new DateTime(1970, 1, 1, 0, 0, 0, 0)).TotalMilliseconds, isMask = true });
-            ls.Add(new EntriesEntity { date = (decimal)(flagDate.AddHours(12).AddHours(-8) - new DateTime(1970, 1, 1, 0, 0, 0, 0)).TotalMilliseconds, isMask = true });
-            ls.Add(new EntriesEntity { date = (decimal)(flagDate.AddHours(15).AddHours(-8) - new DateTime(1970, 1, 1, 0, 0, 0, 0)).TotalMilliseconds, isMask = true });
-            ls.Add(new EntriesEntity { date = (decimal)(flagDate.AddHours(18).AddHours(-8) - new DateTime(1970, 1, 1, 0, 0, 0, 0)).TotalMilliseconds, isMask = true });
-            ls.Add(new EntriesEntity { date = (decimal)(flagDate.AddHours(21).AddHours(-8) - new DateTime(1970, 1, 1, 0, 0, 0, 0)).TotalMilliseconds, isMask = true });
-            ls.Add(new EntriesEntity { date = (decimal)(flagDate.AddHours(23).AddMinutes(59).AddSeconds(59).AddHours(-8) - new DateTime(1970, 1, 1, 0, 0, 0, 0)).TotalMilliseconds, isMask = true });
-            foreach (var item in ls)
+            sugers = sugers.OrderBy(s => s.date_str).ToList();
+            //分组日期
+            var data = sugers.GroupBy(t => t.date_str.Date).ToList();
+            sugarDTO.groupDays = data.Select(t=> t.Key.ToString("yyyy-MM-dd")).ToList();
+            foreach (var day in data)
             {
-                FormatDate(item);
+
+                var dayAll = sugers.FindAll(t => t.date_str.Date == day.Key);
+                for (int i = 0; i < dayAll.Count; i++)
+                {
+                    if (i == 0)
+                    {
+                        var dat = (int)dayAll[i].date_str.DayOfWeek;
+                        switch (dat)
+                        {
+                            case 1:
+                                dayAll[i].showLabel = dayAll[i].date_str.ToString("周一 dd号");
+                                break;
+                            case 2:
+                                dayAll[i].showLabel = dayAll[i].date_str.ToString("周二 dd号");
+                                break;
+                            case 3:
+                                dayAll[i].showLabel = dayAll[i].date_str.ToString("周三 dd号");
+                                break;
+                            case 4:
+                                dayAll[i].showLabel = dayAll[i].date_str.ToString("周四 dd号");
+                                break;
+                            case 5:
+                                dayAll[i].showLabel = dayAll[i].date_str.ToString("周五 dd号");
+                                break;
+                            case 6:
+                                dayAll[i].showLabel = dayAll[i].date_str.ToString("周六 dd号");
+                                break;
+                            case 0:
+                                dayAll[i].showLabel = dayAll[i].date_str.ToString("周天 dd号");
+                                break;
+                        }
+                    }
+                    else
+                    {
+                        dayAll = dayAll.OrderByDescending(t => t.date_str).ToList();
+                        List<int> hours = new List<int>();
+                        foreach (var item in dayAll)
+                        {
+                            if (!string.IsNullOrEmpty(item.showLabel))
+                                continue;
+                            if (hours.Contains(item.date_str.Hour))
+                                continue;
+
+
+                            switch (item.date_str.Hour)
+                            {
+                                case 3:
+                                case 6:
+                                case 9:
+                                case 12:
+                                case 15:
+                                case 18:
+                                case 21:
+                                    hours.Add(item.date_str.Hour);
+                                    item.showLabel = item.date_str.ToString("HH:00");
+                                    break;
+
+                            }
+                        }
+                        break;
+                        //dayAll[i].showLabel = dayAll[i].date_str.ToString("HH-mm");
+                    }
+                }
+                //for (int i = 0; i <= 23; i++)
+                //{
+                //    var formTime = item.Key.AddHours(i);
+                //    var formEntry = new EntriesEntity();
+                //    formEntry.date_str = formTime;
+                //    formEntry.isMask = true;
+                //    sugers.Add(formEntry);
+                //}
             }
-            flagList.AddRange(ls);
-            return flagList.AsEnumerable().OrderBy(s => s.date_now).ToList();
+            return sugers.OrderBy(s => s.date_str).ToList();
         }
 
 
         private void FormatDate(EntriesEntity dd)
         {
             DateTimeOffset dateTimeOffset = DateTimeOffset.FromUnixTimeMilliseconds((long)dd.date);
-            DateTime dateTime = dateTimeOffset.UtcDateTime.AddHours(8);
-            dd.date_now = dateTime;
-            dd.date_str = dateTime.ToString("yyyy-MM-dd HH:mm:ss");
+            DateTime dateTime = dateTimeOffset.DateTime.AddMinutes(dd.utcOffset);
+            dd.date_str = dateTime;
             dd.date_time = dateTime.ToString("HH:mm:ss");
+            dd.date_day = dateTime.ToString("yyyy-MM-dd");
 
             dd.date_step = (int)(DateTime.Now - dateTime).TotalMinutes;
 
@@ -1294,11 +1409,13 @@ namespace MyDotnet.Controllers.Ns
 
     public class SugarDTO
     {
-        public List<EntriesEntity> day0 { get; set; }
+        public List<string> groupDays { get; set; }
 
-        public List<EntriesEntity> day1 { get; set; }
+        public List<EntriesEntity> day0 { get; set; } = new List<EntriesEntity>();
 
-        public List<EntriesEntity> day2 { get; set; }
+        public List<EntriesEntity> day1 { get; set; } = new List<EntriesEntity>();
+
+        public List<EntriesEntity> day2 { get; set; } = new List<EntriesEntity>();
 
         public EntriesEntity curBlood { get; set; }
 
@@ -1316,10 +1433,9 @@ namespace MyDotnet.Controllers.Ns
     public class EntriesEntity
     {
         public decimal date { get; set; }
-
-        public DateTime date_now { get; set; }
-        public string date_str { get; set; }
+        public DateTime date_str { get; set; }
         public string date_time { get; set; }
+        public string date_day { get; set; }
         public int? date_step { get; set; }
         public double? sgv { get; set; }
         public double? sgv_str { get; set; }
@@ -1329,6 +1445,13 @@ namespace MyDotnet.Controllers.Ns
         public string title { get; set; }
         public string saying { get; set; }
         public double percent { get; set; }
+        public double utcOffset { get; set; }
+        public string showLabel { get; set; }
+        public DateTime? probeStartTime { get; set; }
+        public int probeUseDays { get; set; }
+        public int probeUseHours { get; set; }
+        public int probeUseMinutes { get; set; }
+        public double nextRefreshTime { get; set; }
     }
     public class AccessTokenDto
     {

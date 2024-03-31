@@ -168,5 +168,9 @@ namespace MyDotnet.Domain.Entity.Ns
         /// 是否需要密码查看血糖
         /// </summary>
         public bool isNeedPassword { get; set; }
+        /// <summary>
+        /// 探头使用时间
+        /// </summary>
+        public DateTime? probeStartTime { get; set; }
     }
 }
