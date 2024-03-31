@@ -1165,7 +1165,7 @@ namespace MyDotnet.Controllers.Ns
             if (sugers.Count > 0)
             {
                 sugarDTO.curBlood = sugers[0];
-                if (sugarDTO.curBlood.date_step > 5 || sugarDTO.curBlood.date_step < 0)
+                if (sugarDTO.curBlood.date_step >= 5 || sugarDTO.curBlood.date_step < 0)
                 {
                     DateTime utcTime = DateTime.Now.AddMinutes(1).ToUniversalTime();
                     TimeSpan timeSpan = utcTime - new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Local);
@@ -1180,7 +1180,7 @@ namespace MyDotnet.Controllers.Ns
             }
             else
             {
-                sugarDTO.curBlood = new EntriesEntity { date_str = DateTime.Now };
+                sugarDTO.curBlood = new EntriesEntity { date_str = DateTime.Now, date_step = -1 };
 
                 DateTime utcTime = DateTime.Now.AddMinutes(1).ToUniversalTime();
                 TimeSpan timeSpan = utcTime - new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Local);
