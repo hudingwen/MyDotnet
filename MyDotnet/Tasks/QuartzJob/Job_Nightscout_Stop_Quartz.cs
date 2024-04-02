@@ -58,11 +58,18 @@ namespace MyDotnet.Tasks.QuartzJob
                     foreach (var nightscout in serverNights)
                     {
                         LogHelper.logApp.Info($"正在检索第{i}个,总计:{nights.Count}个");
-                        await _nightscoutServices.StopLongTimeNoUseNs(nightscout, server);
+                        var isStop =  await _nightscoutServices.StopLongTimeNoUseNs(nightscout, server);
+                        if (!isStop)
+                        {
+                            //没有停止的检测到过期的也停止掉
+                            if(DateTime.Now > nightscout.endTime)
+                            {
+                                await _nightscoutServices.StopDocker(nightscout, server);
+                            }
+                        }
                         i++;
                         Thread.Sleep(1000);
                     }
-                    
                 }
                 
             }

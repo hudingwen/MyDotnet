@@ -858,9 +858,10 @@ server {{
         /// <param name="nsserver"></param>
         /// <returns></returns>
 
-        public async Task StopLongTimeNoUseNs(Nightscout nightscout, NightscoutServer nsserver)
+        public async Task<bool> StopLongTimeNoUseNs(Nightscout nightscout, NightscoutServer nsserver)
         {
-
+            //是否已经停止
+            bool isStop = false;
             try
             {
                 var stopOfDate = await _dicService.GetDicDataOne(NsInfo.KEY, NsInfo.stopOutBlood);
@@ -889,6 +890,7 @@ server {{
                         LogHelper.logApp.Info($"停止实例id:{nightscout.Id},名称:{nightscout.name}");
                         await StopDocker(nightscout, nsserver);
                         await Dal.Db.Updateable<Nightscout>().SetColumns(t => t.isStop, true).Where(t => t.Id == nightscout.Id).ExecuteCommandAsync();
+                        isStop = true;
                     }
                 }
                 else
@@ -902,6 +904,7 @@ server {{
                         LogHelper.logApp.Info($"停止实例id:{nightscout.Id},名称:{nightscout.name}");
                         await StopDocker(nightscout, nsserver);
                         await Dal.Db.Updateable<Nightscout>().SetColumns(t => t.isStop, true).Where(t => t.Id == nightscout.Id).ExecuteCommandAsync();
+                        isStop = true;
                     }
                     await Dal.Db.Updateable<Nightscout>().SetColumns(t => t.lastUpdateTime, lastUpdateTime).Where(t => t.Id == nightscout.Id).ExecuteCommandAsync();
                 }
@@ -910,7 +913,7 @@ server {{
             {
                 LogHelper.logApp.Error($"{nightscout.name},id:{nightscout.Id},实例停止异常", ex);
             }
-            await Task.CompletedTask;
+            return isStop;
         }
 
         
