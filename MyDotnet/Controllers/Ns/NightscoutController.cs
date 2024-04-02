@@ -393,7 +393,7 @@ namespace MyDotnet.Controllers.Ns
             if (data.success)
             {
                 data.msg = "更新成功";
-                data.response = request?.Id.ObjToString();
+                data.response = request.Id.ObjToString();
             }
             bool isDiff = false;
 
@@ -478,7 +478,7 @@ namespace MyDotnet.Controllers.Ns
             if (data.success)
             {
                 data.msg = "删除成功";
-                data.response = model?.Id.ObjToString();
+                data.response = model.Id.ObjToString();
             }
             var nsserver = await _nightscoutServerServices.Dal.QueryById(model.serverId);
             await _nightscoutServices.StopDocker(model, nsserver);
@@ -534,7 +534,14 @@ namespace MyDotnet.Controllers.Ns
             if (data == null || data.IsDeleted) return MessageModel<string>.Fail("实例不存在");
             var nsserver = await _nightscoutServerServices.Dal.QueryById(data.serverId);
             await _nightscoutServices.Refresh(data, nsserver);
-            return MessageModel<string>.Success("刷新成功");
+            if(DateTime.Now > data.endTime)
+            {
+                return MessageModel<string>.Success("刷新成功,用户使用期限已到,请注意!");
+            }
+            else
+            {
+                return MessageModel<string>.Success("刷新成功");
+            }
         }
         /// <summary>
         /// nightscout微信绑定二维码
@@ -1289,25 +1296,25 @@ namespace MyDotnet.Controllers.Ns
                         switch (dat)
                         {
                             case 1:
-                                dayAll[i].showLabel = dayAll[i].date_str.ToString("周一 dd号");
+                                dayAll[i].showLabel = dayAll[i].date_str.ToString("周一 d号");
                                 break;
                             case 2:
-                                dayAll[i].showLabel = dayAll[i].date_str.ToString("周二 dd号");
+                                dayAll[i].showLabel = dayAll[i].date_str.ToString("周二 d号");
                                 break;
                             case 3:
-                                dayAll[i].showLabel = dayAll[i].date_str.ToString("周三 dd号");
+                                dayAll[i].showLabel = dayAll[i].date_str.ToString("周三 d号");
                                 break;
                             case 4:
-                                dayAll[i].showLabel = dayAll[i].date_str.ToString("周四 dd号");
+                                dayAll[i].showLabel = dayAll[i].date_str.ToString("周四 d号");
                                 break;
                             case 5:
-                                dayAll[i].showLabel = dayAll[i].date_str.ToString("周五 dd号");
+                                dayAll[i].showLabel = dayAll[i].date_str.ToString("周五 d号");
                                 break;
                             case 6:
-                                dayAll[i].showLabel = dayAll[i].date_str.ToString("周六 dd号");
+                                dayAll[i].showLabel = dayAll[i].date_str.ToString("周六 d号");
                                 break;
                             case 0:
-                                dayAll[i].showLabel = dayAll[i].date_str.ToString("周天 dd号");
+                                dayAll[i].showLabel = dayAll[i].date_str.ToString("周天 d号");
                                 break;
                         }
                     }
@@ -1409,7 +1416,7 @@ namespace MyDotnet.Controllers.Ns
 
     public class SugarDTO
     {
-        public List<string> groupDays { get; set; }
+        public List<string> groupDays { get; set; } = new List<string>();
 
         public List<EntriesEntity> day0 { get; set; } = new List<EntriesEntity>();
 
@@ -1417,7 +1424,7 @@ namespace MyDotnet.Controllers.Ns
 
         public List<EntriesEntity> day2 { get; set; } = new List<EntriesEntity>();
 
-        public EntriesEntity curBlood { get; set; }
+        public EntriesEntity curBlood { get; set; } 
 
     }
 

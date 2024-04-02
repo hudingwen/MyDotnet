@@ -84,7 +84,6 @@ namespace MyDotnet.Services.WeChat
         /// <summary>
         /// 获取菜单
         /// </summary>
-        /// <param name="id"></param>
         /// <returns></returns>
         public async Task<MessageModel<WeChatApiDto>> GetMenu(string publicAccount)
         {
@@ -142,7 +141,7 @@ namespace MyDotnet.Services.WeChat
         public async Task<string> Valid(WeChatValidDto validDto, string body)
         {
             
-            string objReturn = null;
+            string objReturn = string.Empty;
             try
             {
                 if (string.IsNullOrEmpty(validDto.publicAccount))
@@ -372,7 +371,7 @@ namespace MyDotnet.Services.WeChat
             }
             else
             {
-                return MessageModel<WeChatResponseUserInfo>.Fail($"卡片消息推送失败=>{reData?.usersData?.errmsg}", reData);
+                return MessageModel<WeChatResponseUserInfo>.Fail($"卡片消息推送失败=>{reData.usersData?.errmsg}", reData);
             }
         }
         /// <summary>
@@ -613,7 +612,6 @@ namespace MyDotnet.Services.WeChat
         /// <summary>
         /// 处理微信公众号事件
         /// </summary>
-        /// <param name="weChat"></param>
         /// <returns></returns>
         public async Task<string> HandleWeChat()
         {
@@ -644,7 +642,6 @@ namespace MyDotnet.Services.WeChat
         /// <summary>
         /// 处理文本
         /// </summary>
-        /// <param name="weChat"></param>
         /// <returns></returns>
         private async Task<string> HandText()
         {
@@ -656,7 +653,6 @@ namespace MyDotnet.Services.WeChat
         /// <summary>
         /// 处理关键词
         /// </summary>
-        /// <param name="weChat"></param>
         /// <param name="isEvent"></param>
         /// <returns></returns>
         private async Task<string> HandleKeyword(bool isEvent = false)
@@ -703,19 +699,34 @@ namespace MyDotnet.Services.WeChat
                                 foreach (var ns in nsList)
                                 {
                                     curNs = ns;
-                                    if (!ns.isStop) continue;
                                     //启动实例
-                                    var nsServer = await _nightscoutServerServices.Dal.QueryById(ns.serverId);
-                                    await _nightscoutServices.Refresh(ns, nsServer);
-                                    //推送消息
-                                    var toekn = await GetToken(weChat.publicAccount);
-                                    var sendWechat = new WeChatPushTestDto();
-                                    sendWechat.selectMsgType = "text";
-                                    sendWechat.selectOperate = "one";
-                                    sendWechat.selectUser = weChat.FromUserName;
-                                    sendWechat.textContent = new WeChatPushTextContentDto();
-                                    sendWechat.textContent.text = $"{ns.name},您好!您的Ns启动成功了!";
-                                    var sendWechatRes = await PushText(toekn.response.access_token, sendWechat);
+                                    if(DateTime.Now > ns.endTime)
+                                    {
+
+                                        //推送消息
+                                        var toekn = await GetToken(weChat.publicAccount);
+                                        var sendWechat = new WeChatPushTestDto();
+                                        sendWechat.selectMsgType = "text";
+                                        sendWechat.selectOperate = "one";
+                                        sendWechat.selectUser = weChat.FromUserName;
+                                        sendWechat.textContent = new WeChatPushTextContentDto();
+                                        sendWechat.textContent.text = $"{ns.name},您好!您的Ns已经到期,无法启动!";
+                                        var sendWechatRes = await PushText(toekn.response.access_token, sendWechat);
+                                    }
+                                    else
+                                    {
+                                        var nsServer = await _nightscoutServerServices.Dal.QueryById(ns.serverId);
+                                        await _nightscoutServices.Refresh(ns, nsServer);
+                                        //推送消息
+                                        var toekn = await GetToken(weChat.publicAccount);
+                                        var sendWechat = new WeChatPushTestDto();
+                                        sendWechat.selectMsgType = "text";
+                                        sendWechat.selectOperate = "one";
+                                        sendWechat.selectUser = weChat.FromUserName;
+                                        sendWechat.textContent = new WeChatPushTextContentDto();
+                                        sendWechat.textContent.text = $"{ns.name},您好!您的Ns启动成功了!";
+                                        var sendWechatRes = await PushText(toekn.response.access_token, sendWechat);
+                                    }
                                 }
                             }
                             else
@@ -832,11 +843,9 @@ namespace MyDotnet.Services.WeChat
                         </xml>";
             }
         }
-
         /// <summary>
         /// 处理图片
         /// </summary>
-        /// <param name="weChat"></param>
         /// <returns></returns>
         private async Task<string> HandImage()
         {
@@ -850,7 +859,6 @@ namespace MyDotnet.Services.WeChat
         /// <summary>
         /// 处理声音
         /// </summary>
-        /// <param name="weChat"></param>
         /// <returns></returns>
         private async Task<string> HandVoice()
         {
@@ -864,7 +872,6 @@ namespace MyDotnet.Services.WeChat
         /// <summary>
         /// 处理小视频
         /// </summary>
-        /// <param name="weChat"></param>
         /// <returns></returns>
         private async Task<string> HandShortvideo()
         {
@@ -878,7 +885,6 @@ namespace MyDotnet.Services.WeChat
         /// <summary>
         /// 处理地理位置
         /// </summary>
-        /// <param name="weChat"></param>
         /// <returns></returns>
         private async Task<string> HandLocation()
         {
@@ -892,7 +898,6 @@ namespace MyDotnet.Services.WeChat
         /// <summary>
         /// 处理链接消息
         /// </summary>
-        /// <param name="weChat"></param>
         /// <returns></returns>
         private async Task<string> HandLink()
         {
@@ -906,7 +911,6 @@ namespace MyDotnet.Services.WeChat
         /// <summary>
         /// 处理事件
         /// </summary>
-        /// <param name="weChat"></param>
         /// <returns></returns>
         private async Task<string> HandEvent()
         {
@@ -942,7 +946,6 @@ namespace MyDotnet.Services.WeChat
         /// <summary>
         /// 关注事件
         /// </summary>
-        /// <param name="weChat"></param>
         /// <returns></returns>
         private async Task<string> EventSubscribe()
         {
@@ -1018,7 +1021,6 @@ namespace MyDotnet.Services.WeChat
         /// <summary>
         /// 取消关注事件
         /// </summary>
-        /// <param name="weChat"></param>
         /// <returns></returns>
         private async Task<string> EventUnsubscribe()
         {
@@ -1038,7 +1040,6 @@ namespace MyDotnet.Services.WeChat
         /// <summary>
         /// 已关注扫码事件
         /// </summary>
-        /// <param name="weChat"></param>
         /// <returns></returns>
         private async Task<string> EventSCAN()
         {
@@ -1059,7 +1060,6 @@ namespace MyDotnet.Services.WeChat
         /// <summary>
         /// 扫码绑定
         /// </summary>
-        /// <param name="weChat"></param>
         /// <returns></returns>
 
         private async Task<string> QRBind()
@@ -1123,7 +1123,6 @@ namespace MyDotnet.Services.WeChat
         /// <summary>
         /// 上报位置地理事件
         /// </summary>
-        /// <param name="weChat"></param>
         /// <returns></returns>
         private async Task<string> EventLOCATION()
         {
@@ -1137,7 +1136,6 @@ namespace MyDotnet.Services.WeChat
         /// <summary>
         /// 点击菜单按钮事件
         /// </summary>
-        /// <param name="weChat"></param>
         /// <returns></returns>
         private async Task<string> EventCLICK()
         {
@@ -1146,7 +1144,6 @@ namespace MyDotnet.Services.WeChat
         /// <summary>
         /// 点击菜单网址事件
         /// </summary>
-        /// <param name="weChat"></param>
         /// <returns></returns>
         private async Task<string> EventVIEW()
         {

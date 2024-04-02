@@ -99,7 +99,6 @@ namespace MyDotnet.Domain.Dto.Ns
         public static readonly string stopOutBlood = "stopOutBlood";
         /// <summary>
         /// 微信公众号启动ns关键词
-
         /// </summary>
         public static readonly string weChatLaunchNsKey = "weChatLaunchNsKey";
         /// <summary>

@@ -23,7 +23,7 @@ namespace MyDotnet.Tasks.QuartzJob
         /// 执行指定任务
         /// </summary>
         /// <param name="context"></param>
-        /// <param name="action"></param>
+        /// <param name="func"></param>
         public async Task<string> ExecuteJob(IJobExecutionContext context, Func<Task> func)
         {
             //记录Job
