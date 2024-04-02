@@ -55,10 +55,8 @@ namespace MyDotnet.Tasks.QuartzJob
                 return;
             JobDataMap data = context.JobDetail.JobDataMap;
 
-            string pars = data.GetString("JobParam");
-            var nsConfig = JsonHelper.JsonToObj<NightscoutRemindConfig>(pars);
+            string serverId = data.GetString("JobParam");  
 
-            long serverId = nsConfig.serverId;
             var nsserver = await _nightscoutServerServices.Dal.QueryById(serverId);
             if (nsserver == null)
                 throw new Exception($"服务器:{serverId}未找到");
@@ -164,7 +162,8 @@ namespace MyDotnet.Tasks.QuartzJob
 
                     try
                     {
-                        var pushUsers = nsConfig.pushUserIDs.Split(",", StringSplitOptions.RemoveEmptyEntries);
+                        var preInnerUser = await _dicService.GetDicDataOne(NsInfo.KEY, NsInfo.preInnerUser);
+                        var pushUsers = preInnerUser.content.Split(",", StringSplitOptions.RemoveEmptyEntries);
                         if (pushUsers.Length > 0)
                         {
                             foreach (var userid in pushUsers)

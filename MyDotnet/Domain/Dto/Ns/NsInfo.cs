@@ -86,6 +86,10 @@ namespace MyDotnet.Domain.Dto.Ns
         /// </summary>
         public static readonly string preDays = "preDays";
         /// <summary>
+        /// ns到期提醒内部用户
+        /// </summary>
+        public static readonly string preInnerUser = "preInnerUser";
+        /// <summary>
         /// ns到期检测api查询地址
         /// </summary>
         public static readonly string preCheckUrl = "preCheckUrl";

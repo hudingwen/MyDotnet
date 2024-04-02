@@ -53,9 +53,7 @@ namespace MyDotnet.Tasks.QuartzJob
             if (jobid <= 0)
                 return;
 
-            JobDataMap data = context.JobDetail.JobDataMap;
-            string pars = data.GetString("JobParam");
-            var nsConfig = JsonHelper.JsonToObj<NightscoutRemindConfig>(pars);
+
 
             var nights = await _nightscoutServices.Dal.Query();
             var servers = await _nightscoutServerServices.Dal.Query();
@@ -166,7 +164,8 @@ namespace MyDotnet.Tasks.QuartzJob
                     }
                     try
                     {
-                        var pushUsers = nsConfig.pushUserIDs.Split(",", StringSplitOptions.RemoveEmptyEntries);
+                        var preInnerUser = await _dicService.GetDicDataOne(NsInfo.KEY, NsInfo.preInnerUser);
+                        var pushUsers = preInnerUser.content.Split(",", StringSplitOptions.RemoveEmptyEntries);
                         if (pushUsers.Length > 0)
                         {
                             foreach (var userid in pushUsers)

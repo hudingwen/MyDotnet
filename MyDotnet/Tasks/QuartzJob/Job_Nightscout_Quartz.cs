@@ -49,12 +49,11 @@ namespace MyDotnet.Tasks.QuartzJob
         {
             if (jobid > 0)
             {
-                JobDataMap data = context.JobDetail.JobDataMap;
-                string pars = data.GetString("JobParam");
-                var nsConfig = JsonHelper.JsonToObj<NightscoutRemindConfig>(pars);
+                //JobDataMap data = context.JobDetail.JobDataMap;
+                //string pars = data.GetString("JobParam");
 
 
-                var nights = await _nightscoutServices.Dal.Query(t => t.status.Equals("已付费"));
+                var nights = await _nightscoutServices.Dal.Query();
 
                 var nsInfo = await _dicService.GetDicData(NsInfo.KEY);
                 var frontPage = nsInfo.Find(t => t.code.Equals(NsInfo.frontPage)).content;
@@ -62,6 +61,12 @@ namespace MyDotnet.Tasks.QuartzJob
                 var pushWechatID = nsInfo.Find(t => t.code.Equals(NsInfo.pushWechatID)).content;
                 var pushCompanyCode = nsInfo.Find(t => t.code.Equals(NsInfo.pushCompanyCode)).content;
 
+                var preDayInfo = await _dicService.GetDicDataOne(NsInfo.KEY, NsInfo.preDays);
+                var preDay = preDayInfo.content.ObjToInt();
+
+                var preInnerUser = await _dicService.GetDicDataOne(NsInfo.KEY, NsInfo.preInnerUser);
+                
+                
 
                 List<string> ls = new List<string>();
                 foreach (var nightscout in nights)
@@ -69,7 +74,7 @@ namespace MyDotnet.Tasks.QuartzJob
                     try
                     {
                         WeChatCardMsgDataDto pushData = null;
-                        if (DateTime.Now.Date.AddDays(nsConfig.preDays) >= nightscout.endTime.AddDays(nsConfig.afterDays))
+                        if (DateTime.Now.Date.AddDays(preDay) >= nightscout.endTime)
                         {
                             ls.Add(nightscout.name);
                             pushData = new WeChatCardMsgDataDto();
@@ -88,8 +93,8 @@ namespace MyDotnet.Tasks.QuartzJob
 
                         if (pushData != null)
                         {
-                            pushData.cardMsg.keyword1 = $"NS服务即将到期,请尽快续费额,以免中断服务";
-                            pushData.cardMsg.keyword2 = $"{nightscout.endTime.ToString("yyyy-MM-dd HH:mm:ss")}";
+                            pushData.cardMsg.keyword1 = $"NS服务即将到期,请尽快续费,以免中断服务";
+                            pushData.cardMsg.keyword2 = $"{nightscout.endTime.ToString("yyyy-MM-dd")}";
                             pushData.cardMsg.remark = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
                             pushData.cardMsg.url = $"https://{nightscout.url}";
                             pushData.cardMsg.template_id = pushTemplateID_Alert;
@@ -109,7 +114,7 @@ namespace MyDotnet.Tasks.QuartzJob
                 {
                     try
                     {
-                        var pushUsers = nsConfig.pushUserIDs.Split(",", StringSplitOptions.RemoveEmptyEntries);
+                        var pushUsers = preInnerUser.content.Split(",", StringSplitOptions.RemoveEmptyEntries);
                         if (pushUsers.Length > 0)
                         {
                             
