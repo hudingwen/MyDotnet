@@ -735,12 +735,15 @@ EOF
             var checkUrl = await _dicService.GetDicDataOne(NsInfo.KEY, NsInfo.preCheckUrl);
 
             //自定义环境变量
+            //用户id
             args.Add($"-e uid={nightscout.Id}");
+            args.Add($"-e FRAME_NAME1={nightscout.Id}");
             args.Add($"-e CUSTOM_TITLE='{(cusInfo == null ? nsInfo.Find(t => NsInfo.CUSTOM_TITLE.Equals(t.code)).content : cusInfo.name)}'");
             args.Add($"-e name='{(cusInfo == null ? nsInfo.Find(t => NsInfo.CUSTOM_TITLE.Equals(t.code)).content : cusInfo.name)}'");
             args.Add($"-e logo='{(cusInfo == null ? "" : cusInfo.logo)}'");
+            //到期检测
             args.Add($"-e preCheckUrl='{checkUrl.content}'");
-
+            args.Add($"-e FRAME_URL1='{checkUrl.content}'");
             //基础率显示默认
             args.Add($"-e BASAL_RENDER='default'");
              
