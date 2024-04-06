@@ -21,25 +21,19 @@ namespace MyDotnet.Services.WeChat
         public BaseServices<WeChatSub> _weChatSubServices { get; set; }
         public BaseServices<WeChatKeyword> _weChatKeywordServices { get; set; }
         public IHttpContextAccessor _accessor { get; set; }
-        public NightscoutServices _nightscoutServices { get; set; }
         public DicService _dictService { get; set; }
-        public BaseServices<NightscoutServer> _nightscoutServerServices;
 
         public WeChatConfigServices(BaseRepository<WeChatConfig> baseRepository
             , BaseServices<WeChatSub> weChatSubServices
             , BaseServices<WeChatKeyword> weChatKeywordServices
             , IHttpContextAccessor accessor
-            , NightscoutServices nightscoutServices
             , DicService dictService
-            , BaseServices<NightscoutServer> nightscoutServerServices
             ) : base(baseRepository)
         {
             _weChatSubServices = weChatSubServices;
             _weChatKeywordServices = weChatKeywordServices;
             _accessor = accessor;
-            _nightscoutServices = nightscoutServices;
             _dictService = dictService;
-            _nightscoutServerServices = nightscoutServerServices;
         }
 
 
@@ -664,10 +658,7 @@ namespace MyDotnet.Services.WeChat
             //启动关键词捕获
             if (weChatLaunchNsKey.content.Equals(key))
             {
-                
 
-
-                 
                 //推送消息
                 var toekn = await GetToken(weChat.publicAccount);
                 var sendWechat = new WeChatPushTestDto();
@@ -676,7 +667,7 @@ namespace MyDotnet.Services.WeChat
                 sendWechat.selectUser = weChat.FromUserName;
                 sendWechat.textContent = new WeChatPushTextContentDto();
                 sendWechat.textContent.text = "您的实例正在启动请稍等";
-                var sendWechatRes = await PushText(toekn.response.access_token, sendWechat); 
+                var sendWechatRes = await PushText(toekn.response.access_token, sendWechat);
 
                 Task.Run(async () =>
                 {
@@ -691,16 +682,24 @@ namespace MyDotnet.Services.WeChat
                         {
                             //有哪些绑定的ns
                             var ls = await Dal.Db.Queryable<WeChatSub>().Where(t => t.SubFromPublicAccount == pushWechatID.content && t.CompanyID == pushCompanyCode.content && t.SubUserOpenID == weChat.FromUserName && t.IsUnBind == false).Select(t => t.SubJobID).ToListAsync();
+                            NightscoutServices _nightscoutServices;
+                            BaseServices<NightscoutServer> _nightscoutServerServices;
+                            using (var serviceScope = AppHelper.appService.CreateScope())
+                            {
+                                var services = serviceScope.ServiceProvider;
+                                _nightscoutServices = services.GetRequiredService<NightscoutServices>();
+                                _nightscoutServerServices = services.GetRequiredService<BaseServices<NightscoutServer>>();
+                            }
                             //查找ns实例
                             var nsList = await _nightscoutServices.Dal.QueryByIDs(ls.ToArray());
                             nsList = nsList.Where(t => t.isStop == true).ToList();
-                            if (ls.Count > 0 && nsList.Count>0)
+                            if (ls.Count > 0 && nsList.Count > 0)
                             {
                                 foreach (var ns in nsList)
                                 {
                                     curNs = ns;
                                     //启动实例
-                                    if(DateTime.Now > ns.endTime)
+                                    if (DateTime.Now > ns.endTime)
                                     {
 
                                         //推送消息
@@ -745,7 +744,7 @@ namespace MyDotnet.Services.WeChat
                     }
                     catch (Exception ex)
                     {
-                        if(curNs != null)
+                        if (curNs != null)
                         {
                             LogHelper.logApp.Error($"{curNs.name}的启动恢复异常,id:{curNs.Id}", ex);
                         }

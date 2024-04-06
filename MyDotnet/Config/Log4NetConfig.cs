@@ -11,7 +11,7 @@ namespace MyDotnet.Config
         /// <summary>
         /// 注册日志
         /// </summary>
-        /// <param name="host"></param>
+        /// <param name="builder"></param>
         public static void SetLog4Net(this WebApplicationBuilder builder)
         {
             builder.Host.ConfigureLogging((context, loggingbuilder) =>

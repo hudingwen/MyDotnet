@@ -6,12 +6,14 @@ using MyDotnet.Controllers.Ns;
 using MyDotnet.Domain.Dto.ExceptionDomain;
 using MyDotnet.Domain.Dto.Ns;
 using MyDotnet.Domain.Dto.System;
+using MyDotnet.Domain.Dto.WeChat;
 using MyDotnet.Domain.Entity.Ns;
 using MyDotnet.Domain.Entity.System;
 using MyDotnet.Helper;
 using MyDotnet.Repository;
 using MyDotnet.Services;
 using MyDotnet.Services.System;
+using MyDotnet.Services.WeChat;
 using Renci.SshNet;
 using System;
 using System.Text;
@@ -28,18 +30,22 @@ namespace MyDotnet.Services.Ns
         public BaseServices<NightscoutServer> _nightscoutServerServices { get; set; }
         public BaseServices<NightscoutCustomer> _nightscoutCustomerServices { get; set; }
         public DicService _dicService {  get; set; }
+        public WeChatConfigServices _weChatConfigServices { get; set; }
 
         public NightscoutServices(BaseRepository<Nightscout> baseRepository
             , BaseServices<NightscoutLog> nightscoutLogServices
             , BaseServices<NightscoutServer> nightscoutServerServices
             , BaseServices<NightscoutCustomer> nightscoutCustomerServices
             , DicService dicService
+            , WeChatConfigServices weChatConfigServices
+
             ) : base(baseRepository)
         {
             _nightscoutLogServices = nightscoutLogServices;
             _nightscoutServerServices = nightscoutServerServices;
             _nightscoutCustomerServices = nightscoutCustomerServices;
             _dicService = dicService;
+            _weChatConfigServices = weChatConfigServices;
         }
 
         /// <summary>
@@ -411,20 +417,7 @@ namespace MyDotnet.Services.Ns
                                 sshMasterClient.Connect();
                                 using (var cmdMaster = sshMasterClient.CreateCommand(""))
                                 {
-                                    
-                                    var resMaster = "";
-                                    var nsNginxCatalog = await _dicService.GetDicDataOne(NsInfo.KEY, NsInfo.nsNginxCatalog);
-                                    var excNginx = $"rm {nsNginxCatalog.content}/{nightscout.Id}.conf -f";
-                                    resMaster += cmdMaster.Execute(excNginx);
-
-                                    resMaster +=  cmdMaster.Execute("docker exec -t nginxserver nginx -s reload");
-                                    NsInfo.ngCount = NsInfo.ngCount + 1;
-                                    if (NsInfo.ngCount >= 10)
-                                    {
-                                        NsInfo.ngCount = 0;
-                                        resMaster += cmdMaster.Execute("docker exec -t nginxserver nginx -s stop");
-                                    }
-                                    sb.AppendLine($"刷新域名:{resMaster}");
+                                    await StopNginxNs(nightscout, sb, cmdMaster);
                                 }
                                 sshMasterClient.Disconnect();
                             }
@@ -468,6 +461,23 @@ namespace MyDotnet.Services.Ns
             }
 
 
+        }
+
+        public async Task StopNginxNs(Nightscout nightscout, StringBuilder sb, SshCommand cmdMaster)
+        {
+            var resMaster = "";
+            var nsNginxCatalog = await _dicService.GetDicDataOne(NsInfo.KEY, NsInfo.nsNginxCatalog);
+            var excNginx = $"rm {nsNginxCatalog.content}/{nightscout.Id}.conf -f";
+            resMaster += cmdMaster.Execute(excNginx);
+
+            resMaster += cmdMaster.Execute("docker exec -t nginxserver nginx -s reload");
+            NsInfo.ngCount = NsInfo.ngCount + 1;
+            if (NsInfo.ngCount >= 10)
+            {
+                NsInfo.ngCount = 0;
+                resMaster += cmdMaster.Execute("docker exec -t nginxserver nginx -s stop");
+            }
+            sb.AppendLine($"刷新域名:{resMaster}");
         }
 
         public async Task DeleteData(Nightscout nightscout, NightscoutServer nsserver)
@@ -582,27 +592,7 @@ namespace MyDotnet.Services.Ns
                                     sshMasterClient.Connect();
                                     using (var cmdMaster = sshMasterClient.CreateCommand(""))
                                     {
-                                        var resMaster = "";
-
-                                        //FileHelper.WriteFile($"/etc/nginx/conf.d/nightscout/{nightscout.Id}.conf", webConfig);
-
-
-                                        var nsNginxCatalog = await _dicService.GetDicDataOne(NsInfo.KEY, NsInfo.nsNginxCatalog);
-                                        var excNginx = $@"
-cat > {nsNginxCatalog.content}/{nightscout.Id}.conf << 'EOF'
-{webConfig}
-EOF
-
-";
-                                        resMaster += cmdMaster.Execute(excNginx);
-                                        resMaster += cmdMaster.Execute("docker exec -t nginxserver nginx -s reload");
-                                        NsInfo.ngCount = NsInfo.ngCount + 1;
-                                        if (NsInfo.ngCount >= 10)
-                                        {
-                                            NsInfo.ngCount = 0;
-                                            resMaster += cmdMaster.Execute("docker exec -t nginxserver nginx -s stop");
-                                        }
-                                        sb.AppendLine($"刷新域名:{resMaster}");
+                                        await StartNginxNs(nightscout, sb, webConfig, cmdMaster);
                                     }
                                     sshMasterClient.Disconnect();
                                 }
@@ -644,6 +634,175 @@ EOF
                 throw;
             }
         }
+
+        public async Task StartNginxNs(Nightscout nightscout, StringBuilder sb, string webConfig, SshCommand cmdMaster)
+        {
+            var resMaster = "";
+
+            //FileHelper.WriteFile($"/etc/nginx/conf.d/nightscout/{nightscout.Id}.conf", webConfig);
+
+
+            var nsNginxCatalog = await _dicService.GetDicDataOne(NsInfo.KEY, NsInfo.nsNginxCatalog);
+            var excNginx = $@"
+cat > {nsNginxCatalog.content}/{nightscout.Id}.conf << 'EOF'
+{webConfig}
+EOF
+
+";
+            resMaster += cmdMaster.Execute(excNginx);
+            resMaster += cmdMaster.Execute("docker exec -t nginxserver nginx -s reload");
+            NsInfo.ngCount = NsInfo.ngCount + 1;
+            if (NsInfo.ngCount >= 10)
+            {
+                NsInfo.ngCount = 0;
+                resMaster += cmdMaster.Execute("docker exec -t nginxserver nginx -s stop");
+            }
+            sb.AppendLine($"刷新域名:{resMaster}");
+        }
+
+
+        /// <summary>
+        /// 重启某个服务器所有实例
+        /// </summary>
+        /// <param name="serverId"></param>
+        /// <returns></returns>
+        /// <exception cref="Exception"></exception>
+        public async Task RestartServer(string serverId)
+        {
+            var nsserver = await _nightscoutServerServices.Dal.QueryById(serverId);
+            if (nsserver == null)
+                throw new Exception($"ns服务器:{serverId}未找到");
+            var nights = await Dal.Query(t => t.serverId == nsserver.Id && t.isStop == false);
+
+            var nsInfo = await _dicService.GetDicData(NsInfo.KEY);
+            var frontPage = nsInfo.Find(t => t.code.Equals(NsInfo.frontPage)).content;
+            var pushTemplateID_Alert = nsInfo.Find(t => t.code.Equals(NsInfo.pushTemplateID_Alert)).content;
+            var pushWechatID = nsInfo.Find(t => t.code.Equals(NsInfo.pushWechatID)).content;
+            var pushCompanyCode = nsInfo.Find(t => t.code.Equals(NsInfo.pushCompanyCode)).content;
+
+            //刷新nginx
+            var master = await _nightscoutServerServices.Dal.QueryById(nsserver.nginxServerId);
+            if (master == null)
+            {
+                throw new Exception($"nginx服务器:{nsserver.nginxServerId}未找到");
+            }
+            using (var sshMasterClient = new SshClient(master.serverIp, master.serverPort, master.serverLoginName, master.serverLoginPassword))
+            {
+                //创建SSH
+                sshMasterClient.Connect();
+                using (var cmdMaster = sshMasterClient.CreateCommand(""))
+                {
+
+                    List<string> errCount = new List<string>();
+                    //单个服务器重启任务
+                    try
+                    {
+                        using (var sshClient = new SshClient(nsserver.serverIp, nsserver.serverPort, nsserver.serverLoginName, nsserver.serverLoginPassword))
+                        {
+                            //创建SSH
+                            sshClient.Connect();
+                            using (var cmd = sshClient.CreateCommand(""))
+                            {
+                                StringBuilder sb = new StringBuilder();
+                                foreach (var nightscout in nights)
+                                {
+                                    NightscoutLog log = new NightscoutLog();
+                                    try
+                                    {
+                                        //停止实例
+                                        var res = cmd.Execute($"docker stop {nightscout.serviceName}");
+                                        sb.AppendLine($"停止实例:{res}");
+                                        //删除实例
+                                        res = cmd.Execute($"docker rm {nightscout.serviceName}");
+                                        sb.AppendLine($"删除实例:{res}");
+                                        //停止访问
+                                        await StopNginxNs(nightscout, sb, cmdMaster);
+                                        //获取docker指令
+                                        string cmdStr = await GetNsDockerConfig(nightscout, nsserver);
+                                        res = cmd.Execute(cmdStr);
+                                        sb.AppendLine($"启动实例:{res}");
+                                        //获取nginx指令
+                                        string webConfig = GetNsWebConfig(nightscout, nsserver);
+                                        await StartNginxNs(nightscout, sb, webConfig, cmdMaster);
+
+                                        log.success = true;
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        log.success = false;
+                                        errCount.Add(nightscout.name);
+                                        LogHelper.logSys.Error($"{nightscout.name}-重启实例失败:{ex.Message}", ex);
+                                        sb.AppendLine($"实例异常:{ex.Message}");
+                                    }
+                                    finally
+                                    {
+                                        log.content = sb.ToString();
+                                        sb.Clear();
+                                        log.pid = nightscout.Id;
+                                        try
+                                        {
+                                            await _nightscoutLogServices.Dal.Add(log);
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            LogHelper.logSys.Error("ns日志记录失败", ex);
+                                            LogHelper.logSys.Error($"ns日志记录失败:{log.content}-{log.pid}");
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        LogHelper.logSys.Error($"ns服务器:{nsserver.serverName}重启出现异常", ex);
+                        errCount.Add($"{nsserver.serverName}");
+                    }
+
+                    try
+                    {
+                        var preInnerUser = await _dicService.GetDicDataOne(NsInfo.KEY, NsInfo.preInnerUser);
+                        var pushUsers = preInnerUser.content.Split(",", StringSplitOptions.RemoveEmptyEntries);
+                        if (pushUsers.Length > 0)
+                        {
+                            foreach (var userid in pushUsers)
+                            {
+                                var pushData = new WeChatCardMsgDataDto();
+                                pushData.cardMsg = new WeChatCardMsgDetailDto();
+                                if (errCount.Count > 0)
+                                {
+                                    pushData.cardMsg.keyword1 = $"ns服务重启失败({nsserver.serverName}):{errCount.Count}个";
+
+                                    LogHelper.logApp.InfoFormat($"ns失败({nsserver.serverName}):{errCount.Count}个");
+                                    LogHelper.logApp.InfoFormat($"失败名单:{string.Join(",", errCount)}");
+                                }
+                                else
+                                {
+                                    pushData.cardMsg.keyword1 = $"单个ns重启任务完成:{nsserver.serverName}";
+                                }
+                                pushData.cardMsg.keyword2 = string.Join(",", errCount);
+                                pushData.cardMsg.remark = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+                                pushData.cardMsg.url = frontPage;
+                                pushData.cardMsg.template_id = pushTemplateID_Alert;
+                                pushData.info = new WeChatUserInfo();
+                                pushData.info.id = pushWechatID;
+                                pushData.info.companyCode = pushCompanyCode;
+                                pushData.info.userID = userid;
+                                await _weChatConfigServices.PushCardMsg(pushData);
+                            }
+                            LogHelper.logApp.InfoFormat($"ns失败({nsserver.serverName}):{errCount.Count}个");
+                            LogHelper.logApp.InfoFormat($"失败名单:{string.Join(",", errCount)}");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        LogHelper.logSys.Error($"推送失败,{ex.Message}", ex);
+                    }
+                }
+                sshMasterClient.Disconnect();
+            }
+        }
+
         /// <summary>
         /// 获取ns容器配置
         /// </summary>

@@ -415,9 +415,8 @@ namespace MyDotnet.Controllers.System
         /// <summary>
         /// 删除用户
         /// </summary>
-        /// <param name="id"></param>
+        /// <param name="ids"></param>
         /// <returns></returns>
-        // DELETE: api/ApiWithActions/5
         [HttpPost]
         [Authorize(Permissions.Name)]
         public async Task<MessageModel<string>> Deletes([FromBody] object[] ids)

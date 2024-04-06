@@ -134,9 +134,6 @@ namespace MyDotnet.Controllers.System
         /// <summary>
         /// 查询树形 Table
         /// </summary>
-        /// <param name="f">父节点</param>
-        /// <param name="key">关键字</param>
-        /// <returns></returns>
         [HttpGet]
         [AllowAnonymous]
         public async Task<MessageModel<List<Permission>>> GetTreeTable()
