@@ -1159,7 +1159,7 @@ namespace MyDotnet.Controllers.Ns
             var projection = Builders<BsonDocument>.Projection.Include("date").Include("sgv").Include("direction").Include("utcOffset").Exclude("_id");
 
 
-            var ls = await collection.Find(filter).Sort(Builders<BsonDocument>.Sort.Descending("_id")).Limit(900).Project(projection).ToListAsync();
+            var ls = await collection.Find(filter).Sort(Builders<BsonDocument>.Sort.Descending("date")).Limit(900).Project(projection).ToListAsync();
 
 
             var sugers = JsonHelper.JsonToObj<List<EntriesEntity>>(ls.ToJson());
