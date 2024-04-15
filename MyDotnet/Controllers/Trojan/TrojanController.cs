@@ -217,12 +217,10 @@ namespace MyDotnet.Controllers.Trojan
 
             var res = new TrojanServerSpliceDto();
             var trojanKeys = await _dicService.GetDicData(TrojanInfo.KEY);
-            //res.normalApi =  TrojanInfo.normalApi;
-            //res.clashApi = TrojanInfo.clashApi;
-            //res.clashApiBackup = TrojanInfo.clashApiBackup;
+
             res.normalApi = trojanKeys.Find(t => t.code == TrojanInfo.KEY_normalApi).content;
             res.clashApi = trojanKeys.Find(t => t.code == TrojanInfo.KEY_clashApi).content;
-            res.clashApiBackup = trojanKeys.Find(t => t.code == TrojanInfo.KEY_clashApiBackup).content;
+            res.clashApi2 = trojanKeys.Find(t => t.code == TrojanInfo.KEY_clashApi_v2).content;
 
             foreach (var item in data)
             {

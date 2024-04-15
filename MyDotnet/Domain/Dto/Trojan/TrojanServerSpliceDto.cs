@@ -20,9 +20,9 @@ namespace MyDotnet.Domain.Dto.Trojan
         /// </summary>
         public string clashApi { get; set; }
         /// <summary>
-        /// 备用clash订阅连接
+        /// clash订阅连接v2版本
         /// </summary>
-        public string clashApiBackup { get; set; }
+        public string clashApi2 { get; set; }
         public List<TrojanServerDto> list { get; set; } = new List<TrojanServerDto>();
     }
 }
