@@ -252,7 +252,7 @@ namespace MyDotnet.Services.WeChat
         {
             
             var ip = _accessor.HttpContext?.Connection?.RemoteIpAddress?.ToString();
-            var bindUser = await Dal.Db.Queryable<WeChatSub>().Where(t => t.SubFromPublicAccount == msg.info.id && t.CompanyID == msg.info.companyCode && t.IsUnBind == false && t.SubJobID == msg.info.userID).SingleAsync();
+            var bindUser = await Dal.Db.Queryable<WeChatSub>().Where(t => t.SubFromPublicAccount == msg.info.id && t.CompanyID == msg.info.companyCode && t.SubJobID == msg.info.userID && t.IsUnBind == false).SingleAsync();
             if (bindUser == null)
                 return MessageModel<WeChatResponseUserInfo>.Fail($"用户不存在或者已经解绑,公众号:{msg.info.id} 公司:{msg.info.companyCode} 员工号:{msg.info.userID}");
             var res = await GetToken(msg.info.id);
@@ -389,7 +389,7 @@ namespace MyDotnet.Services.WeChat
                 if (msg.selectOperate.Equals("one"))
                 {
                     //发送单个 
-                    var usrs = Dal.Db.Queryable<WeChatSub>().Where(t => t.SubFromPublicAccount.Equals(msg.selectWeChat) && t.CompanyID.Equals(msg.selectCompany) && t.SubJobID.Equals(msg.selectUser)).ToList();
+                    var usrs = Dal.Db.Queryable<WeChatSub>().Where(t => t.SubFromPublicAccount.Equals(msg.selectWeChat) && t.CompanyID.Equals(msg.selectCompany) && t.SubJobID.Equals(msg.selectUser) && t.IsUnBind == false).ToList();
                     foreach (var item in usrs)
                     {
                         msg.selectUser = item.SubUserOpenID;
@@ -404,7 +404,7 @@ namespace MyDotnet.Services.WeChat
                 else
                 {
                     //发送所有
-                    var usrs = Dal.Db.Queryable<WeChatSub>().Where(t => t.SubFromPublicAccount.Equals(msg.selectWeChat) && t.CompanyID.Equals(msg.selectCompany)).ToList();
+                    var usrs = Dal.Db.Queryable<WeChatSub>().Where(t => t.SubFromPublicAccount.Equals(msg.selectWeChat) && t.CompanyID.Equals(msg.selectCompany) && t.IsUnBind == false).ToList();
                     foreach (var item in usrs)
                     {
                         msg.selectUser = item.SubUserOpenID;
@@ -1085,7 +1085,7 @@ namespace MyDotnet.Services.WeChat
             {
                 isNewBind = false;
                 //订阅过的就更新
-                if (bindUser.SubUserOpenID != weChat.FromUserName)
+                if (!bindUser.SubUserOpenID.Equals(weChat.FromUserName))
                 {
                     //记录上一次的订阅此工号的微信号
                     bindUser.LastSubUserOpenID = bindUser.SubUserOpenID;

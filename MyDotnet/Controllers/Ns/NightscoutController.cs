@@ -18,6 +18,7 @@ using MyDotnet.Services.System;
 using MyDotnet.Services.WeChat;
 using SqlSugar;
 using System.Diagnostics;
+using System.Globalization;
 using System.Linq.Expressions;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -1008,34 +1009,33 @@ namespace MyDotnet.Controllers.Ns
             var miniAppid = miniPro.Find(t => t.code.Equals(NSminiProgram.appid)).content;
 
             var nsInfo = await _weChatConfigServices.Dal.Db.Queryable<WeChatSub>().Where(t => t.SubFromPublicAccount == miniAppid && t.CompanyID == pushCompanyCode && t.SubUserOpenID == openid).FirstAsync();
-            //.Select(t => t.SubJobID)
-            // && t.IsUnBind == false
-            //if (!string.IsNullOrEmpty(nsid))
-            if (nsInfo != null && nsInfo.IsUnBind == false)
-            {
-                var tempInfo = await _weChatConfigServices.Dal.Db.Queryable<WeChatQR>().Where(t => t.QRpublicAccount == miniAppid && t.QRticket == ticket && t.QRisUsed == false).FirstAsync();
-                if (tempInfo != null)
-                {
-                    tempInfo.QRisUsed = true;
-                    tempInfo.QRuseTime = DateTime.Now;
-                    tempInfo.QRuseOpenid = openid;
-                    await _weChatConfigServices.Dal.Db.Updateable<WeChatQR>(tempInfo).UpdateColumns(t => new { t.QRisUsed, t.QRuseOpenid, t.QRuseTime }).ExecuteCommandAsync();
-                }
+            if(nsInfo != null && nsInfo.IsUnBind == false) return MessageModel<string>.Success("您已绑定,无需重复绑定!");
 
-                return MessageModel<string>.Success("已绑定");
-            }
-
-
-            var ticketInfo = await _weChatConfigServices.Dal.Db.Queryable<WeChatQR>().Where(t => t.QRpublicAccount == miniAppid && t.QRticket == ticket && t.QRisUsed == false).FirstAsync();
+            var ticketInfo = await _weChatConfigServices.Dal.Db.Queryable<WeChatQR>().Where(t => t.QRpublicAccount == miniAppid && t.QRticket == ticket).FirstAsync();
             if (ticketInfo == null)
-                return MessageModel<string>.Fail($"无效的绑定信息,请勿重复使用");
+                return MessageModel<string>.Fail($"无效的绑定信息");
+            if (ticketInfo.QRisUsed)
+                return MessageModel<string>.Fail($"绑定码已使用,请勿重复使用!");
+
+
+
+            
             var bindInfo = await _weChatConfigServices.Dal.Db.Queryable<WeChatSub>().Where(t => t.SubFromPublicAccount == miniAppid && t.CompanyID == pushCompanyCode && t.SubJobID == ticketInfo.QRbindJobID).FirstAsync();
 
-            _unitOfWorkManage.BeginTran();
+           
             try
             {
+                _unitOfWorkManage.BeginTran();
+
+                ticketInfo.QRisUsed = true;
+                ticketInfo.QRuseTime = DateTime.Now;
+                ticketInfo.QRuseOpenid = openid;
+                await _weChatConfigServices.Dal.Db.Updateable<WeChatQR>(ticketInfo).UpdateColumns(t => new { t.QRisUsed, t.QRuseOpenid, t.QRuseTime }).ExecuteCommandAsync();
+
+
                 if (bindInfo == null)
                 {
+                    //新增绑定信息
                     bindInfo = new WeChatSub
                     {
                         SubFromPublicAccount = miniAppid,
@@ -1049,17 +1049,13 @@ namespace MyDotnet.Controllers.Ns
                 }
                 else
                 {
-
+                    //更新绑定信息
                     bindInfo.LastSubUserOpenID = bindInfo.SubUserOpenID;
                     bindInfo.SubUserOpenID = openid;
                     bindInfo.SubUserRefTime = DateTime.Now;
                     bindInfo.IsUnBind = false;
                     await _weChatConfigServices.Dal.Db.Updateable<WeChatSub>(bindInfo).UpdateColumns(t => new { t.LastSubUserOpenID, t.SubUserOpenID, t.SubUserRefTime, t.IsUnBind }).ExecuteCommandAsync();
                 }
-                ticketInfo.QRisUsed = true;
-                ticketInfo.QRuseOpenid = openid;
-                ticketInfo.QRuseTime = DateTime.Now;
-                await _weChatConfigServices.Dal.Db.Updateable<WeChatQR>(ticketInfo).UpdateColumns(t => new { t.QRisUsed, t.QRuseOpenid, t.QRuseTime }).ExecuteCommandAsync();
                 _unitOfWorkManage.CommitTran();
             }
             catch (Exception)
@@ -1284,10 +1280,27 @@ namespace MyDotnet.Controllers.Ns
             //分组日期
             var data = sugers.GroupBy(t => t.date_str.Date).ToList();
             sugarDTO.groupDays = data.Select(t=> t.Key.ToString("yyyy-MM-dd")).ToList();
+            int idx = 1;
             foreach (var day in data)
             {
-
+                
                 var dayAll = sugers.FindAll(t => t.date_str.Date == day.Key);
+                var dayAllPercent = dayAll.FindAll(t => t.sgv_str >= 3.9 && t.sgv_str <= 10);
+                if(dayAll.Count == 0)
+                {
+                    sugarDTO.groupDaysPercent.Add("0%");
+                }
+                else
+                {
+                    if (data.Count>3 && idx == 1)
+                    {
+                        sugarDTO.groupDaysPercent.Add("数据不足");
+                    }
+                    else
+                    {
+                        sugarDTO.groupDaysPercent.Add(((int)((1.0 * dayAllPercent.Count / dayAll.Count) * 100)).ToString() + "%");
+                    }
+                }
                 for (int i = 0; i < dayAll.Count; i++)
                 {
                     if (i == 0)
@@ -1346,17 +1359,9 @@ namespace MyDotnet.Controllers.Ns
                             }
                         }
                         break;
-                        //dayAll[i].showLabel = dayAll[i].date_str.ToString("HH-mm");
                     }
                 }
-                //for (int i = 0; i <= 23; i++)
-                //{
-                //    var formTime = item.Key.AddHours(i);
-                //    var formEntry = new EntriesEntity();
-                //    formEntry.date_str = formTime;
-                //    formEntry.isMask = true;
-                //    sugers.Add(formEntry);
-                //}
+                idx++;
             }
             return sugers.OrderBy(s => s.date_str).ToList();
         }
@@ -1417,6 +1422,7 @@ namespace MyDotnet.Controllers.Ns
     public class SugarDTO
     {
         public List<string> groupDays { get; set; } = new List<string>();
+        public List<string> groupDaysPercent { get; set; } = new List<string>();
 
         public List<EntriesEntity> day0 { get; set; } = new List<EntriesEntity>();
 
