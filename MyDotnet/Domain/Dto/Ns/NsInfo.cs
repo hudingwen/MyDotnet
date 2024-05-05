@@ -113,8 +113,16 @@ namespace MyDotnet.Domain.Dto.Ns
         /// ns的代理访问配置存放目录
         /// </summary>
         public static readonly string nsNginxCatalog = "nsNginxCatalog";
+        /// <summary>
+        /// cdn检测错误次数提醒
+        /// </summary>
+        public static readonly string cdnErrorCount = "cdnErrorCount";
+        /// <summary>
+        /// cdn间隔时间
+        /// </summary>
+        public static readonly string cdnErrorSleep = "cdnErrorSleep";
 
-        
+
 
 
 
