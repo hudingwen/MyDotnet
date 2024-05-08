@@ -73,7 +73,9 @@ namespace MyDotnet.Tasks.QuartzJob
                 
 
                 List<string> daoqi = new List<string>();
+                int daoqiCount = 0;
                 List<string> tixing = new List<string>();
+                int tixingCount = 0;
                 foreach (var nightscout in nights)
                 {
                     try
@@ -83,18 +85,17 @@ namespace MyDotnet.Tasks.QuartzJob
                         
                         if (DateTime.Now.Date >= nightscout.endTime)
                         {
-                            daoqi.Add(nightscout.name);
                             pushData = new WeChatCardMsgDataDto();
                             pushData.cardMsg = new WeChatCardMsgDetailDto();
                             pushData.cardMsg.first = $"{nightscout.name},你的ns服务已到期";
-
-                        }else if (DateTime.Now.Date.AddDays(preDay) >= nightscout.endTime)
+                            daoqiCount += 1;
+                        }
+                        else if (DateTime.Now.Date.AddDays(preDay) >= nightscout.endTime)
                         {
-                            tixing.Add(nightscout.name);
                             pushData = new WeChatCardMsgDataDto();
                             pushData.cardMsg = new WeChatCardMsgDetailDto();
                             pushData.cardMsg.first = $"{nightscout.name},你的ns服务即将到期";
-
+                            tixingCount += 1;
                         }
 
                         if (pushData != null)
@@ -102,32 +103,42 @@ namespace MyDotnet.Tasks.QuartzJob
                             var lessDays = Math.Ceiling((nightscout.endTime - DateTime.Now.Date).TotalDays);
                             if (lessDays <= 0)
                             {
+                               
 
-                                var afterDayConfig = await _dicService.GetDicDataOne(NsInfo.KEY, NsInfo.afterDays);
-                                var afterDay = afterDayConfig.content.ObjToInt() + lessDays;
-
-                                var nsserver = await _nightscoutServerServices.Dal.QueryById(nightscout.serverId);
-                                if (afterDay < 0)
+                                if (!nightscout.isStop)
                                 {
-                                    //删除
-                                    pushData.cardMsg.keyword1 = $"NS已经到期,服务已删除,请联系重新购买部署";
+                                    var nsserver = await _nightscoutServerServices.Dal.QueryById(nightscout.serverId);
                                     await _nightscoutServices.StopDocker(nightscout, nsserver);
-                                    await _nightscoutServices.DeleteData(nightscout, nsserver);
-                                    await _nightscoutServices.Dal.DeleteById(nightscout.serverId);
+                                    await _nightscoutServices.Dal.Db.Updateable<Nightscout>().SetColumns(t => t.isStop, true).Where(t => t.Id == nightscout.Id).ExecuteCommandAsync();
                                 }
-                                else
-                                {
-                                    //停止
-                                    pushData.cardMsg.keyword1 = $"NS已经到期,请及时续费({afterDay}天后删除服务)";
-                                    if (!nightscout.isStop)
-                                    {
-                                        await _nightscoutServices.StopDocker(nightscout, nsserver);
-                                        await _nightscoutServices.Dal.Db.Updateable<Nightscout>().SetColumns(t => t.isStop, true).Where(t => t.Id == nightscout.Id).ExecuteCommandAsync();
-                                    }
-                                }
+                                daoqi.Insert(0, nightscout.name);
+                                //到期后就不提醒了
+                                continue;
+
+                                //var afterDayConfig = await _dicService.GetDicDataOne(NsInfo.KEY, NsInfo.afterDays);
+                                //var afterDay = afterDayConfig.content.ObjToInt() + lessDays;
+                                //if (afterDay < 0)
+                                //{
+                                //    //删除
+                                //    pushData.cardMsg.keyword1 = $"NS已经到期,服务已删除,请联系重新购买部署";
+                                //    await _nightscoutServices.StopDocker(nightscout, nsserver);
+                                //    await _nightscoutServices.DeleteData(nightscout, nsserver);
+                                //    await _nightscoutServices.Dal.DeleteById(nightscout.Id);
+                                //}
+                                //else
+                                //{
+                                //    //停止
+                                //    pushData.cardMsg.keyword1 = $"NS已经到期,请及时续费({afterDay}天后删除服务)";
+                                //    if (!nightscout.isStop)
+                                //    {
+                                //        await _nightscoutServices.StopDocker(nightscout, nsserver);
+                                //        await _nightscoutServices.Dal.Db.Updateable<Nightscout>().SetColumns(t => t.isStop, true).Where(t => t.Id == nightscout.Id).ExecuteCommandAsync();
+                                //    }
+                                //}
                             }
                             else
                             {
+                                tixing.Insert(0, nightscout.name);
                                 pushData.cardMsg.keyword1 = $"NS即将到期,需及时续费({lessDays}天后停止服务)";
                             }
                             
@@ -159,9 +170,9 @@ namespace MyDotnet.Tasks.QuartzJob
                             {
                                 var pushData = new WeChatCardMsgDataDto();
                                 pushData.cardMsg = new WeChatCardMsgDetailDto();
-                                pushData.cardMsg.keyword1 = $"NS用户：到期{daoqi.Count}个，提醒{tixing.Count}个";
+                                pushData.cardMsg.keyword1 = $"NS用户：到期{daoqiCount}个，提醒{tixingCount}个";
                                 daoqi.AddRange(tixing);
-                                pushData.cardMsg.keyword2 = string.Join(",", daoqi);
+                                pushData.cardMsg.keyword2 = string.Join(",", daoqi.Take(10));
                                 pushData.cardMsg.remark = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
                                 pushData.cardMsg.url = frontPage;
                                 pushData.cardMsg.template_id = pushTemplateID_Alert;
