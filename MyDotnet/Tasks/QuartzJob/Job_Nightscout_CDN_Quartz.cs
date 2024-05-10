@@ -77,22 +77,80 @@ namespace MyDotnet.Tasks.QuartzJob
                 int errTotal = cdnErrorCount.content.ObjToInt();
                 //间隔
                 int sleepTime = cdnErrorSleep.content.ObjToInt();
-
+                //当前错误次数
                 int errCount = 0;
-                while (true)
+                //是否切换
+                bool canSwitch = false;
+                //是否进入异常时间
+                bool isEnterErrTime = false;
+                //记录进入异常时间
+                DateTime enterErrTime = DateTime.Now;
+                //是否结束任务 1-运行 2-退出
+                string existStatus = "1";
+
+                while (true && "1".Equals(existStatus))
                 {
                     PingReply reply = await pingSender.SendPingAsync(curRow.content2, timeout, new byte[32], options);
                     if (reply.Status == IPStatus.Success)
                     {
                         //成功
                         errCount = 0;
+
+                        if (canSwitch == true)
+                        {
+                            //网络正常切换回原来的
+                            await _nightscoutServices.ChangeCDN(curRow.code);
+                            try
+                            {
+                                var nsInfo = await _dicService.GetDicData(NsInfo.KEY);
+                                var frontPage = nsInfo.Find(t => t.code.Equals(NsInfo.frontPage)).content;
+                                var pushTemplateID_Alert = nsInfo.Find(t => t.code.Equals(NsInfo.pushTemplateID_Alert)).content;
+                                var pushWechatID = nsInfo.Find(t => t.code.Equals(NsInfo.pushWechatID)).content;
+                                var pushCompanyCode = nsInfo.Find(t => t.code.Equals(NsInfo.pushCompanyCode)).content;
+
+                                var preDayInfo = await _dicService.GetDicDataOne(NsInfo.KEY, NsInfo.preDays);
+                                var preDay = preDayInfo.content.ObjToInt();
+
+                                var preInnerUser = await _dicService.GetDicDataOne(NsInfo.KEY, NsInfo.preInnerUser);
+
+                                var pushUsers = preInnerUser.content.Split(",", StringSplitOptions.RemoveEmptyEntries);
+                                //恢复推送
+                                if (pushUsers.Length > 0)
+                                {
+                                    foreach (var userid in pushUsers)
+                                    {
+                                        var pushData = new WeChatCardMsgDataDto();
+                                        pushData.cardMsg = new WeChatCardMsgDetailDto();
+                                        pushData.cardMsg.keyword1 = $"NS网络恢复,异常时间持续:{(DateTime.Now - enterErrTime).TotalMinutes} 分";
+                                        pushData.cardMsg.keyword2 = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+                                        pushData.cardMsg.url = frontPage;
+                                        pushData.cardMsg.template_id = pushTemplateID_Alert;
+                                        pushData.info = new WeChatUserInfo();
+                                        pushData.info.id = pushWechatID;
+                                        pushData.info.companyCode = pushCompanyCode;
+                                        pushData.info.userID = userid;
+                                        await _weChatConfigServices.PushCardMsg(pushData);
+                                    }
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                LogHelper.logSys.Error($"推送失败,{ex.Message}", ex);
+                            }
+
+                            //恢复
+                            canSwitch = false;
+                            isEnterErrTime = false;
+                        }
                     }
                     else
                     {
                         //失败
                         errCount += 1;
+                        if(!isEnterErrTime) enterErrTime = DateTime.Now;
+                        isEnterErrTime = true;
                         //切换
-                        if (errCount >= errTotal)
+                        if (errCount >= errTotal && canSwitch == false)
                         {
                             foreach (var item in cdnList)
                             {
@@ -102,8 +160,6 @@ namespace MyDotnet.Tasks.QuartzJob
 
                                 try
                                 {
-
-
                                     var nsInfo = await _dicService.GetDicData(NsInfo.KEY);
                                     var frontPage = nsInfo.Find(t => t.code.Equals(NsInfo.frontPage)).content;
                                     var pushTemplateID_Alert = nsInfo.Find(t => t.code.Equals(NsInfo.pushTemplateID_Alert)).content;
@@ -139,14 +195,17 @@ namespace MyDotnet.Tasks.QuartzJob
                                 {
                                     LogHelper.logSys.Error($"推送失败,{ex.Message}", ex);
                                 }
-
-
-                                return;
+                                //切换
+                                canSwitch = true;
+                                break;
                             }
                         }
                     }
                     //间隔
                     Thread.Sleep(sleepTime * 1000);
+                    //退出标识
+                    var cdnCheckFinish = await _dicService.GetDicDataOne(NsInfo.KEY, NsInfo.cdnCheckFinish);
+                    existStatus = cdnCheckFinish.content;
                 }
                 
             }

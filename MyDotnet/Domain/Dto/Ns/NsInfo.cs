@@ -121,6 +121,10 @@ namespace MyDotnet.Domain.Dto.Ns
         /// cdn间隔时间
         /// </summary>
         public static readonly string cdnErrorSleep = "cdnErrorSleep";
+        /// <summary>
+        /// cdn检测主动退出
+        /// </summary>
+        public static readonly string cdnCheckFinish = "cdnCheckFinish";
 
 
 

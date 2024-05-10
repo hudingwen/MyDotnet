@@ -139,7 +139,7 @@ namespace MyDotnet.Tasks.QuartzJob
                             else
                             {
                                 tixing.Insert(0, nightscout.name);
-                                pushData.cardMsg.keyword1 = $"NS即将到期,需及时续费({lessDays}天后停止服务)";
+                                pushData.cardMsg.keyword1 = $"NS即将到期,需及时续费,({lessDays}天后停止服务)";
                             }
                             
                             pushData.cardMsg.keyword2 = $"{nightscout.endTime.ToString("yyyy-MM-dd")}";
