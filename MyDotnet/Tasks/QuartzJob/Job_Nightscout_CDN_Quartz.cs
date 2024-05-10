@@ -121,7 +121,7 @@ namespace MyDotnet.Tasks.QuartzJob
                                     {
                                         var pushData = new WeChatCardMsgDataDto();
                                         pushData.cardMsg = new WeChatCardMsgDetailDto();
-                                        pushData.cardMsg.keyword1 = $"NS网络恢复,异常时间持续:{(DateTime.Now - enterErrTime).TotalMinutes} 分";
+                                        pushData.cardMsg.keyword1 = $"NS网络恢复,异常时间持续:{Math.Ceiling((DateTime.Now - enterErrTime).TotalMinutes)}分钟";
                                         pushData.cardMsg.keyword2 = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
                                         pushData.cardMsg.url = frontPage;
                                         pushData.cardMsg.template_id = pushTemplateID_Alert;
