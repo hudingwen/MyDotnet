@@ -75,10 +75,20 @@ namespace MyDotnet.Domain.Entity.Ns
         /// </summary>
         public bool isMongo { get; set; }
         /// <summary>
-        /// 统计数量
+        /// 统计数量-创建
         /// </summary>
         [SugarColumn(IsIgnore = true)]
         public int count { get; set; }
+        /// <summary>
+        /// 统计数量-运行
+        /// </summary>
+        [SugarColumn(IsIgnore = true)]
+        public int countStart { get; set; }
+        /// <summary>
+        /// 统计数量-停止
+        /// </summary>
+        [SugarColumn(IsIgnore = true)]
+        public int countStop { get; set; }
         /// <summary>
         /// 理论最大ns数量
         /// </summary>

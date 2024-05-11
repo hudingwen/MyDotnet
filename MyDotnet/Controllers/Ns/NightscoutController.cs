@@ -900,17 +900,36 @@ namespace MyDotnet.Controllers.Ns
 
 
             var ids = data.Select(tt => tt.Id).ToList();
+            //
             var ls = await _nightscoutServerServices.Dal.Db.Queryable<Nightscout>()
-            .GroupBy(t => t.serverId)
-                .Where(t => ids.Contains(t.serverId)).Select(t => new { t.serverId , count = SqlFunc.AggregateCount(t.serverId) }).ToListAsync();
+            .GroupBy(t => new { t.serverId ,t.isStop})
+                .Select(t => new { t.serverId,t.isStop,count = SqlFunc.AggregateCount(t.serverId) }).ToListAsync();
 
             foreach (var item in data)
             {
-                var row = ls.Find(t => t.serverId == item.Id);
-                if (row == null)
-                    item.count = 0;
+                var rows = ls.FindAll(t => t.serverId == item.Id);
+                if(rows.Count() > 0)
+                {
+                    foreach (var tj in rows)
+                    {
+                        item.count += tj.count;
+                        if (tj.isStop)
+                        {
+                            item.countStop = tj.count;
+                        }
+                        else
+                        {
+                            item.countStart = tj.count;
+                        }
+
+                    }
+                }
                 else
-                    item.count = row.count;
+                {
+                    item.count = 0;
+                    item.countStart = 0;
+                    item.countStop = 0;
+                }
             }
             return MessageModel<List<NightscoutServer>>.Success("获取成功", data);
         }
