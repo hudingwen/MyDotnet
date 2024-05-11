@@ -4,11 +4,13 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MyDotnet.Domain.Dto.System;
 using MyDotnet.Domain.Dto.Trojan;
+using MyDotnet.Domain.Entity.Ns;
 using MyDotnet.Domain.Entity.Trojan;
 using MyDotnet.Helper;
 using MyDotnet.Repository;
 using MyDotnet.Services;
 using MyDotnet.Services.System;
+using Renci.SshNet;
 
 namespace MyDotnet.Controllers.Trojan
 {
@@ -135,6 +137,23 @@ namespace MyDotnet.Controllers.Trojan
         public async Task<MessageModel<object>> UpdateUser([FromBody] TrojanUsers user)
         {
             var data = await _trojanUsersServices.Dal.Update(user);
+
+            //重启服务
+            var servers = await _dicService.GetDicData(TrojanInfo.TrojanServer);
+            foreach (var item in servers)
+            {
+                using (var sshClient = new SshClient(item.code, item.content.ObjToInt(), item.content2, item.content3))
+                {
+                    //创建SSH
+                    sshClient.Connect();
+                    using (var cmd = sshClient.CreateCommand(""))
+                    {
+                        var res = cmd.Execute($"systemctl restart trojan");
+                    }
+                    sshClient.Disconnect();
+                }
+            }
+
             return MessageModel<object>.Success("更新成功", data);
         }
 
@@ -147,6 +166,22 @@ namespace MyDotnet.Controllers.Trojan
         public async Task<MessageModel<string>> DelUser(int id)
         { 
             await _trojanUsersServices.Dal.DeleteById(id);
+
+            //重启服务
+            var servers = await _dicService.GetDicData(TrojanInfo.TrojanServer);
+            foreach (var item in servers)
+            {
+                using (var sshClient = new SshClient(item.code, item.content.ObjToInt(), item.content2, item.content3))
+                {
+                    //创建SSH
+                    sshClient.Connect();
+                    using (var cmd = sshClient.CreateCommand(""))
+                    {
+                        var res = cmd.Execute($"systemctl restart trojan");
+                    }
+                    sshClient.Disconnect();
+                }
+            }
             return MessageModel<string>.Success("删除成功");
         }
         /// <summary>
@@ -159,6 +194,22 @@ namespace MyDotnet.Controllers.Trojan
         public async Task<MessageModel<string>> DelUsers([FromBody] object[] ids)
         {
             await _trojanUsersServices.Dal.DeleteByIds(ids);
+
+            //重启服务
+            var servers = await _dicService.GetDicData(TrojanInfo.TrojanServer);
+            foreach (var item in servers)
+            {
+                using (var sshClient = new SshClient(item.code, item.content.ObjToInt(), item.content2, item.content3))
+                {
+                    //创建SSH
+                    sshClient.Connect();
+                    using (var cmd = sshClient.CreateCommand(""))
+                    {
+                        var res = cmd.Execute($"systemctl restart trojan");
+                    }
+                    sshClient.Disconnect();
+                }
+            }
             return MessageModel<string>.Success("删除成功");
         }
 
@@ -179,6 +230,21 @@ namespace MyDotnet.Controllers.Trojan
                 item.download = 0;
                 await _trojanUsersServices.Dal.Update(item, t => new { t.upload, t.download });
             }
+            //重启服务
+            var servers = await _dicService.GetDicData(TrojanInfo.TrojanServer);
+            foreach (var item in servers)
+            {
+                using (var sshClient = new SshClient(item.code, item.content.ObjToInt(), item.content2, item.content3))
+                {
+                    //创建SSH
+                    sshClient.Connect();
+                    using (var cmd = sshClient.CreateCommand(""))
+                    {
+                        var res = cmd.Execute($"systemctl restart trojan");
+                    }
+                    sshClient.Disconnect();
+                }
+            }
             return MessageModel<string>.Success("重置流量成功");
         }
         /// <summary>
@@ -197,6 +263,21 @@ namespace MyDotnet.Controllers.Trojan
                 item.password = passEcrypt;
                 item.passwordshow = pass;
                 await _trojanUsersServices.Dal.Update(item, t => new { t.password, t.passwordshow });
+            }
+            //重启服务
+            var servers = await _dicService.GetDicData(TrojanInfo.TrojanServer);
+            foreach (var item in servers)
+            {
+                using (var sshClient = new SshClient(item.code, item.content.ObjToInt(), item.content2, item.content3))
+                {
+                    //创建SSH
+                    sshClient.Connect();
+                    using (var cmd = sshClient.CreateCommand(""))
+                    {
+                        var res = cmd.Execute($"systemctl restart trojan");
+                    }
+                    sshClient.Disconnect();
+                }
             }
             return MessageModel<string>.Success("重置链接密码成功");
         }

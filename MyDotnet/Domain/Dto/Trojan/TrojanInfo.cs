@@ -7,6 +7,10 @@ namespace MyDotnet.Domain.Dto.Trojan
         public static string KEY = "trojan";
         public static string KEY_normalApi = "normalApi";
         public static string KEY_clashApi = "clashApi";
-        public static string KEY_clashApi_v2 = "clashApi2"; 
+        public static string KEY_clashApi_v2 = "clashApi2";
+
+
+
+        public static string TrojanServer = "TrojanServer";
     }
 }
