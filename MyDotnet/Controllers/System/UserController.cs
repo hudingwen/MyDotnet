@@ -29,6 +29,7 @@ namespace MyDotnet.Controllers.System
         public AspNetUser _user;
         public IMapper _mapper;
         public IHttpContextAccessor _httpContext;
+        public DicService _dictService;
 
         public UserController(UnitOfWorkManage unitOfWorkManage
             , SysUserInfoServices sysUserInfoServices
@@ -39,6 +40,7 @@ namespace MyDotnet.Controllers.System
             , AspNetUser user
             , IMapper mapper
             , IHttpContextAccessor httpContext
+            , DicService dictService
             )
         {
             _unitOfWorkManage = unitOfWorkManage;
@@ -50,6 +52,7 @@ namespace MyDotnet.Controllers.System
             _mapper = mapper;
             _httpContext = httpContext;
             _userGoogleAuthService = userGoogleAuthService;
+            _dictService = dictService;
 
         }
         /// <summary>
@@ -324,10 +327,13 @@ namespace MyDotnet.Controllers.System
             {
                 return Failed(default(UserGoogleAuthenticator), "用户不存在或已被删除");
             }
+
+
             //生成新的
+            var  dicIss = await  _dictService.GetDicDataOne(SysAuthInfo.KEY, SysAuthInfo.auth_issuer);
             var auth = new UserGoogleAuthenticator();
             auth.user = oldUser.LoginName;
-            auth.issuer = "";
+            auth.issuer = dicIss.content;
             auth.key = StringHelper.GetGUID();
             auth.userId = uid;
             auth.Enabled = true;

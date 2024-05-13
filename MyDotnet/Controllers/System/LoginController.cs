@@ -29,6 +29,7 @@ namespace MyDotnet.Controllers.System
         public RoleModulePermissionServices _roleModulePermissionServices;
         public CodeService _codeService;
         public BaseServices<UserGoogleAuthenticator> _userGoogleAuthService;
+        public DicService _dictService;
 
         public LoginController(SysUserInfoServices sysUserInfoServices
             , UserRoleServices userRoleServices
@@ -37,6 +38,7 @@ namespace MyDotnet.Controllers.System
             , RoleModulePermissionServices roleModulePermissionServices
             , CodeService codeService
             , BaseServices<UserGoogleAuthenticator> userGoogleAuthService
+            , DicService dictService
             )
         {
             _sysUserInfoServices = sysUserInfoServices;
@@ -46,6 +48,7 @@ namespace MyDotnet.Controllers.System
             _roleModulePermissionServices = roleModulePermissionServices;
             _codeService = codeService;
             _userGoogleAuthService = userGoogleAuthService;
+            _dictService = dictService;
         }
         /// <summary>
         /// 登录系统
@@ -65,10 +68,16 @@ namespace MyDotnet.Controllers.System
 
             if (string.IsNullOrEmpty(name) || string.IsNullOrEmpty(pass))
                 return Failed<TokenInfoViewModel>("认证失败");
-            if (string.IsNullOrEmpty(key) || string.IsNullOrEmpty(code))
-                return Failed<TokenInfoViewModel>("认证失败");
-            if (!_codeService.ValidCode(key, code))
-                return Failed<TokenInfoViewModel>("认证失败");
+
+            var codeDic = await _dictService.GetDicDataOne(SysAuthInfo.KEY, SysAuthInfo.login_code_enable);
+            if ("1".Equals(codeDic.content))
+            {
+                if (string.IsNullOrEmpty(key) || string.IsNullOrEmpty(code))
+                    return Failed<TokenInfoViewModel>("认证失败");
+                if (!_codeService.ValidCode(key, code))
+                    return Failed<TokenInfoViewModel>("认证失败");
+            }
+
 
             pass = MD5Helper.MD5Encrypt32(pass);
 
@@ -113,6 +122,25 @@ namespace MyDotnet.Controllers.System
 
             var user = await _sysUserInfoServices.Dal.Query(d => d.LoginName == name && d.IsDeleted == false);
             if (user.Count == 1 && user[0].auth2faEnable)
+            {
+                return Success(true);
+            }
+            else
+            {
+                return Success(false);
+            }
+        }
+        /// <summary>
+        /// 验证码验证
+        /// </summary>
+        /// <param name="name"></param>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("GetCodeInfo")]
+        public async Task<MessageModel<bool>> GetCodeInfo()
+        {
+            var codeDic = await _dictService.GetDicDataOne(SysAuthInfo.KEY, SysAuthInfo.login_code_enable);
+            if ("1".Equals(codeDic.content))
             {
                 return Success(true);
             }
