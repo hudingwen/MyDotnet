@@ -106,6 +106,17 @@ namespace MyDotnet.Domain.Entity.System
         [SugarColumn(IsNullable = true)]
         public string logo { get; set; }
 
+        /// <summary>
+        /// 是否开启双因子认证
+        /// </summary>
+        [SugarColumn(IsNullable = true)]
+        public bool auth2faEnable { get; set; }
+        /// <summary>
+        /// 双因子认证id
+        /// </summary>
+        [SugarColumn(IsNullable = true)]
+        public long auth2faId { get; set; }
+
 
 
         // 地址

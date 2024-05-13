@@ -34,8 +34,7 @@ namespace MyDotnet.Services.System
             }
 
             //创建表：根据实体类CodeFirstTable1  (所有数据库都支持)
-            db.CodeFirst.InitTables(typeof(TrojanUrlServersUsers));
-            db.CodeFirst.InitTables(typeof(TrojanCusServersUsers));
+            db.CodeFirst.InitTables(typeof(UserGoogleAuthenticator)); 
 
             await Task.CompletedTask;
         }

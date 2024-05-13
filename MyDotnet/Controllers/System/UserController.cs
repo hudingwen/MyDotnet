@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MyDotnet.Controllers.Base;
 using MyDotnet.Domain.Dto.System;
+using MyDotnet.Domain.Entity.Ns;
 using MyDotnet.Domain.Entity.System;
 using MyDotnet.Helper;
 using MyDotnet.Repository;
@@ -21,6 +22,7 @@ namespace MyDotnet.Controllers.System
     {
         public UnitOfWorkManage _unitOfWorkManage;
         public SysUserInfoServices _sysUserInfoServices;
+        public BaseServices<UserGoogleAuthenticator> _userGoogleAuthService;
         public UserRoleServices _userRoleServices;
         public RoleServices _roleServices;
         public BaseServices<Department> _departmentServices;
@@ -33,6 +35,7 @@ namespace MyDotnet.Controllers.System
             , UserRoleServices userRoleServices
             , RoleServices roleServices
             , BaseServices<Department> departmentServices
+            , BaseServices<UserGoogleAuthenticator> userGoogleAuthService
             , AspNetUser user
             , IMapper mapper
             , IHttpContextAccessor httpContext
@@ -46,6 +49,7 @@ namespace MyDotnet.Controllers.System
             _user = user;
             _mapper = mapper;
             _httpContext = httpContext;
+            _userGoogleAuthService = userGoogleAuthService;
 
         }
         /// <summary>
@@ -222,7 +226,7 @@ namespace MyDotnet.Controllers.System
         }
 
         /// <summary>
-        /// 更新头像
+        /// 更新我的头像
         /// </summary>
         /// <param name="sysUserInfo"></param>
         /// <returns></returns>
@@ -300,6 +304,151 @@ namespace MyDotnet.Controllers.System
             }
             return data;
         }
+
+
+        /// <summary>
+        /// 获取一个新的的双因子认证
+        /// </summary>
+        /// <param name="sysUserInfo"></param>
+        /// <returns></returns>
+        [HttpGet]
+        [Authorize]
+        public async Task<MessageModel<UserGoogleAuthenticator>> GetMy2FA()
+        {
+            //获取我的双因子
+            var uid = (JWTHelper.SerializeJwtStr(_httpContext.HttpContext.Request.Headers["Authorization"].ObjToString().Replace("Bearer ", ""))?.Uid).ObjToLong();
+           
+           
+            var oldUser = await _sysUserInfoServices.Dal.QueryById(uid);
+            if (oldUser == null || oldUser.IsDeleted)
+            {
+                return Failed(default(UserGoogleAuthenticator), "用户不存在或已被删除");
+            }
+            //生成新的
+            var auth = new UserGoogleAuthenticator();
+            auth.user = oldUser.LoginName;
+            auth.issuer = "";
+            auth.key = StringHelper.GetGUID();
+            auth.userId = uid;
+            auth.Enabled = true;
+            var setCode = GoogleAuthenticatorHelper.GenerateSetupCode(auth.issuer, auth.user, auth.key);
+            auth.provisionUrl = setCode.provisionUrl;
+            auth.keyBase32 = setCode.encodedSecretKey;
+            await _userGoogleAuthService.Dal.Add(auth);
+            return Success(auth);
+        }
+        /// <summary>
+        /// 认证双因子
+        /// </summary>
+        /// <param name="authId"></param>
+        /// <param name="authCode"></param>
+        /// <returns></returns>
+        [HttpGet]
+        [Authorize]
+        public async Task<MessageModel<string>> ValidMy2FA(long authId,string authCode)
+        {
+            //获取我的双因子
+            var uid = (JWTHelper.SerializeJwtStr(_httpContext.HttpContext.Request.Headers["Authorization"].ObjToString().Replace("Bearer ", ""))?.Uid).ObjToLong();
+
+            var oldUser = await _sysUserInfoServices.Dal.QueryById(uid);
+            if (oldUser == null || oldUser.IsDeleted)
+            {
+                return Failed("用户不存在或已被删除");
+            }
+
+            var auth = await _userGoogleAuthService.Dal.QueryById(authId);
+            if(auth == null || auth.Enabled == false || !auth.userId.Equals(uid) ) return Failed("认证失败");
+            if(DateTime.Now.AddMinutes(-5) >= auth.CreateTime.Value) return Failed("二维码失效,请重新生成");
+
+            if (GoogleAuthenticatorHelper.ValidateTwoFactorPIN(auth.key, authCode))
+            {
+                //认证成功
+                _unitOfWorkManage.BeginTran();
+                try
+                {
+                    oldUser.auth2faEnable = true;
+                    oldUser.auth2faId = auth.Id;
+                    await _sysUserInfoServices.Dal.Update(oldUser, t => new { t.auth2faEnable, t.auth2faId });
+
+                    auth.Enabled = false;
+                    await _userGoogleAuthService.Dal.Update(auth, t => new { t.Enabled });
+                    _unitOfWorkManage.CommitTran();
+                    return Success("认证成功");
+                }
+                catch (Exception ex)
+                {
+                    _unitOfWorkManage.RollbackTran();
+                    LogHelper.logApp.Error("认证失败", ex);
+                    return Failed($"认证失败:{ex.Message}");
+                }
+            }
+            else
+            {
+                //认证失败
+                return Failed("认证失败");
+            }
+
+        }
+
+        /// <summary>
+        /// 认证双因子
+        /// </summary>
+        /// <param name="authId"></param>
+        /// <param name="authCode"></param>
+        /// <returns></returns>
+        [HttpGet]
+        [Authorize]
+        public async Task<MessageModel<string>> CancelMy2FA(string authCode)
+        {
+            //获取我的双因子
+            var uid = (JWTHelper.SerializeJwtStr(_httpContext.HttpContext.Request.Headers["Authorization"].ObjToString().Replace("Bearer ", ""))?.Uid).ObjToLong();
+
+            var oldUser = await _sysUserInfoServices.Dal.QueryById(uid);
+            if (oldUser == null || oldUser.IsDeleted)
+            {
+                return Failed("用户不存在或已被删除");
+            }
+            if (oldUser.auth2faEnable == false)
+            {
+                return Failed("未开启验证");
+            }
+
+
+            var auth = await _userGoogleAuthService.Dal.QueryById(oldUser.auth2faId);
+            if (auth == null) return Failed("认证失败");
+
+            if (GoogleAuthenticatorHelper.ValidateTwoFactorPIN(auth.key, authCode))
+            {
+                //认证成功 
+                oldUser.auth2faEnable = false;
+                await _sysUserInfoServices.Dal.Update(oldUser, t => new { t.auth2faEnable });
+                return Success("取消成功");
+            }
+            else
+            {
+                //认证失败
+                return Failed("认证失败");
+            }
+
+        }
+
+        /// <summary>
+        /// 获取我的信息
+        /// </summary>
+        /// <param name="sysUserInfo"></param>
+        /// <returns></returns>
+        [HttpGet]
+        [Authorize]
+        public async Task<MessageModel<SysUserInfo>> GetMyInfo()
+        {
+            var token =_httpContext.HttpContext.Request.Headers["Authorization"].ObjToString().Replace("Bearer ", "");
+            return await GetInfoByToken(token);
+
+        }
+
+
+
+
 
         /// <summary>
         /// 更新用户与角色

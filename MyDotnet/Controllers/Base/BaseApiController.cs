@@ -57,8 +57,24 @@ namespace MyDotnet.Controllers.Base
             {
                 success = false,
                 status = status,
+                msg = msg
+            };
+        }
+        /// <summary>
+        /// 返回成功
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="data"></param>
+        /// <param name="msg"></param>
+        /// <returns></returns>
+        [NonAction]
+        public MessageModel<T> Failed<T>(T data, string msg = "成功")
+        {
+            return new MessageModel<T>()
+            {
+                success = true,
                 msg = msg,
-                response = null,
+                response = data,
             };
         }
         /// <summary>
@@ -75,8 +91,7 @@ namespace MyDotnet.Controllers.Base
             {
                 success = false,
                 status = status,
-                msg = msg,
-                response = default,
+                msg = msg
             };
         }
         /// <summary>
