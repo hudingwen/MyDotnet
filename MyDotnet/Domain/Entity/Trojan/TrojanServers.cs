@@ -65,5 +65,10 @@ namespace MyDotnet.Domain.Entity.Trojan
         /// </summary>
         [SugarColumn(IsIgnore = true)]
         public List<int> bindUsers { get; set; }
+        /// <summary>
+        /// 排除用户
+        /// </summary>
+        [SugarColumn(IsIgnore = true)]
+        public List<int> excludeUsers { get; set; }
     }
 }
