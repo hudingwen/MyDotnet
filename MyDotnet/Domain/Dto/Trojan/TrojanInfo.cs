@@ -12,5 +12,9 @@ namespace MyDotnet.Domain.Dto.Trojan
 
 
         public static string TrojanServer = "TrojanServer";
+
+
+        public static string TrojanAwsFastCDN = "TrojanAwsFastCDN";
+        public static string TrojanAwsIP = "TrojanAwsIP";
     }
 }

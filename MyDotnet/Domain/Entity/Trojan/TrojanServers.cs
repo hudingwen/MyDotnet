@@ -61,6 +61,10 @@ namespace MyDotnet.Domain.Entity.Trojan
         /// </summary>
         public bool isAllUser { get; set; }
         /// <summary>
+        /// 服务器别名(筛选用)
+        /// </summary>
+        public string servercode { get; set; }
+        /// <summary>
         /// 绑定用户
         /// </summary>
         [SugarColumn(IsIgnore = true)]
