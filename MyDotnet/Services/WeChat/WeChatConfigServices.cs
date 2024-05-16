@@ -42,12 +42,23 @@ namespace MyDotnet.Services.WeChat
             var config = await Dal.QueryById(publicAccount);
             if (config == null)
                 throw new ServiceException($"公众号{publicAccount}未维护至系统");
-            var data = await WeChatHelper.GetToken(config.appid, config.appsecret);
-            if (!data.errcode.Equals(0))
-                throw new ServiceException($"错误代码:{data.errcode} 错误信息:{data.errmsg}");
-            config.token = data.access_token;
-            config.tokenExpiration = DateTime.Now.AddSeconds(data.expires_in);
-            await Dal.Update(config);
+            WeChatApiDto data;
+            if (config.tokenExpiration == null || config.tokenExpiration.Value.AddMinutes(-5) <= DateTime.Now)
+            {
+                data = await WeChatHelper.GetToken(config.appid, config.appsecret);
+                if (!data.errcode.Equals(0))
+                    throw new ServiceException($"错误代码:{data.errcode} 错误信息:{data.errmsg}");
+                config.token = data.access_token;
+                config.tokenExpiration = DateTime.Now.AddSeconds(data.expires_in);
+                await Dal.Update(config);
+            }
+            else
+            {
+                data = new WeChatApiDto();
+                data.errcode = 0;
+                data.id = publicAccount;
+                data.access_token = config.token;
+            }
             return MessageModel<WeChatApiDto>.Success("获取token成功", data);
         }
         public async Task<MessageModel<WeChatApiDto>> RefreshToken(string publicAccount)

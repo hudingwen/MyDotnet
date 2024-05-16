@@ -47,10 +47,8 @@ namespace MyDotnet.Tasks.QuartzJob
         {
             if (jobid > 0)
             {
-                var nights = await _nightscoutServices.Dal.Query();
-                var servers = await _nightscoutServerServices.Dal.Query();
-                nights = nights.Where(t => t.isStop == false).ToList();
-
+                var nights = await _nightscoutServices.Dal.Query(t => t.isStop == false);
+                var servers = await _nightscoutServerServices.Dal.Query();  
                 int i = 1;
                 foreach (var server in servers)
                 {

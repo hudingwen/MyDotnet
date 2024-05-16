@@ -2,7 +2,7 @@
 {
     public class entries
     {
-        public object date { get; set; }
+        public long date { get; set; }
         public object sgv { get; set; }
         public object direction { get; set; }
         public object _id { get; set; }
@@ -20,7 +20,7 @@
         public object isValid { get; set; }
         public object filtered { get; set; }
         public object dataType { get; set; }
-        public object utcOffset { get; set; }
+        public int utcOffset { get; set; }
         public object created_at { get; set; }
         public object rssi { get; set; }
         public object index { get; set; }
