@@ -1162,8 +1162,10 @@ namespace MyDotnet.Controllers.Ns
             if (ns ==null)
                 return MessageModel<SugarDTO>.Fail("无血糖信息可供查看,请检查是否绑定NS");
 
-            var nsServer = await _nightscoutServerServices.Dal.Db.Queryable<NightscoutServer>().Where(t=>t.Id == ns.serverId).Select(t=> new { t.mongoLoginName,t.mongoLoginPassword,t.mongoIp,t.mongoPort}).FirstAsync();
-            var grantConnectionMongoString = $"mongodb://{nsServer.mongoLoginName}:{nsServer.mongoLoginPassword}@{nsServer.mongoIp}:{nsServer.mongoPort}";
+            var nsServer = await _nightscoutServerServices.Dal.Db.Queryable<NightscoutServer>().Where(t=>t.Id == ns.serverId).Select(t=> new { t.mongoServerId }).FirstAsync();
+            var curNsserverMongoSsh = await _nightscoutServerServices.Dal.QueryById(nsServer.mongoServerId);
+
+            var grantConnectionMongoString = $"mongodb://{curNsserverMongoSsh.mongoLoginName}:{curNsserverMongoSsh.mongoLoginPassword}@{curNsserverMongoSsh.mongoIp}:{curNsserverMongoSsh.mongoPort}";
 
             var client = new MongoClient(grantConnectionMongoString);
             var database = client.GetDatabase(ns.serviceName);

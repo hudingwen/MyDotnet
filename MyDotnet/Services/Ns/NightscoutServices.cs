@@ -294,41 +294,19 @@ namespace MyDotnet.Services.Ns
                     using (var cmd = sshClient.CreateCommand(""))
                     {
                         //创建用户
-                        var grantConnectionMongoString = $"mongodb://{nsserver.mongoLoginName}:{nsserver.mongoLoginPassword}@{nsserver.mongoIp}:{nsserver.mongoPort}";
+                        var grantConnectionMongoString = $"mongodb://{curNsserverMongoSsh.mongoLoginName}:{curNsserverMongoSsh.mongoLoginPassword}@{curNsserverMongoSsh.mongoIp}:{curNsserverMongoSsh.mongoPort}";
                         var client = new MongoClient(grantConnectionMongoString);
 
-                        //try
-                        //{
-                        //    client.DropDatabase(nightscout.serviceName);
-                        //}
-                        //catch (Exception ex)
-                        //{
-                        //    sb.Append($"删除数据库失败:{ex.Message}");
-                        //}
+                       
                         var database = client.GetDatabase(nightscout.serviceName);
 
-                        //try
-                        //{
-                        //    var deleteUserCommand = new BsonDocument
-                        //    {
-                        //        { "dropUser", nsserver.mongoLoginName },
-                        //        { "writeConcern", new BsonDocument("w", 1) }
-                        //    };
-                        //    // 执行删除用户的命令
-                        //    var result = database.RunCommand<BsonDocument>(deleteUserCommand);
-
-                        //}
-                        //catch (Exception ex)
-                        //{
-                        //    sb.Append($"删除用户失败:{ex.Message}");
-                        //}
                         try
                         {
                             //创建用户
                             var command = new BsonDocument
                                     {
-                                        { "createUser", nsserver.mongoLoginName },
-                                        { "pwd" ,nsserver.mongoLoginPassword },
+                                        { "createUser", curNsserverMongoSsh.mongoLoginName },
+                                        { "pwd" ,curNsserverMongoSsh.mongoLoginPassword },
                                         { "roles", new BsonArray
                                             {
                                                 {"readWrite"}
@@ -343,7 +321,7 @@ namespace MyDotnet.Services.Ns
                         }
 
                         //初始化数据库
-                        var res = cmd.Execute($"docker exec -t mongoserver mongorestore -u={nsserver.mongoLoginName} -p={nsserver.mongoLoginPassword} -d {nightscout.serviceName} /data/backup/template");
+                        var res = cmd.Execute($"docker exec -t mongoserver mongorestore -u={curNsserverMongoSsh.mongoLoginName} -p={curNsserverMongoSsh.mongoLoginPassword} -d {nightscout.serviceName} /data/backup/template");
 
                         try
                         {
@@ -490,13 +468,14 @@ namespace MyDotnet.Services.Ns
 
             try
             {
-                var connectionMongoString = $"mongodb://{nsserver.mongoLoginName}:{nsserver.mongoLoginPassword}@{nsserver.mongoIp}:{nsserver.mongoPort}";
+                var curNsserverMongoSsh = await _nightscoutServerServices.Dal.QueryById(nsserver.mongoServerId);
+                var connectionMongoString = $"mongodb://{curNsserverMongoSsh.mongoLoginName} : {curNsserverMongoSsh.mongoLoginPassword} @ {curNsserverMongoSsh.mongoIp} : {curNsserverMongoSsh.mongoPort}";
                 var client = new MongoClient(connectionMongoString);
 
                 var database = client.GetDatabase(nightscout.serviceName);
                 var deleteUserCommand = new BsonDocument
                     {
-                        { "dropUser", nsserver.mongoLoginName },
+                        { "dropUser", curNsserverMongoSsh.mongoLoginName },
                         { "writeConcern", new BsonDocument("w", 1) }
                     };
                 // 执行删除用户的命令
@@ -827,7 +806,8 @@ EOF
             args.Add($"-e INSECURE_USE_HTTP='true'");
 
             //数据库链接
-            var connectionMongoString = $"mongodb://{nsserver.mongoLoginName}:{nsserver.mongoLoginPassword}@{nsserver.mongoIp}:{nsserver.mongoPort}/{nightscout.serviceName}";
+            var curNsserverMongoSsh = await _nightscoutServerServices.Dal.QueryById(nsserver.mongoServerId);
+            var connectionMongoString = $"mongodb://{curNsserverMongoSsh.mongoLoginName}:{curNsserverMongoSsh.mongoLoginPassword}@{curNsserverMongoSsh.mongoIp}:{curNsserverMongoSsh.mongoPort}/{nightscout.serviceName}";
 
             args.Add($"-e MONGO_CONNECTION={connectionMongoString}");
             args.Add($"-e API_SECRET={nightscout.passwd}");
@@ -979,7 +959,8 @@ server {{
                 flagTime = flagTime.AddDays(-outOfDate.content.ObjToInt()).ToUniversalTime();
 
                 //数据库链接
-                var client = new MongoClient($"mongodb://{nsserver.mongoLoginName}:{nsserver.mongoLoginPassword}@{nsserver.mongoIp}:{nsserver.mongoPort}");
+                var curNsserverMongoSsh = await _nightscoutServerServices.Dal.QueryById(nsserver.mongoServerId);
+                var client = new MongoClient($"mongodb://{curNsserverMongoSsh.mongoLoginName}:{curNsserverMongoSsh.mongoLoginPassword}@{curNsserverMongoSsh.mongoIp}:{curNsserverMongoSsh.mongoPort}");
                 //var client = new MongoClient($"mongodb://{NsInfo.miniLoginName}:{NsInfo.miniLoginPasswd}@{NsInfo.miniHost}:{NsInfo.miniPort}"); // 连接到MongoDB
                 var database = client.GetDatabase(nightscout.serviceName); // 获取数据库对象
 
@@ -1027,7 +1008,8 @@ server {{
                 var stopOfDate = await _dicService.GetDicDataOne(NsInfo.KEY, NsInfo.stopOutBlood);
                 int outDays = stopOfDate.content.ObjToInt();
                 //数据库链接
-                var client = new MongoClient($"mongodb://{nsserver.mongoLoginName}:{nsserver.mongoLoginPassword}@{nsserver.mongoIp}:{nsserver.mongoPort}");
+                var curNsserverMongoSsh = await _nightscoutServerServices.Dal.QueryById(nsserver.mongoServerId);
+                var client = new MongoClient($"mongodb://{curNsserverMongoSsh.mongoLoginName}:{curNsserverMongoSsh.mongoLoginPassword}@{curNsserverMongoSsh.mongoIp}:{curNsserverMongoSsh.mongoPort}");
                 var database = client.GetDatabase(nightscout.serviceName); // 获取数据库对象 
 
                 var collectionEntries = database.GetCollection<BsonDocument>("entries"); 
