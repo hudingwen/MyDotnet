@@ -469,7 +469,7 @@ namespace MyDotnet.Services.Ns
             try
             {
                 var curNsserverMongoSsh = await _nightscoutServerServices.Dal.QueryById(nsserver.mongoServerId);
-                var connectionMongoString = $"mongodb://{curNsserverMongoSsh.mongoLoginName} : {curNsserverMongoSsh.mongoLoginPassword} @ {curNsserverMongoSsh.mongoIp} : {curNsserverMongoSsh.mongoPort}";
+                var connectionMongoString = $"mongodb://{curNsserverMongoSsh.mongoLoginName}:{curNsserverMongoSsh.mongoLoginPassword}@{curNsserverMongoSsh.mongoIp}:{curNsserverMongoSsh.mongoPort}";
                 var client = new MongoClient(connectionMongoString);
 
                 var database = client.GetDatabase(nightscout.serviceName);
