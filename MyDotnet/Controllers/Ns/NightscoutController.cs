@@ -758,7 +758,7 @@ namespace MyDotnet.Controllers.Ns
         public async Task<MessageModel<string>> delNsServer(string id)
         {
             await _nightscoutServerServices.Dal.DeleteById(id);
-            await _caching.DelCacheKeyAsync(CacheKeyList.allNsServer);
+            await _caching.RemoveAsync(CacheKeyList.allNsServer);
             return MessageModel<string>.Success("删除成功");
         }
 
@@ -766,7 +766,7 @@ namespace MyDotnet.Controllers.Ns
         public async Task<MessageModel<string>> delBatchNsServer([FromBody] string[] ids)
         {
             await _nightscoutServerServices.Dal.DeleteByIds(ids);
-            await _caching.DelCacheKeyAsync(CacheKeyList.allNsServer);
+            await _caching.RemoveAsync(CacheKeyList.allNsServer);
             return MessageModel<string>.Success("删除成功");
         }
         [HttpPut]
@@ -775,14 +775,14 @@ namespace MyDotnet.Controllers.Ns
             var data = await _nightscoutServerServices.Dal.QueryById(request.Id);
             if (data == null) MessageModel<string>.Fail("要更新的数据不存在");
             var id = await _nightscoutServerServices.Dal.Update(request);
-            await _caching.DelCacheKeyAsync(CacheKeyList.allNsServer);
+            await _caching.RemoveAsync(CacheKeyList.allNsServer);
             return MessageModel<string>.Success("更新成功", id.ObjToString());
         }
         [HttpPost]
         public async Task<MessageModel<string>> addNsServer([FromBody] NightscoutServer request)
         {
             var id = await _nightscoutServerServices.Dal.Add(request);
-            await _caching.DelCacheKeyAsync(CacheKeyList.allNsServer);
+            await _caching.RemoveAsync(CacheKeyList.allNsServer);
             return MessageModel<string>.Success("添加成功", id.ObjToString());
         }
 
