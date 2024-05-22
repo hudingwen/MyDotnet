@@ -43,9 +43,9 @@ namespace MyDotnet.Domain.Entity.Ns
         /// </summary>
         public int curExposedPort { get; set; }
         /// <summary>
-        /// 当前服务序列
+        /// 当前服务序列(弃用)
         /// </summary>
-        public int curServiceSerial { get; set; }
+        //public int curServiceSerial { get; set; }
         /// <summary>
         /// MongoDB数据库
         /// </summary>

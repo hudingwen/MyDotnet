@@ -290,15 +290,23 @@ namespace MyDotnet.Controllers.Ns
 
             if (request.serverId > 0)
             {
+                //获取当前最大服务序列
+                var curServiceNameSerial = await _dictService.GetDic(DicTypeList.NsServiceNameCurSerial);
                 var nsserver = await _nightscoutServerServices.Dal.QueryById(request.serverId);
                 if (request.serviceSerial == 0)
                 {
                     //新增实例
-
+                    var curSerial = curServiceNameSerial.content.ObjToInt();
+                    if (curSerial <= 0)
+                    {
+                        return MessageModel<string>.Fail("最大服务序列错误");
+                    }
+                    curSerial += 1;
+                    curServiceNameSerial.content = curSerial.ObjToString();
                     //设置服务名称
-                    nsserver.curServiceSerial += 1;
-                    request.serviceName = $"nightscout-template{nsserver.curServiceSerial}";
-                    request.serviceSerial = nsserver.curServiceSerial;
+                    //nsserver.curServiceSerial += 1;
+                    request.serviceName = $"nightscout-template{curSerial}";
+                    //request.serviceSerial = nsserver.curServiceSerial;
 
                     //设置访问IP
                     if (nsserver.curExposedPort > 0)
@@ -317,7 +325,7 @@ namespace MyDotnet.Controllers.Ns
                         request.instanceIP = nsserver.curInstanceIp;
                     }
                     //不填写自动生成
-                    var padName = nsserver.curServiceSerial.ObjToString().PadLeft(3, '0');
+                    var padName = curSerial.ObjToString().PadLeft(3, '0');
                     if (string.IsNullOrEmpty(request.name))
                     {
                         request.name = padName;
@@ -348,7 +356,8 @@ namespace MyDotnet.Controllers.Ns
                     var id = await _nightscoutServices.Dal.Add(request);
                     request.Id = id;
                     await _nightscoutServerServices.Dal.Update(nsserver);
-                    await _nightscoutServerServices.Dal.Db.Updateable<NightscoutServer>().SetColumns(t=>t.curServiceSerial, nsserver.curServiceSerial).Where(t => t.Id > 0).ExecuteCommandAsync();
+                    await _dictService.PutDicType(curServiceNameSerial);
+                    //await _nightscoutServerServices.Dal.Db.Updateable<NightscoutServer>().SetColumns(t=>t.curServiceSerial, nsserver.curServiceSerial).Where(t => t.Id > 0).ExecuteCommandAsync();
                     _unitOfWorkManage.CommitTran();
 
                     data.success = id > 0;

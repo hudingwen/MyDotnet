@@ -17,5 +17,9 @@
         /// Nightscout默认内存/单位/M
         /// </summary>
         public static string defaultNsMemory = "defaultNsMemory";
+        /// <summary>
+        /// Nightscout服务名称当前序列号 每次加+1 并更新字典
+        /// </summary>
+        public static string NsServiceNameCurSerial = "NsServiceNameCurSerial";
     }
 }

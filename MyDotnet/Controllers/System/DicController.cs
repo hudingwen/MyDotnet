@@ -39,7 +39,7 @@ namespace MyDotnet.Controllers.System
             _unitOfWorkManage = unitOfWorkManage;
         }
         /// <summary>
-        /// 获取字典类型
+        /// 获取字典类型(缓存用)
         /// </summary>
         /// <param name="code"></param>
         /// <returns></returns>
@@ -50,7 +50,7 @@ namespace MyDotnet.Controllers.System
             return Success(data);
         }
         /// <summary>
-        /// 获取字典类型列表
+        /// 获取字典类型列表(缓存用)
         /// </summary>
         /// <param name="code"></param>
         /// <returns></returns>
@@ -62,7 +62,7 @@ namespace MyDotnet.Controllers.System
         }
 
         /// <summary>
-        /// 获取某个字典列表中的值
+        /// 获取某个字典列表中的值(缓存用)
         /// </summary>
         /// <param name="pCode"></param>
         /// <param name="code"></param>
@@ -118,8 +118,7 @@ namespace MyDotnet.Controllers.System
         [Authorize(Permissions.Name)]
         public async Task<MessageModel<string>> Post([FromBody] DicType data)
         {
-            var id = await _dicType.Dal.Add(data);
-            await _caching.RemoveAsync(data.code);
+            var id = await _dicService.AddDicType(data);
             return id > 0 ? Success(id.ObjToString(), "添加成功") : Failed();
 
         }
@@ -135,28 +134,7 @@ namespace MyDotnet.Controllers.System
         {
             if (data == null || data.Id <= 0)
                 return Failed("缺少参数");
-            await _caching.RemoveAsync(data.code);
-
-            //子集字典同步修改
-            try
-            {
-                _unitOfWorkManage.BeginTran();
-
-                var oldData = await _dicType.Dal.QueryById(data.Id);
-
-                await _dicType.Dal.Update(data);
-                if (!oldData.code.Equals(data.code))
-                {
-                    //修改code后同步修改子集
-                    await _dicData.Dal.Db.Updateable<DicData>().SetColumns(t => t.pCode, data.code).Where(t => t.pCode == oldData.code).ExecuteCommandAsync();
-                }
-                _unitOfWorkManage.CommitTran();
-            }
-            catch (Exception)
-            {
-                _unitOfWorkManage.RollbackTran();
-                throw;
-            }
+            await _dicService.PutDicType(data);
             return Success("更新成功");
         }
 
@@ -174,6 +152,11 @@ namespace MyDotnet.Controllers.System
             var data = await _dicType.Dal.QueryById(id);
             if(data == null)
                 return Failed("数据不存在");
+            var childData = await _dicData.Dal.Query(t => t.pCode == data.code);
+            if (childData.Count > 0)
+            {
+                return Failed($"{data.code}存在子项数据,请先删除子项数据");
+            }
             var isOk = await _dicType.Dal.DeleteById(id);
             await _caching.RemoveAsync(data.code);
             if (isOk)
@@ -192,6 +175,15 @@ namespace MyDotnet.Controllers.System
         {
 
             var ls = await _dicType.Dal.QueryByIDs(ids);
+            foreach (var data in ls)
+            {
+                var childData = await _dicData.Dal.Query(t => t.pCode == data.code);
+                if (childData.Count > 0)
+                {
+                    return Failed($"{data.code}存在子项数据,请先删除子项数据");
+                }
+            }
+            
             var isOk = await _dicType.Dal.DeleteByIds(ids);
             if (isOk)
                 return Success("", "删除成功");
@@ -250,8 +242,7 @@ namespace MyDotnet.Controllers.System
         [Authorize(Permissions.Name)]
         public async Task<MessageModel<string>> DicDataPost([FromBody] DicData data)
         {
-            var id = await _dicData.Dal.Add(data);
-            await _caching.RemoveAsync($"{data.pCode}_list");
+            var id = await _dicService.AddDicData(data); 
             return id > 0 ? Success(id.ObjToString(), "添加成功") : Failed();
 
         }
@@ -267,8 +258,8 @@ namespace MyDotnet.Controllers.System
         {
             if (data == null || data.Id <= 0)
                 return Failed("缺少参数");
-            await _caching.RemoveAsync($"{data.pCode}_list");
-            return await _dicData.Dal.Update(data) ? Success(data.Id.ObjToString(), "更新成功") : Failed();
+            var isOk = await _dicService.PutDicData(data);
+            return isOk ? Success(data.Id.ObjToString(), "更新成功") : Failed();
         }
 
         /// <summary>
@@ -283,10 +274,12 @@ namespace MyDotnet.Controllers.System
             if (id <= 0)
                 return Failed("缺少参数");
             var data = await _dicData.Dal.QueryById(id);
-            await _caching.RemoveAsync($"{data.pCode}_list");
             var isOk = await _dicData.Dal.DeleteById(id);
             if (isOk)
+            {
+                await _caching.RemoveAsync($"{data.pCode}_list");
                 return Success("", "删除成功");
+            }
             return Failed();
         }
 
@@ -299,11 +292,15 @@ namespace MyDotnet.Controllers.System
         [Authorize(Permissions.Name)]
         public async Task<MessageModel<string>> DicDataDeletes([FromBody] object[] ids)
         {
+
+            var data = await _dicData.Dal.QueryByIDs(ids);
+            if(data.Count == 0) return Failed("没有要删除的数据");
             var isOk = await _dicData.Dal.DeleteByIds(ids);
-            var data = await _dicData.Dal.QueryById(ids[0]);
-            await _caching.RemoveAsync($"{data.pCode}_list");
             if (isOk)
+            {
+                await _caching.RemoveAsync($"{data[0].pCode}_list");
                 return Success("", "删除成功");
+            }
             return Failed();
         }
 

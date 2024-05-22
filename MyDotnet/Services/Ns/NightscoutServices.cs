@@ -138,7 +138,7 @@ namespace MyDotnet.Services.Ns
                         //更新所有ns的cdn
                         await Dal.Db.Updateable<Nightscout>().SetColumns(t => t.cdn, cdnCode).Where(t => t.cdn == defaultCDN.content).ExecuteCommandAsync();
                         defaultCDN.content = cdnCode;
-                        await _dicService.Dal.Update(defaultCDN); 
+                        await _dicService.PutDicType(defaultCDN); 
                     }
                 }
                 else
