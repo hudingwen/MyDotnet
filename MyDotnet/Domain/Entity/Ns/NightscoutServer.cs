@@ -27,17 +27,17 @@ namespace MyDotnet.Domain.Entity.Ns
         public string serverLoginName { get; set; }
         public string serverLoginPassword { get; set; }
         /// <summary>
-        /// 当前实例IP
+        /// 当前实例IP(弃用)
         /// </summary>
-        public string curInstanceIp { get; set; }
+        //public string curInstanceIp { get; set; }
         /// <summary>
-        /// 当前IP序列
+        /// 当前IP序列(弃用)
         /// </summary>
-        public int curInstanceIpSerial { get; set; }
+        //public int curInstanceIpSerial { get; set; }
         /// <summary>
-        /// 实例模板ip
+        /// 实例模板ip(弃用)
         /// </summary>
-        public string instanceIpTemplate { get; set; }
+        //public string instanceIpTemplate { get; set; }
         /// <summary>
         /// 当前暴露端口(服务器IP+暴露端口)(如果为0则为实例IP+1337)
         /// </summary>

@@ -73,6 +73,7 @@ namespace MyDotnet.Controllers.Ns
             _unitOfWorkManage = unitOfWorkManage;
             _caching = caching;
         }
+
         [AllowAnonymous]
         [HttpGet]
         public async Task<MessageModel<NsPreRemindDto>> GetNsExpireInfo(long id)
@@ -236,25 +237,27 @@ namespace MyDotnet.Controllers.Ns
                 return MessageModel<string>.Fail($"域名不能为空");
 
             Expression<Func<Nightscout, bool>> whereExpression = a => true;
-
             whereExpression = whereExpression.And(t => t.Id != request.Id);
             whereExpression = whereExpression.And(t => t.url == request.url);
             var data = await _nightscoutServices.Dal.Query(whereExpression);
             if (data != null && data.Count > 0)
                 return MessageModel<string>.Fail($"当前操作的[{request.name}]与[{data[0].name}]的网址配置有冲突,请检查");
 
+            whereExpression = a => true;
             whereExpression.And(t => t.Id != request.Id);
             whereExpression = whereExpression.And(t => t.exposedPort == 0 && t.instanceIP == request.instanceIP && t.serverId == request.serverId);
             data = await _nightscoutServices.Dal.Query(whereExpression);
             if (data != null && data.Count > 0)
                 return MessageModel<string>.Fail($"当前操作的[{request.name}]与[{data[0].name}]的IP配置有冲突,请检查");
 
+            whereExpression = a => true;
             whereExpression.And(t => t.Id != request.Id);
             whereExpression = whereExpression.And(t => t.exposedPort > 0 && t.exposedPort == request.exposedPort && t.serverId == request.serverId);
             data = await _nightscoutServices.Dal.Query(whereExpression);
             if (data != null && data.Count > 0)
                 return MessageModel<string>.Fail($"当前操作的[{request.name}]与[{data[0].name}]的端口配置有冲突,请检查");
 
+            whereExpression = a => true;
             whereExpression.And(t => t.Id != request.Id);
             whereExpression = whereExpression.And(t => t.serviceName == request.serviceName);
             data = await _nightscoutServices.Dal.Query(whereExpression);
@@ -291,7 +294,7 @@ namespace MyDotnet.Controllers.Ns
             if (request.serverId > 0)
             {
                 //获取当前最大服务序列
-                var curServiceNameSerial = await _dictService.GetDic(DicTypeList.NsServiceNameCurSerial);
+                var curServiceNameSerial = await _dictService.GetDic(DicTypeList.NsServiceNameCurSerial,false);
                 var nsserver = await _nightscoutServerServices.Dal.QueryById(request.serverId);
                 if (request.serviceSerial == 0)
                 {
@@ -299,31 +302,22 @@ namespace MyDotnet.Controllers.Ns
                     var curSerial = curServiceNameSerial.content.ObjToInt();
                     if (curSerial <= 0)
                     {
-                        return MessageModel<string>.Fail("最大服务序列错误");
+                        return MessageModel<string>.Fail("实例序列初始序列未设置");
                     }
                     curSerial += 1;
                     curServiceNameSerial.content = curSerial.ObjToString();
                     //设置服务名称
-                    //nsserver.curServiceSerial += 1;
                     request.serviceName = $"nightscout-template{curSerial}";
-                    //request.serviceSerial = nsserver.curServiceSerial;
+                    request.serviceSerial = curSerial;
+                    //通过暴露端口访问
+                    if (nsserver.curExposedPort <= 0)
+                    {
+                        return MessageModel<string>.Fail("服务器端口初始端口未设置");
+                    }
+                    nsserver.curExposedPort += 1;
+                    request.exposedPort = nsserver.curExposedPort;
+                    request.instanceIP = nsserver.serverIp;
 
-                    //设置访问IP
-                    if (nsserver.curExposedPort > 0)
-                    {
-                        //通过暴露端口访问
-                        nsserver.curExposedPort += 1;
-                        request.exposedPort = nsserver.curExposedPort;
-                        request.instanceIP = nsserver.serverIp;
-                    }
-                    else
-                    {
-                        //通过实例DockerIP访问
-                        nsserver.curInstanceIpSerial += 1;
-                        //192.168.0.{}
-                        nsserver.curInstanceIp = string.Format(nsserver.instanceIpTemplate, nsserver.curInstanceIpSerial);
-                        request.instanceIP = nsserver.curInstanceIp;
-                    }
                     //不填写自动生成
                     var padName = curSerial.ObjToString().PadLeft(3, '0');
                     if (string.IsNullOrEmpty(request.name))
@@ -357,7 +351,6 @@ namespace MyDotnet.Controllers.Ns
                     request.Id = id;
                     await _nightscoutServerServices.Dal.Update(nsserver);
                     await _dictService.PutDicType(curServiceNameSerial);
-                    //await _nightscoutServerServices.Dal.Db.Updateable<NightscoutServer>().SetColumns(t=>t.curServiceSerial, nsserver.curServiceSerial).Where(t => t.Id > 0).ExecuteCommandAsync();
                     _unitOfWorkManage.CommitTran();
 
                     data.success = id > 0;
@@ -426,31 +419,21 @@ namespace MyDotnet.Controllers.Ns
             
             if (!request.serverId.Equals(old.serverId))
             {
-
-
-
-
                 //不是同一个服务器需要停掉先前服务器
 
                 var oldNsserver = await _nightscoutServerServices.Dal.QueryById(old.serverId);
                 await _nightscoutServices.StopDocker(old, oldNsserver);
 
                 var nsserver = await _nightscoutServerServices.Dal.QueryById(request.serverId);
-                if (nsserver.curExposedPort > 0)
+                //通过暴露端口访问
+                if (nsserver.curExposedPort <= 0)
                 {
-                    //通过暴露端口访问
-                    nsserver.curExposedPort += 1;
-                    request.exposedPort = nsserver.curExposedPort;
-                    request.instanceIP = nsserver.serverIp;
+                    return MessageModel<string>.Fail("服务器端口初始端口未设置");
                 }
-                else
-                {
-                    //通过实例DockerIP访问
-                    nsserver.curInstanceIpSerial += 1;
-                    //192.168.0.{}
-                    nsserver.curInstanceIp = string.Format(nsserver.instanceIpTemplate, nsserver.curInstanceIpSerial);
-                    request.instanceIP = nsserver.curInstanceIp;
-                }
+                nsserver.curExposedPort += 1;
+                request.exposedPort = nsserver.curExposedPort;
+                request.instanceIP = nsserver.serverIp;
+
                 var check2 = await CheckData(request);
                 if (!check2.success)
                 {
