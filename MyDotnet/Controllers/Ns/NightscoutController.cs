@@ -244,21 +244,21 @@ namespace MyDotnet.Controllers.Ns
                 return MessageModel<string>.Fail($"当前操作的[{request.name}]与[{data[0].name}]的网址配置有冲突,请检查");
 
             whereExpression = a => true;
-            whereExpression.And(t => t.Id != request.Id);
+            whereExpression = whereExpression.And(t => t.Id != request.Id);
             whereExpression = whereExpression.And(t => t.exposedPort == 0 && t.instanceIP == request.instanceIP && t.serverId == request.serverId);
             data = await _nightscoutServices.Dal.Query(whereExpression);
             if (data != null && data.Count > 0)
                 return MessageModel<string>.Fail($"当前操作的[{request.name}]与[{data[0].name}]的IP配置有冲突,请检查");
 
             whereExpression = a => true;
-            whereExpression.And(t => t.Id != request.Id);
+            whereExpression = whereExpression.And(t => t.Id != request.Id);
             whereExpression = whereExpression.And(t => t.exposedPort > 0 && t.exposedPort == request.exposedPort && t.serverId == request.serverId);
             data = await _nightscoutServices.Dal.Query(whereExpression);
             if (data != null && data.Count > 0)
                 return MessageModel<string>.Fail($"当前操作的[{request.name}]与[{data[0].name}]的端口配置有冲突,请检查");
 
             whereExpression = a => true;
-            whereExpression.And(t => t.Id != request.Id);
+            whereExpression = whereExpression.And(t => t.Id != request.Id);
             whereExpression = whereExpression.And(t => t.serviceName == request.serviceName);
             data = await _nightscoutServices.Dal.Query(whereExpression);
             if (data != null && data.Count > 0)
