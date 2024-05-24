@@ -524,11 +524,11 @@ namespace MyDotnet.Services.Ns
             nightscout.isStop = false;
             await Dal.Update(nightscout, t => new { t.isStop });
         }
-        public async Task SwitchDatabase(Nightscout nightscout, NightscoutServer oldnsserver, NightscoutServer newnsserver)
+        public async Task<bool> SwitchDatabase(Nightscout nightscout, NightscoutServer oldnsserver, NightscoutServer newnsserver)
         {
             //如果新旧服务器的数据库一致就不需要迁移数据库
             if (oldnsserver.mongoServerId == newnsserver.mongoServerId)
-                return;
+                return false;
             StringBuilder sb = new StringBuilder();
             NightscoutLog log = new NightscoutLog();
             try
@@ -612,6 +612,7 @@ namespace MyDotnet.Services.Ns
                     }
                     sshClient.Disconnect();
                 }
+                return true;
             }
             catch (Exception ex)
             {

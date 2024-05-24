@@ -471,10 +471,15 @@ namespace MyDotnet.Controllers.Ns
                     throw;
                 }
                 //判断是否迁移数据
-                await _nightscoutServices.SwitchDatabase(request, oldNsserver, nsserver);
-
+                var isSwitchOk = await _nightscoutServices.SwitchDatabase(request, oldNsserver, nsserver);
+                if (isSwitchOk)
+                {
+                    //迁移成功后删除原数据库
+                    await _nightscoutServices.DeleteData(request, oldNsserver);
+                }
                 //启动新实例
-                await _nightscoutServices.RunDocker(request, nsserver);
+                if(!request.isStop)
+                    await _nightscoutServices.RunDocker(request, nsserver);
                 isDiff = true;
             }
             if (request.isRefresh && !isDiff)
