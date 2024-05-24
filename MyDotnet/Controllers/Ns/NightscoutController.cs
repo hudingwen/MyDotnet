@@ -426,6 +426,10 @@ namespace MyDotnet.Controllers.Ns
             
             if (!request.serverId.Equals(old.serverId))
             {
+
+
+
+
                 //不是同一个服务器需要停掉先前服务器
 
                 var oldNsserver = await _nightscoutServerServices.Dal.QueryById(old.serverId);
@@ -466,6 +470,10 @@ namespace MyDotnet.Controllers.Ns
                     _unitOfWorkManage.RollbackTran();
                     throw;
                 }
+                //判断是否迁移数据
+                await _nightscoutServices.SwitchDatabase(request, oldNsserver, nsserver);
+
+                //启动新实例
                 await _nightscoutServices.RunDocker(request, nsserver);
                 isDiff = true;
             }

@@ -1,4 +1,5 @@
 ﻿using log4net;
+using Microsoft.Extensions.Hosting;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
@@ -31,6 +32,7 @@ namespace MyDotnet.Services.Ns
         public BaseServices<NightscoutCustomer> _nightscoutCustomerServices { get; set; }
         public DicService _dicService {  get; set; }
         public WeChatConfigServices _weChatConfigServices { get; set; }
+        public IWebHostEnvironment _env;
 
         public NightscoutServices(BaseRepository<Nightscout> baseRepository
             , BaseServices<NightscoutLog> nightscoutLogServices
@@ -38,6 +40,7 @@ namespace MyDotnet.Services.Ns
             , BaseServices<NightscoutCustomer> nightscoutCustomerServices
             , DicService dicService
             , WeChatConfigServices weChatConfigServices
+            , IWebHostEnvironment env
 
             ) : base(baseRepository)
         {
@@ -46,6 +49,7 @@ namespace MyDotnet.Services.Ns
             _nightscoutCustomerServices = nightscoutCustomerServices;
             _dicService = dicService;
             _weChatConfigServices = weChatConfigServices;
+            _env = env;
         }
 
         /// <summary>
@@ -520,7 +524,117 @@ namespace MyDotnet.Services.Ns
             nightscout.isStop = false;
             await Dal.Update(nightscout, t => new { t.isStop });
         }
+        public async Task SwitchDatabase(Nightscout nightscout, NightscoutServer oldnsserver, NightscoutServer newnsserver)
+        {
+            //如果新旧服务器的数据库一致就不需要迁移数据库
+            if (oldnsserver.mongoServerId == newnsserver.mongoServerId)
+                return;
+            StringBuilder sb = new StringBuilder();
+            NightscoutLog log = new NightscoutLog();
+            try
+            {
+                //备份
+                var curNsserverMongoSsh = await _nightscoutServerServices.Dal.QueryById(oldnsserver.mongoServerId);
+                using (var sshClient = new SshClient(curNsserverMongoSsh.serverIp, curNsserverMongoSsh.serverPort, curNsserverMongoSsh.serverLoginName, curNsserverMongoSsh.serverLoginPassword))
+                {
+                    sshClient.Connect();
 
+                    using (var cmd = sshClient.CreateCommand(""))
+                    {
+                        //docker备份
+                        var res = cmd.Execute($"docker exec -t mongoserver mongodump -u={curNsserverMongoSsh.mongoLoginName} -p={curNsserverMongoSsh.mongoLoginPassword} --db {nightscout.serviceName} -o /data/backup");
+                        //宿主机打包
+                        res = cmd.Execute($"zip -j -q -r /root/mongo/backup/{nightscout.serviceName}.zip /root/mongo/backup/{nightscout.serviceName}/*");
+                        //拷贝宿主文件到当前程序下
+                        using (var scpClient = new ScpClient(sshClient.ConnectionInfo))
+                        {
+                            var localPath = Path.Combine(_env.ContentRootPath, $"{nightscout.serviceName}.zip");
+                            scpClient.Connect();
+                            scpClient.Download($"/root/mongo/backup/{nightscout.serviceName}.zip", new FileInfo(localPath));
+                            scpClient.Disconnect();
+                        }
+
+                    }
+                    sshClient.Disconnect();
+                    sb.Append("备份完成");
+                }
+                //还原
+                curNsserverMongoSsh = await _nightscoutServerServices.Dal.QueryById(newnsserver.mongoServerId);
+                using (var sshClient = new SshClient(curNsserverMongoSsh.serverIp, curNsserverMongoSsh.serverPort, curNsserverMongoSsh.serverLoginName, curNsserverMongoSsh.serverLoginPassword))
+                {
+                    sshClient.Connect();
+
+                    using (var cmd = sshClient.CreateCommand(""))
+                    {
+                        //拷贝到另一台服务器上
+                        using (var scpClient = new ScpClient(sshClient.ConnectionInfo))
+                        {
+                            var localPath = Path.Combine(_env.ContentRootPath, $"{nightscout.serviceName}.zip");
+                            scpClient.Connect();
+                            scpClient.Upload(new FileInfo(localPath), $"/root/mongo/backup/{nightscout.serviceName}.zip");
+                            scpClient.Disconnect();
+                            FileHelper.FileDel(localPath);
+                        }
+                        //解压
+                        var res = cmd.Execute($"unzip -o -d /root/mongo/backup/{nightscout.serviceName} /root/mongo/backup/{nightscout.serviceName}.zip");
+
+
+                        //创建用户
+                        var grantConnectionMongoString = $"mongodb://{curNsserverMongoSsh.mongoLoginName}:{curNsserverMongoSsh.mongoLoginPassword}@{curNsserverMongoSsh.mongoIp}:{curNsserverMongoSsh.mongoPort}";
+                        var client = new MongoClient(grantConnectionMongoString);
+
+
+                        var database = client.GetDatabase(nightscout.serviceName);
+
+                        try
+                        {
+                            //创建用户
+                            var command = new BsonDocument
+                                    {
+                                        { "createUser", curNsserverMongoSsh.mongoLoginName },
+                                        { "pwd" ,curNsserverMongoSsh.mongoLoginPassword },
+                                        { "roles", new BsonArray
+                                            {
+                                                {"readWrite"}
+                                            }
+                                        }
+                                    };
+                            var result = database.RunCommand<BsonDocument>(command);
+                        }
+                        catch (Exception ex)
+                        {
+                            sb.Append($"创建用户失败:{ex.Message}");
+                        }
+
+                        //还原
+                        res = cmd.Execute($"docker exec -t mongoserver mongorestore -u={curNsserverMongoSsh.mongoLoginName} -p={curNsserverMongoSsh.mongoLoginPassword} -d {nightscout.serviceName} /data/backup/{nightscout.serviceName}");
+                        sb.Append("还原完成");
+                    }
+                    sshClient.Disconnect();
+                }
+            }
+            catch (Exception ex)
+            {
+                sb.AppendLine($"数据库迁移错误:{ex.Message}");
+                log.success = false;
+                throw;
+            }
+            finally
+            {
+                log.content = sb.ToString();
+                log.pid = nightscout.Id;
+                try
+                {
+                    await _nightscoutLogServices.Dal.Add(log);
+                }
+                catch (Exception ex)
+                {
+                    LogHelper.logSys.Error("ns日志记录失败", ex);
+                    LogHelper.logSys.Error($"ns日志记录失败:{log.content}-{log.pid}");
+                }
+            }
+
+        }
         public async Task RunDocker(Nightscout nightscout, NightscoutServer nsserver)
         {
             try

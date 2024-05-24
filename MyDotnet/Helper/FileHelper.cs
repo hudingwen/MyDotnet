@@ -378,6 +378,11 @@ namespace MyDotnet.Helper
                 throw new Exception(ee.ToString());
             }
         }
+
+        public static Stream OpenRead(string localFilePath)
+        {
+            return File.OpenRead(localFilePath);
+        }
         #endregion
     }
 }
