@@ -1,0 +1,21 @@
+[
+  {
+    "code": "sys_auth_info",
+    "name": "系统认证相关配置",
+    "content": null,
+    "content2": null,
+    "content3": null,
+    "description": null,
+    "Enabled": true,
+    "IsDeleted": false,
+    "IsInternal": false,
+    "CreateId": 0,
+    "CreateBy": "",
+    "CreateTime": "2024-05-29 17:24:31",
+    "ModifyId": null,
+    "ModifyBy": null,
+    "ModifyTime": null,
+    "Version": "0",
+    "Id": "1789923222200913920"
+  }
+]

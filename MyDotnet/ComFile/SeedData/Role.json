@@ -1,0 +1,20 @@
+[
+  {
+    "Name": "SuperAdmin",
+    "Description": "≥¨º∂π‹¿Ì",
+    "OrderSort": 0,
+    "Dids": null,
+    "AuthorityScope": -1,
+    "Enabled": true,
+    "IsDeleted": false,
+    "IsInternal": false,
+    "CreateId": 0,
+    "CreateBy": "",
+    "CreateTime": "2024-05-29 17:24:31",
+    "ModifyId": null,
+    "ModifyBy": null,
+    "ModifyTime": "2019-01-01 00:00:00",
+    "Version": "0",
+    "Id": "4"
+  }
+]

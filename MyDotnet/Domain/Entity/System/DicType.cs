@@ -11,26 +11,32 @@ namespace MyDotnet.Domain.Entity.System
         /// <summary>
         /// 字典code
         /// </summary>
+        [SugarColumn(Length = 50, IsNullable = false)]
         public string code { set; get; }
         /// <summary>
         /// 字典名称
         /// </summary>
+        [SugarColumn(Length = 50, IsNullable = false)]
         public string name { set; get; }
         /// <summary>
         /// 字典内容
         /// </summary>
+        [SugarColumn(Length = 300, IsNullable = true)]
         public string content { set; get; }
         /// <summary>
         /// 字典内容2
         /// </summary>
+        [SugarColumn(Length = 100, IsNullable = true)]
         public string content2 { set; get; }
         /// <summary>
         /// 字典内容3
         /// </summary>
+        [SugarColumn(Length = 100, IsNullable = true)]
         public string content3 { set; get; }
         /// <summary>
         /// 字典描述
         /// </summary>
+        [SugarColumn(Length = 100, IsNullable = true)]
         public string description { set; get; }
     }
 }

@@ -34,13 +34,15 @@ namespace MyDotnet.Tasks.HostJob
                     using (var scope = _services.CreateScope())
                     {
                         CodeFirstService codeFirstService = scope.ServiceProvider.GetRequiredService<CodeFirstService>();
+                        Console.WriteLine($"数据库初始开始");
                         await codeFirstService.InitDatabase();
+                        Console.WriteLine($"数据库初始结束");
                     }
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"数据库初始化失败");
+                Console.WriteLine($"数据库初始化失败:"+ex.Message);
                 LogHelper.logSys.Error("数据库初始化失败", ex);
             }
         }
