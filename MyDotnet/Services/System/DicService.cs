@@ -36,69 +36,101 @@ namespace MyDotnet.Services.System
         /// 获取一个字典类型值(缓存用)
         /// </summary>
         /// <param name="code"></param>
+        /// <param name="isUseCache">是否查询缓存</param>
         /// <returns></returns>
-        public async Task<DicType> GetDic(string code)
+        /// <exception cref="ServiceException"></exception>
+        public async Task<DicType> GetDic(string code,bool isUseCache = true)
         {
-            var data = await _caching.GetAsync<DicType>(code);
-            if(data == null)
+            if (isUseCache)
             {
-                //缓存穿透
+
+                var data = await _caching.GetAsync<DicType>(code);
+                if (data == null)
+                {
+                    //缓存穿透
+                    var ls = await _dicType.Query(t => t.code == code);
+                    if (ls == null || ls.Count == 0)
+                    {
+                        throw new ServiceException($"字典[{code}]不存在");
+                    }
+                    data = ls[0];
+                    //设置缓存
+                    _caching.Set(code, data);
+                }
+                return data;
+            }
+            else
+            {
                 var ls = await _dicType.Query(t => t.code == code);
                 if (ls == null || ls.Count == 0)
                 {
                     throw new ServiceException($"字典[{code}]不存在");
                 }
-                data = ls.FirstOrDefault();
-                //设置缓存
-                _caching.Set(code, data);
+                return ls[0];
             }
-            return data;
         }
-
         /// <summary>
         /// 获取一个字典类型列表值(缓存用)
         /// </summary>
         /// <param name="code"></param>
+        /// <param name="isUseCache">是否查询缓存</param>
         /// <returns></returns>
-        public async Task<List<DicData>> GetDicData(string code)
+        /// <exception cref="ServiceException"></exception>
+        public async Task<List<DicData>> GetDicData(string code, bool isUseCache = true)
         {
-
-            var data = await _caching.GetAsync<List<DicData>>(code);
-            if(data == null)
+            if (isUseCache)
             {
-                data = await _dicData.Query(t => t.pCode == code && t.Enabled == true, "codeOrder asc");
-                if (data == null || data.Count == 0)
+                var data = await _caching.GetAsync<List<DicData>>(code);
+                if (data == null)
                 {
-                    throw new ServiceException($"字典[{code}]不存在");
+                    data = await _dicData.Query(t => t.pCode == code && t.Enabled == true, "codeOrder asc");
+                    if (data == null || data.Count == 0)
+                    {
+                        throw new ServiceException($"字典[{code}]不存在");
+                    }
+                    //设置缓存
+                    _caching.Set($"{code}_list", data);
                 }
-                //设置缓存
-                _caching.Set($"{code}_list", data);
+                return data;
             }
-            return data;
+            else
+            {
+                return await _dicData.Query(t => t.pCode == code && t.Enabled == true, "codeOrder asc");
+            }
+             
         }
         /// <summary>
         /// 获取一个字典类型列表值(缓存用)
         /// </summary>
         /// <param name="pCode"></param>
         /// <param name="code"></param>
+        /// <param name="isUseCache">是否查询缓存</param>
         /// <returns></returns>
-        public async Task<DicData> GetDicDataOne(string pCode,string code)
+        public async Task<DicData> GetDicDataOne(string pCode,string code, bool isUseCache = true)
         {
-
-            var data = await _caching.GetAsync<List<DicData>>(pCode);
-            if (data == null)
+            if (isUseCache)
             {
-                data = await _dicData.Query(t => t.pCode == pCode && t.Enabled == true, "codeOrder asc");
-                if (data == null || data.Count == 0)
+                var data = await _caching.GetAsync<List<DicData>>(pCode);
+                if (data == null)
                 {
-                    throw new ServiceException($"字典[{code}]不存在");
-                }
+                    data = await _dicData.Query(t => t.pCode == pCode && t.Enabled == true, "codeOrder asc");
+                    if (data == null || data.Count == 0)
+                    {
+                        throw new ServiceException($"字典[{code}]不存在");
+                    }
 
-                //设置缓存
-                _caching.Set($"{code}_list", data);
+                    //设置缓存
+                    _caching.Set($"{code}_list", data);
+                }
+                var one = data.Find(t => t.code == code);
+                return one;
             }
-            var one = data.Find(t => t.code == code);
-            return one;
+            else
+            {
+                var data = await _dicData.Query(t => t.pCode == pCode && t.Enabled == true, "codeOrder asc");
+                return data.Find(t => t.code == code);
+            }
+              
         }
 
         /// <summary>
