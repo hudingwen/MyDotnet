@@ -108,6 +108,82 @@ namespace MyDotnet.Helper
             string[] arrStr = resourceStr.Split("\r\n");
             return string.Join("", (from q in arrStr select q).Skip(arrStr.Length - length + 1).Take(length).ToArray());
         }
+        /// <summary>
+        /// 下划线转驼峰
+        /// </summary>
+        /// <param name="snakeCaseString"></param>
+        /// <returns></returns>
+        public static string ToCamelCase(string snakeCaseString)
+        {
+            if (string.IsNullOrEmpty(snakeCaseString))
+            {
+                return snakeCaseString;
+            }
 
+            var parts = snakeCaseString.Split('_');
+            for (int i = 1; i < parts.Length; i++)
+            {
+                if (parts[i].Length > 0)
+                {
+                    parts[i] = char.ToUpper(parts[i][0]) + parts[i].Substring(1);
+                }
+            }
+
+            return string.Concat(parts);
+        }
+        /// <summary>
+        /// 驼峰转下划线
+        /// </summary>
+        /// <param name="camelCaseString"></param>
+        /// <returns></returns>
+        public static string ToSnakeCase(string camelCaseString)
+        {
+            if (string.IsNullOrEmpty(camelCaseString))
+            {
+                return camelCaseString;
+            }
+
+            var stringBuilder = new System.Text.StringBuilder();
+            for (int i = 0; i < camelCaseString.Length; i++)
+            {
+                if (char.IsUpper(camelCaseString[i]))
+                {
+                    if (i > 0)
+                    {
+                        stringBuilder.Append('_');
+                    }
+                    stringBuilder.Append(char.ToLower(camelCaseString[i]));
+                }
+                else
+                {
+                    stringBuilder.Append(camelCaseString[i]);
+                }
+            }
+
+            return stringBuilder.ToString();
+        }
+        /// <summary>
+        ///  下划线转驼峰(首字母大写-Pascal Case)
+        /// </summary>
+        /// <param name="snakeCaseString"></param>
+        /// <returns></returns>
+        public static string ToPascalCase(string snakeCaseString)
+        {
+            if (string.IsNullOrEmpty(snakeCaseString))
+            {
+                return snakeCaseString;
+            }
+
+            var parts = snakeCaseString.Split('_');
+            for (int i = 0; i < parts.Length; i++)
+            {
+                if (parts[i].Length > 0)
+                {
+                    parts[i] = char.ToUpper(parts[i][0]) + parts[i].Substring(1);
+                }
+            }
+
+            return string.Concat(parts);
+        }
     }
 }

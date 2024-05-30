@@ -20,6 +20,11 @@ namespace MyDotnet.Controllers.System
             _dbFirstService = dbFirstService;
             _env = env;
         }
+        /// <summary>
+        /// 通过数据库表创建实体
+        /// </summary>
+        /// <param name="dbFirstDto"></param>
+        /// <returns></returns>
         [HttpPost]
         public async Task<MessageModel<string>> CreateModels([FromBody]DbFirstDTO dbFirstDto)
         {
@@ -27,7 +32,7 @@ namespace MyDotnet.Controllers.System
                 return Failed("当前不处于开发模式,请勿操作");
             //"kmkm", $@"C:/my-file/Blog.Core.Model", "Blog.Core.Model.Models",new string[] { "t_code" }
             await _dbFirstService.CreateModels(dbFirstDto);
-            return Success("");
+            return Success("创建成功");
         }
     }
 }

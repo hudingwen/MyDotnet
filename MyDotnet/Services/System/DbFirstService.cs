@@ -47,7 +47,10 @@ namespace MyDotnet.Services.System
             }
             var ls = IDbFirst.IsCreateDefaultValue().IsCreateAttribute()
 
-                  .SettingClassTemplate(p => p =
+                
+                  .SettingClassTemplate((p) =>
+                  {
+                      p =
 @"{using}
 
 namespace " + strNameSpace + @"
@@ -56,17 +59,23 @@ namespace " + strNameSpace + @"
     [SugarTable( ""{ClassName}"", """ + dbFirstDto.connId + @""")]" + (dbFirstDto.isSerializable ? "\n    [Serializable]" : "") + @"
     public class {ClassName}" + (string.IsNullOrEmpty(dbFirstDto.strInterface) ? "" : (" : " + dbFirstDto.strInterface)) + @"
     {
-           public {ClassName}()
-           {
-           }
 {PropertyName}
     }
-}")
-                  //.SettingPropertyDescriptionTemplate(p => p = string.Empty)
-                  .SettingPropertyTemplate(p => p =
-@"{SugarColumn}
-           public {PropertyType} {PropertyName} { get; set; }")
+}";
 
+                      return p;
+                  }
+)
+                  .SettingPropertyTemplate((p1,p2,p3) =>
+                  {
+                      var p =
+@$"
+           [SugarColumn({(p3.Equals("string") ? "Length = "+p1.Length+", " : "")}IsNullable = {(p1.IsNullable ? "true" : "false")}{(p1.IsPrimarykey ? ", IsPrimaryKey = true" : "")})]
+           public {p3} {p1.DbColumnName} {{ get; set; }}";
+
+                      return p;
+
+                  })   
                    //.SettingConstructorTemplate(p => p = "              this._{PropertyName} ={DefaultValue};")
 
                    .ToClassStringList(strNameSpace); 
