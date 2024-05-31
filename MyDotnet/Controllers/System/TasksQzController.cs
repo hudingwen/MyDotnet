@@ -2,13 +2,16 @@
 using System.Reflection;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using MyDotnet.Domain.Attr;
 using MyDotnet.Domain.Dto.System;
+using MyDotnet.Domain.Entity.Nginx;
 using MyDotnet.Domain.Entity.System;
 using MyDotnet.Helper;
 using MyDotnet.Repository;
 using MyDotnet.Services;
 using MyDotnet.Services.System;
 using Quartz;
+using SqlSugar;
 
 namespace MyDotnet.Controllers.System
 {
@@ -506,7 +509,17 @@ namespace MyDotnet.Controllers.System
                 .GetExportedTypes()
                 .Where(x => x != baseType && baseType.IsAssignableFrom(x))
                 .ToArray();
-            var implementTypes = types.Where(x => x.IsClass).Select(item => new QuartzReflectionViewModel { nameSpace = item.Namespace, nameClass = item.Name, remark = "" }).ToList();
+            var implementTypes = types.Where(x => x.IsClass).Select(type => {
+                var temp = new QuartzReflectionViewModel { nameSpace = type.Namespace, nameClass = type.Name, remark = "" };
+                var tempAttr = Attribute.GetCustomAttribute(type, typeof(JobDescriptionAttribute));
+                if (tempAttr != null)
+                {
+                    temp.name = ((JobDescriptionAttribute)tempAttr).Name;
+                    temp.description = ((JobDescriptionAttribute)tempAttr).Description;
+                } 
+                return temp;
+            }).ToList();
+
             return MessageModel<List<QuartzReflectionViewModel>>.Success("获取成功", implementTypes);
         }
 

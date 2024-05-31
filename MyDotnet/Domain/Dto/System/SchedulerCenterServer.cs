@@ -464,29 +464,27 @@ namespace MyDotnet.Domain.Dto.System
             var result = new MessageModel<string>();
             try
             {
-                JobKey jobKey = new JobKey(tasksQz.Id.ToString(), tasksQz.JobGroup);
-
-                //判断任务是否存在，存在则 触发一次，不存在则先添加一个任务，触发以后再 停止任务
-                if (!await _scheduler.Result.CheckExists(jobKey))
+                //判断任务调度是否开启
+                if (!_scheduler.Result.IsStarted)
                 {
-                    //不存在 则 添加一个计划任务
-                    var status = await AddScheduleJobAsync(tasksQz);
-                    if (!status.success) return status;
-
-                    //触发执行一次
-                    await _scheduler.Result.TriggerJob(jobKey);
-
-                    //停止任务
-                    await StopScheduleJobAsync(tasksQz);
-
-                    result.msg = $"立即执行计划任务:【{tasksQz.Name}】成功";
+                    await StartScheduleAsync();
                 }
-                else
-                {
-                    await _scheduler.Result.TriggerJob(jobKey);
 
-                    result.msg = $"立即执行计划任务:【{tasksQz.Name}】成功";
-                }
+                string className = $"{tasksQz.AssemblyName}.{tasksQz.ClassName}";
+                Type jobType = Type.GetType(className);
+
+                //传入反射出来的执行程序集
+                IJobDetail job = new JobDetailImpl(StringHelper.GetGUID(), tasksQz.JobGroup, jobType);
+                job.JobDataMap.Add("JobParam", tasksQz.JobParams);
+
+                // 定义一个立即触发的触发器
+                ITrigger trigger = TriggerBuilder.Create()
+                    .WithIdentity(StringHelper.GetGUID(), tasksQz.JobGroup, jobType)
+                    .StartNow()
+                    .Build();
+                await _scheduler.Result.ScheduleJob(job, trigger);
+                result.success = true;
+                result.msg = "执行成功";
             }
             catch (Exception ex)
             {

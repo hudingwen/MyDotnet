@@ -1,4 +1,5 @@
 ﻿
+using MyDotnet.Domain.Attr;
 using MyDotnet.Domain.Dto.Ns;
 using MyDotnet.Domain.Dto.WeChat;
 using MyDotnet.Domain.Entity.Ns;
@@ -14,6 +15,7 @@ namespace MyDotnet.Tasks.QuartzJob
     /// <summary>
     /// Nightscout定时停止实例
     /// </summary>
+    [JobDescriptionAttribute("Nightscout定时停止实例", "当超过一段时间没有使用就会停止实例,过期的也会被停止掉")]
     public class Job_Nightscout_Stop_Quartz : JobBase, IJob
     {
         public Job_Nightscout_Stop_Quartz(BaseServices<TasksQz> tasksQzServices

@@ -1,5 +1,6 @@
 ﻿
 using Amazon.Runtime.Internal.Util;
+using MyDotnet.Domain.Attr;
 using MyDotnet.Domain.Dto.Ns;
 using MyDotnet.Domain.Dto.System;
 using MyDotnet.Domain.Dto.WeChat;
@@ -18,6 +19,7 @@ namespace MyDotnet.Tasks.QuartzJob
     /// <summary>
     /// Nightscout定时切换CDN
     /// </summary>
+    [JobDescriptionAttribute("Nightscout网络检测", "出现异常时自动切换其他网络")]
     public class Job_Nightscout_CDN_Quartz : JobBase, IJob
     {
         public Job_Nightscout_CDN_Quartz(BaseServices<TasksQz> tasksQzServices

@@ -1,4 +1,5 @@
 ﻿
+using MyDotnet.Domain.Attr;
 using MyDotnet.Domain.Dto.Ns;
 using MyDotnet.Domain.Dto.WeChat;
 using MyDotnet.Domain.Entity.Ns;
@@ -17,6 +18,7 @@ namespace MyDotnet.Tasks.QuartzJob
     /// <summary>
     /// Nightscout定时刷新
     /// </summary>
+    [JobDescriptionAttribute("Nightscout定时刷新", "执行此任务会把每个服务器的实例都重启一次")]
     public class Job_Nightscout_Refresh_Quartz : JobBase, IJob
     {
         public Job_Nightscout_Refresh_Quartz(BaseServices<TasksQz> tasksQzServices

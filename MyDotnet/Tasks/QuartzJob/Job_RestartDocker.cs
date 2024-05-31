@@ -1,4 +1,5 @@
 ﻿
+using MyDotnet.Domain.Attr;
 using MyDotnet.Domain.Entity.Ns;
 using MyDotnet.Domain.Entity.System;
 using MyDotnet.Helper;
@@ -8,6 +9,10 @@ using Renci.SshNet;
 
 namespace MyDotnet.Tasks.QuartzJob
 {
+    /// <summary>
+    /// 定时重启Nginx服务
+    /// </summary>
+    [JobDescriptionAttribute("定时重启Nginx服务", "查找服务器为Nginx的标记进行重启")]
     public class Job_RestartDocker : JobBase, IJob
     {
         public Job_RestartDocker(BaseServices<TasksQz> tasksQzServices

@@ -14,6 +14,14 @@
         /// </summary>
         public string nameClass { get; set; }
         /// <summary>
+        /// 任务名称
+        /// </summary>
+        public string name { get; set; }
+        /// <summary>
+        /// 任务描述
+        /// </summary>
+        public string description { get; set; }
+        /// <summary>
         /// 备注
         /// </summary>
         public string remark { get; set; }

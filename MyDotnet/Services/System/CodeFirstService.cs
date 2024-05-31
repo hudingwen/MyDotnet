@@ -1,6 +1,7 @@
 ﻿using Microsoft.IdentityModel.Tokens;
 using MyDotnet.Domain.Dto.System;
 using MyDotnet.Domain.Entity.Base;
+using MyDotnet.Domain.Entity.Nginx;
 using MyDotnet.Domain.Entity.Ns;
 using MyDotnet.Domain.Entity.System;
 using MyDotnet.Domain.Entity.Trojan;
@@ -21,17 +22,17 @@ namespace MyDotnet.Services.System
             , UnitOfWorkManage unitOfWorkManage) : base(baseRepository)
         {
             _unitOfWorkManage = unitOfWorkManage;
-        } 
+        }
         /// <summary>
         /// 通过实体创建数据库表
         /// </summary>
-        /// <param name="dbFirstDto"></param>
+        /// <param name="codeFirstDTO"></param>
         /// <returns></returns>
-        public async Task CreateTables(DbFirstDTO dbFirstDto)
+        public async Task CreateTables(CodeFirstDTO codeFirstDTO)
         {
-            var db = _unitOfWorkManage.db.GetConnectionScope(dbFirstDto.connId);
+            var db = _unitOfWorkManage.db.GetConnectionScope(codeFirstDTO.connId);
 
-            var dbInfo = DbConfigHelper.listdatabase.Find(t => t.ConnId == dbFirstDto.connId);
+            var dbInfo = DbConfigHelper.listdatabase.Find(t => t.ConnId == codeFirstDTO.connId);
 
             if (!(dbInfo.DbType == DataBaseType.Oracle || dbInfo.DbType == DataBaseType.Dm))
             {
@@ -41,7 +42,27 @@ namespace MyDotnet.Services.System
             }
 
             //创建表：根据实体类CodeFirstTable1  (所有数据库都支持)
-            db.CodeFirst.InitTables(typeof(UserGoogleAuthenticator)); 
+            Type type = typeof(NginxHostRequest);
+            var tempAttr = Attribute.GetCustomAttribute(type, typeof(SugarTable));
+            var attrTable = string.Empty;
+            if (tempAttr != null)
+            {
+                attrTable = ((SugarTable)tempAttr).TableName;
+            }
+
+            if (!string.IsNullOrEmpty(attrTable))
+            {
+                //查特性
+                if (!db.DbMaintenance.IsAnyTable(attrTable))
+                {
+                    db.CodeFirst.InitTables<NginxHostRequest>();
+                }
+            }
+            else if (!db.DbMaintenance.IsAnyTable(type.Name))
+            {
+                //直接查反射名
+                db.CodeFirst.InitTables<NginxHostRequest>();
+            }
 
             await Task.CompletedTask;
         }

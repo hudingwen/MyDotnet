@@ -1,4 +1,5 @@
 ﻿
+using MyDotnet.Domain.Attr;
 using MyDotnet.Domain.Dto.Other;
 using MyDotnet.Domain.Entity.System;
 using MyDotnet.Helper;
@@ -8,6 +9,10 @@ using System.Net.Http.Headers;
 
 namespace MyDotnet.Tasks.QuartzJob
 {
+    /// <summary>
+    /// QQ群消息提醒
+    /// </summary>
+    [JobDescriptionAttribute("QQ群消息提醒", "")]
     public class Job_QQGroup_Quartz : JobBase, IJob
     {
         public Job_QQGroup_Quartz(BaseServices<TasksQz> tasksQzServices

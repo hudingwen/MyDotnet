@@ -1,4 +1,5 @@
 ﻿
+using MyDotnet.Domain.Attr;
 using MyDotnet.Domain.Dto.Ns;
 using MyDotnet.Domain.Dto.WeChat;
 using MyDotnet.Domain.Entity.Ns;
@@ -17,6 +18,7 @@ namespace MyDotnet.Tasks.QuartzJob
     /// <summary>
     /// Nightscout定时刷新-单个服务器(需参数)
     /// </summary>
+    [JobDescriptionAttribute("Nightscout定时刷新-单个服务器", "任务参数为服务器id")]
     public class Job_Nightscout_Refresh_Single_Quartz : JobBase, IJob
     {
         public Job_Nightscout_Refresh_Single_Quartz(BaseServices<TasksQz> tasksQzServices

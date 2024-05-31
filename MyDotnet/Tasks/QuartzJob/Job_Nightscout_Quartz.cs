@@ -1,4 +1,5 @@
 ﻿
+using MyDotnet.Domain.Attr;
 using MyDotnet.Domain.Dto.Ns;
 using MyDotnet.Domain.Dto.WeChat;
 using MyDotnet.Domain.Entity.Ns;
@@ -16,6 +17,7 @@ namespace MyDotnet.Tasks.QuartzJob
     /// <summary>
     /// Nightscout到期提醒
     /// </summary>
+    [JobDescriptionAttribute("Nightscout到期提醒", "会提前多少天提醒")]
     public class Job_Nightscout_Quartz : JobBase, IJob
     {
         public Job_Nightscout_Quartz(BaseServices<TasksQz> tasksQzServices

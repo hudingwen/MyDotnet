@@ -1,4 +1,5 @@
 ﻿
+using MyDotnet.Domain.Attr;
 using MyDotnet.Domain.Entity.System;
 using MyDotnet.Domain.Entity.Trojan;
 using MyDotnet.Helper;
@@ -8,6 +9,10 @@ using Quartz;
 
 namespace MyDotnet.Tasks.QuartzJob
 {
+    /// <summary>
+    /// 每月流量统计
+    /// </summary>
+    [JobDescriptionAttribute("每月流量统计", "任务会每月1号执行,并清零使用流量")]
     public class Job_Trojan_Quartz : JobBase, IJob
     {
         public Job_Trojan_Quartz(BaseServices<TasksQz> tasksQzServices

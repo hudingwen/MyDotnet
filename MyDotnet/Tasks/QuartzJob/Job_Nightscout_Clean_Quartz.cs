@@ -1,4 +1,5 @@
 ﻿
+using MyDotnet.Domain.Attr;
 using MyDotnet.Domain.Dto.Ns;
 using MyDotnet.Domain.Dto.WeChat;
 using MyDotnet.Domain.Entity.Ns;
@@ -14,6 +15,7 @@ namespace MyDotnet.Tasks.QuartzJob
     /// <summary>
     /// Nightscout定时清理数据
     /// </summary>
+    [JobDescriptionAttribute("Nightscout定时清理数据", "清理好多天以前的数据")]
     public class Job_Nightscout_Clean_Quartz : JobBase, IJob
     {
         public Job_Nightscout_Clean_Quartz(BaseServices<TasksQz> tasksQzServices

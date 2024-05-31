@@ -1,4 +1,5 @@
 ﻿
+using MyDotnet.Domain.Attr;
 using MyDotnet.Domain.Entity.System;
 using MyDotnet.Helper;
 using MyDotnet.Services;
@@ -6,6 +7,10 @@ using Quartz;
 
 namespace MyDotnet.Tasks.QuartzJob
 {
+    /// <summary>
+    /// 清理sql任务
+    /// </summary>
+    [JobDescriptionAttribute("清理sql任务","给一段sql,就可以执行")]
     public class Job_CleanSQL_Quartz : JobBase, IJob
     {
         public Job_CleanSQL_Quartz(BaseServices<TasksQz> tasksQzServices

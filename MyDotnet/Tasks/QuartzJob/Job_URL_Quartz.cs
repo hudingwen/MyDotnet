@@ -1,4 +1,5 @@
 ﻿
+using MyDotnet.Domain.Attr;
 using MyDotnet.Domain.Entity.System;
 using MyDotnet.Helper;
 using MyDotnet.Services;
@@ -6,6 +7,10 @@ using Quartz;
 
 namespace MyDotnet.Tasks.QuartzJob
 {
+    /// <summary>
+    /// url访问任务
+    /// </summary>
+    [JobDescriptionAttribute("url访问任务", "参数提供一段url,执行get请求")]
     public class Job_URL_Quartz : JobBase, IJob
     {
         public Job_URL_Quartz(BaseServices<TasksQz> tasksQzServices

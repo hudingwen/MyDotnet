@@ -7,5 +7,10 @@
         /// </summary>
         public string connId { get; set; }
 
+        /// <summary>
+        /// 需要生成的表名列表
+        /// </summary>
+        public string[] lsTableNames { get; set; }
+
     }
 }

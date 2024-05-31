@@ -1,4 +1,5 @@
 ﻿
+using MyDotnet.Domain.Attr;
 using MyDotnet.Domain.Dto.Trojan;
 using MyDotnet.Domain.Entity.System;
 using MyDotnet.Domain.Entity.Trojan;
@@ -14,6 +15,10 @@ using System.Net.NetworkInformation;
 
 namespace MyDotnet.Tasks.QuartzJob
 {
+    /// <summary>
+    /// ip优先
+    /// </summary>
+    [JobDescriptionAttribute("ip优先", "会根据ping值查找最优ip,并回写服务器列表")]
     public class Job_Trojan_Select_Quartz : JobBase, IJob
     {
         public Job_Trojan_Select_Quartz(BaseServices<TasksQz> tasksQzServices

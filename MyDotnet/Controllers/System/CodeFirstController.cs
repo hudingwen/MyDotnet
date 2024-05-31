@@ -23,14 +23,14 @@ namespace MyDotnet.Controllers.System
         /// <summary>
         /// 创建一个数据库表
         /// </summary>
-        /// <param name="dbFirstDto"></param>
+        /// <param name="codeFirstDTO"></param>
         /// <returns></returns>
         [HttpPost]
-        public async Task<MessageModel<string>> CreateTables([FromBody]DbFirstDTO dbFirstDto)
+        public async Task<MessageModel<string>> CreateTables([FromBody]CodeFirstDTO codeFirstDTO)
         {
             if (!_env.IsDevelopment())
                 return Failed("当前不处于开发模式,请勿操作");
-            await _codeFirstService.CreateTables(dbFirstDto);
+            await _codeFirstService.CreateTables(codeFirstDTO);
             return Success("创建成功");
         }
         /// <summary>
