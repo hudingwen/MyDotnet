@@ -104,7 +104,7 @@ namespace MyDotnet.Controllers.Ns
         }
 
         [HttpDelete]
-        public async Task<MessageModel<string>> Delete(long id)
+        public async Task<MessageModel<string>> Delete(string id)
         {
             var isOk = await baseServices.Dal.DeleteById(id);
             if (isOk)
