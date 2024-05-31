@@ -185,5 +185,24 @@ namespace MyDotnet.Helper
 
             return string.Concat(parts);
         }
+        /// <summary>
+        /// 随机获取中文
+        /// </summary>
+        /// <param name="length"></param>
+        /// <returns></returns>
+        public static string GenerateRandomChinese(int length)
+        {
+            Random random = new Random();
+            StringBuilder sb = new StringBuilder(length);
+
+            for (int i = 0; i < length; i++)
+            {
+                int unicodeValue = random.Next(0x4E00, 0x9FFF + 1);
+                char chineseChar = (char)unicodeValue;
+                sb.Append(chineseChar);
+            }
+
+            return sb.ToString();
+        }
     }
 }

@@ -74,8 +74,17 @@ namespace MyDotnet.Domain.Entity.Ns
         /// </summary>
         public DateTime? delete_time { get; set; }
 
+        /// <summary>
+        /// 创建数量
+        /// </summary>
 
         [SugarColumn(IsIgnore = true)]
         public int createCount {  get; set; }
+
+        /// <summary>
+        /// 创建类型0-英文 1-中文 
+        /// </summary>
+        [SugarColumn(IsIgnore = true)]
+        public int createType { get; set; }
     }
 }

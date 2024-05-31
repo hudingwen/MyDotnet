@@ -746,7 +746,7 @@ EOF
             resMaster += cmdMaster.Execute(excNginx);
             resMaster += cmdMaster.Execute("docker exec -t nginxserver nginx -s reload");
             NsInfo.ngCount = NsInfo.ngCount + 1;
-            if (NsInfo.ngCount >= 10)
+            if (NsInfo.ngCount >= 5)
             {
                 NsInfo.ngCount = 0;
                 resMaster += cmdMaster.Execute("docker exec -t nginxserver nginx -s stop");

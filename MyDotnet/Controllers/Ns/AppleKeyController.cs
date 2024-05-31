@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Driver.Core.Servers;
+using MyDotnet.Controllers.Base;
 using MyDotnet.Domain.Dto.System;
 using MyDotnet.Domain.Entity.Ns;
 using MyDotnet.Helper;
@@ -17,7 +18,7 @@ namespace MyDotnet.Controllers.Ns
     [Route("api/[controller]/[action]")]
     [ApiController]
     [Authorize(Permissions.Name)]
-    public class AppleKeyController : ControllerBase
+    public class AppleKeyController : BaseApiController
     {
         private BaseServices<TCode> baseServices;
         public AppleKeyController(BaseServices<TCode> _baseServices)
@@ -52,7 +53,17 @@ namespace MyDotnet.Controllers.Ns
                 while (i<= data.createCount)
                 {
                     TCode code = new TCode();
-                    code.auth_code= "Q"+StringHelper.GetGUID().ToUpper().Substring(0,17);
+                    if(data.createType == 0)
+                    {
+                        code.auth_code = "Q" + StringHelper.GetGUID().ToUpper().Substring(0, 17);
+                    }else if (data.createType == 1)
+                    {
+                        code.auth_code = StringHelper.GenerateRandomChinese(12);
+                    }
+                    else
+                    {
+                        return Failed(new List<TCode>(),"激活码类型错误");
+                    }
                     code.user_id = "d480cea86cda0272bc7e8e20f5e3eea6"; 
                     code.id = StringHelper.GetGUID().ToLower();
                     code.record_id = code.id;
