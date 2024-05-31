@@ -63,10 +63,9 @@ namespace MyDotnet.Services.Analyze
                             {
                                 findHost = new NginxHostRequest();
                                 findHost.host = host;
-                                findHost.date = dateTime.Date;
                                 requests.Add(findHost);
                             }
-
+                            findHost.date = dateTime;
                             //url
                             var urlStr = matches[3].Groups[1].Value;
 
