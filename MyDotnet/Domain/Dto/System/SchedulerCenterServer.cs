@@ -474,12 +474,12 @@ namespace MyDotnet.Domain.Dto.System
                 Type jobType = Type.GetType(className);
 
                 //传入反射出来的执行程序集
-                IJobDetail job = new JobDetailImpl(tasksQz.Id.ToString(), tasksQz.JobGroup, jobType);
+                IJobDetail job = new JobDetailImpl(tasksQz.Id.ToString(), tasksQz.JobGroup+"-"+ StringHelper.GetGUID(), jobType);
                 job.JobDataMap.Add("JobParam", tasksQz.JobParams);
 
                 // 定义一个立即触发的触发器
                 ITrigger trigger = TriggerBuilder.Create()
-                    .WithIdentity(tasksQz.Id.ToString(), tasksQz.JobGroup)
+                    .WithIdentity(tasksQz.Id.ToString(), tasksQz.JobGroup + "-" + StringHelper.GetGUID())
                     .StartNow()
                     .Build();
                 await _scheduler.Result.ScheduleJob(job, trigger);

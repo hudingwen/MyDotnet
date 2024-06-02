@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using MyDotnet.Domain.Dto.System;
 using MyDotnet.Domain.Dto.Trojan;
 using MyDotnet.Domain.Entity.Ns;
+using MyDotnet.Domain.Entity.System;
 using MyDotnet.Domain.Entity.Trojan;
 using MyDotnet.Helper;
 using MyDotnet.Repository;
@@ -82,12 +83,25 @@ namespace MyDotnet.Controllers.Trojan
             var data = await _trojanUsersServices.Dal.QueryPage(whereFind, pagination.page, pagination.size,"id desc");
             if (data.data.Count > 0)
             {
+                //流量统计
                 var ids = data.data.Select(t => t.id).ToList();
                 var where = LinqHelper.True<TrojanDetails>();
-                where = where.And(t => ids.Contains(t.userId));//.And(t => t.calDate < DateTime.Now).And(t => t.calDate > DateTime.Now.AddMonths(-12));
+                where = where.And(t => ids.Contains(t.userId));
                 var userDetails = await _baseServicesDetails.Dal.Query(where);
+                
+                //获取绑定服务器
+                var whereServerUser = LinqHelper.True<TrojanServersUsers>();
+                whereServerUser = whereServerUser.And(t => ids.Contains(t.userid));
+                var serverUser = await _baseServicesServersUsers.Dal.Query(whereServerUser);
+                //获取排除服务器
+                var whereServerUserExclude = LinqHelper.True<TrojanServersUsersExclude>();
+                whereServerUserExclude = whereServerUserExclude.And(t => ids.Contains(t.userid));
+                var serverUserExclude = await _baseServicesServersUsersExclude.Dal.Query(whereServerUserExclude);
+
+
                 foreach (var trojanUser in data.data)
                 {
+                    //流量统计
                     var ls = from t in userDetails
                              where t.userId == trojanUser.id
                              group t by new { moth = t.calDate.ToString("yyyy-MM"), id = t.userId } into g
@@ -96,7 +110,15 @@ namespace MyDotnet.Controllers.Trojan
                     var lsData = ls.ToList();
                     lsData.Insert(0, new TrojanUseDetailDto { userId = trojanUser.id, up = trojanUser.upload, down = trojanUser.download, moth = DateTime.Now.ToString("yyyy-MM") });
                     trojanUser.useList = lsData;
+
+                    //绑定服务器
+                    trojanUser.serverIds = serverUser.FindAll(t => t.userid == trojanUser.id).Select(t => t.serverid).ToList();
+                    //排除服务器
+                    trojanUser.serverIdsExclude = serverUserExclude.FindAll(t => t.userid == trojanUser.id).Select(t => t.serverid).ToList();
+
                 }
+
+
             }
             return MessageModel<PageModel<TrojanUsers>>.Success("获取成功", data);
         }
@@ -128,8 +150,40 @@ namespace MyDotnet.Controllers.Trojan
             user.download = 0;
             user.password = passEcrypt;
             user.passwordshow = pass;
-            var data = await _trojanUsersServices.Dal.Db.Insertable<TrojanUsers>(user).ExecuteCommandAsync();
-            return MessageModel<object>.Success("添加成功", data);
+
+           
+            try
+            {
+                _unitOfWorkManage.BeginTran();
+                var data = await _trojanUsersServices.Dal.Db.Insertable<TrojanUsers>(user).ExecuteCommandIdentityIntoEntityAsync();
+                //绑定服务器
+                List<TrojanServersUsers> trojanServersUsers = new List<TrojanServersUsers>();
+                user.serverIds.ForEach(t =>
+                {
+                    trojanServersUsers.Add(new TrojanServersUsers { serverid = t, userid = user.id });
+                });
+
+                await _baseServicesServersUsers.Dal.Delete(t => t.userid == user.id);
+                await _baseServicesServersUsers.Dal.Add(trojanServersUsers);
+
+                //排除服务器
+                List<TrojanServersUsersExclude> trojanServersUsersExcludes = new List<TrojanServersUsersExclude>();
+                user.serverIdsExclude.ForEach(t =>
+                {
+                    trojanServersUsersExcludes.Add(new TrojanServersUsersExclude { serverid = t, userid = user.id });
+                });
+                await _baseServicesServersUsersExclude.Dal.Delete(t => t.userid == user.id);
+                await _baseServicesServersUsersExclude.Dal.Add(trojanServersUsersExcludes);
+
+                _unitOfWorkManage.CommitTran();
+            }
+            catch (Exception)
+            {
+                _unitOfWorkManage.RollbackTran();
+                throw;
+            }
+
+            return MessageModel<object>.Success("添加成功");
         }
         /// <summary>
         /// 更新Trojan用户
@@ -139,25 +193,66 @@ namespace MyDotnet.Controllers.Trojan
         [HttpPut]
         public async Task<MessageModel<object>> UpdateUser([FromBody] TrojanUsers user)
         {
-            var data = await _trojanUsersServices.Dal.Update(user);
+            
+            try
+            {
+                _unitOfWorkManage.BeginTran();
+                var data = await _trojanUsersServices.Dal.Update(user);
+                //绑定服务器
+                List<TrojanServersUsers> trojanServersUsers = new List<TrojanServersUsers>();
+                user.serverIds.ForEach(t =>
+                {
+                    trojanServersUsers.Add(new TrojanServersUsers { serverid = t, userid = user.id });
+                });
+                await _baseServicesServersUsers.Dal.Delete(t => t.userid == user.id);
+                await _baseServicesServersUsers.Dal.Add(trojanServersUsers);
 
+                //排除服务器
+                List<TrojanServersUsersExclude> trojanServersUsersExcludes = new List<TrojanServersUsersExclude>();
+                user.serverIdsExclude.ForEach(t =>
+                {
+                    trojanServersUsersExcludes.Add(new TrojanServersUsersExclude { serverid = t, userid = user.id });
+                });
+                await _baseServicesServersUsersExclude.Dal.Delete(t => t.userid == user.id);
+                await _baseServicesServersUsersExclude.Dal.Add(trojanServersUsersExcludes);
+
+                _unitOfWorkManage.CommitTran();
+            }
+            catch (Exception)
+            {
+                _unitOfWorkManage.RollbackTran();
+                throw;
+            }
             //重启服务
             var servers = await _dicService.GetDicData(TrojanInfo.TrojanServer);
+            bool isRestartOk = true;
+            Exception err = null;
+            DicData errDic = null;
             foreach (var item in servers)
             {
-                using (var sshClient = new SshClient(item.code, item.content.ObjToInt(), item.content2, item.content3))
+                try
                 {
-                    //创建SSH
-                    sshClient.Connect();
-                    using (var cmd = sshClient.CreateCommand(""))
+                    using (var sshClient = new SshClient(item.code, item.content.ObjToInt(), item.content2, item.content3))
                     {
-                        var res = cmd.Execute($"systemctl restart trojan");
+                        //创建SSH
+                        sshClient.Connect();
+                        using (var cmd = sshClient.CreateCommand(""))
+                        {
+                            var res = cmd.Execute($"systemctl restart trojan");
+                        }
+                        sshClient.Disconnect();
                     }
-                    sshClient.Disconnect();
+                }
+                catch (Exception ex)
+                {
+                    err = ex;
+                    errDic = item;
+                    isRestartOk = false;
+                    LogHelper.logApp.Error("服务器重启失败", ex);
                 }
             }
 
-            return MessageModel<object>.Success("更新成功", data);
+            return MessageModel<object>.Success($"更新成功{(isRestartOk == false ? ",但有服务器(" + errDic.name + ")重启失败:"+ err.Message : "")}");
         }
 
         /// <summary>
@@ -167,25 +262,57 @@ namespace MyDotnet.Controllers.Trojan
         /// <returns></returns>
         [HttpDelete]
         public async Task<MessageModel<string>> DelUser(int id)
-        { 
-            await _trojanUsersServices.Dal.DeleteById(id);
+        {
+
+
+            try
+            {
+                _unitOfWorkManage.BeginTran();
+                await _trojanUsersServices.Dal.DeleteById(id);
+                //绑定服务器 
+                await _baseServicesServersUsers.Dal.Delete(t => t.userid == id);
+
+                //排除服务器
+                await _baseServicesServersUsersExclude.Dal.Delete(t => t.userid == id);
+
+                _unitOfWorkManage.CommitTran();
+            }
+            catch (Exception)
+            {
+                _unitOfWorkManage.RollbackTran();
+                throw;
+            }
 
             //重启服务
             var servers = await _dicService.GetDicData(TrojanInfo.TrojanServer);
+            bool isRestartOk = true;
+            Exception err = null;
+            DicData errDic = null;
             foreach (var item in servers)
             {
-                using (var sshClient = new SshClient(item.code, item.content.ObjToInt(), item.content2, item.content3))
+                try
                 {
-                    //创建SSH
-                    sshClient.Connect();
-                    using (var cmd = sshClient.CreateCommand(""))
+                    using (var sshClient = new SshClient(item.code, item.content.ObjToInt(), item.content2, item.content3))
                     {
-                        var res = cmd.Execute($"systemctl restart trojan");
+                        //创建SSH
+                        sshClient.Connect();
+                        using (var cmd = sshClient.CreateCommand(""))
+                        {
+                            var res = cmd.Execute($"systemctl restart trojan");
+                        }
+                        sshClient.Disconnect();
                     }
-                    sshClient.Disconnect();
+                }
+                catch (Exception ex)
+                {
+                    err = ex;
+                    errDic = item;
+                    isRestartOk = false;
+                    LogHelper.logApp.Error("服务器重启失败", ex);
                 }
             }
-            return MessageModel<string>.Success("删除成功");
+
+            return MessageModel<string>.Success($"删除成功{(isRestartOk == false ? ",但有服务器(" + errDic.name + ")重启失败:" + err.Message : "")}");
         }
         /// <summary>
         /// 删除用户
@@ -196,24 +323,56 @@ namespace MyDotnet.Controllers.Trojan
         [HttpPost]
         public async Task<MessageModel<string>> DelUsers([FromBody] object[] ids)
         {
-            await _trojanUsersServices.Dal.DeleteByIds(ids);
+           
+
+            try
+            {
+                _unitOfWorkManage.BeginTran();
+                await _trojanUsersServices.Dal.DeleteByIds(ids);
+                //绑定服务器 
+                await _baseServicesServersUsers.Dal.Delete(t => ids.Contains(t.userid));
+
+                //排除服务器
+                await _baseServicesServersUsersExclude.Dal.Delete(t => ids.Contains(t.userid));
+
+                _unitOfWorkManage.CommitTran();
+            }
+            catch (Exception)
+            {
+                _unitOfWorkManage.RollbackTran();
+                throw;
+            }
 
             //重启服务
             var servers = await _dicService.GetDicData(TrojanInfo.TrojanServer);
+            bool isRestartOk = true;
+            Exception err = null;
+            DicData errDic = null;
             foreach (var item in servers)
             {
-                using (var sshClient = new SshClient(item.code, item.content.ObjToInt(), item.content2, item.content3))
+                try
                 {
-                    //创建SSH
-                    sshClient.Connect();
-                    using (var cmd = sshClient.CreateCommand(""))
+                    using (var sshClient = new SshClient(item.code, item.content.ObjToInt(), item.content2, item.content3))
                     {
-                        var res = cmd.Execute($"systemctl restart trojan");
+                        //创建SSH
+                        sshClient.Connect();
+                        using (var cmd = sshClient.CreateCommand(""))
+                        {
+                            var res = cmd.Execute($"systemctl restart trojan");
+                        }
+                        sshClient.Disconnect();
                     }
-                    sshClient.Disconnect();
+                }
+                catch (Exception ex)
+                {
+                    err = ex;
+                    errDic = item;
+                    isRestartOk = false;
+                    LogHelper.logApp.Error("服务器重启失败", ex);
                 }
             }
-            return MessageModel<string>.Success("删除成功");
+
+            return MessageModel<string>.Success($"删除成功{(isRestartOk == false ? ",但有服务器(" + errDic.name + ")重启失败:" + err.Message : "")}");
         }
 
 
@@ -235,20 +394,34 @@ namespace MyDotnet.Controllers.Trojan
             }
             //重启服务
             var servers = await _dicService.GetDicData(TrojanInfo.TrojanServer);
+            bool isRestartOk = true;
+            Exception err = null;
+            DicData errDic = null;
             foreach (var item in servers)
             {
-                using (var sshClient = new SshClient(item.code, item.content.ObjToInt(), item.content2, item.content3))
+                try
                 {
-                    //创建SSH
-                    sshClient.Connect();
-                    using (var cmd = sshClient.CreateCommand(""))
+                    using (var sshClient = new SshClient(item.code, item.content.ObjToInt(), item.content2, item.content3))
                     {
-                        var res = cmd.Execute($"systemctl restart trojan");
+                        //创建SSH
+                        sshClient.Connect();
+                        using (var cmd = sshClient.CreateCommand(""))
+                        {
+                            var res = cmd.Execute($"systemctl restart trojan");
+                        }
+                        sshClient.Disconnect();
                     }
-                    sshClient.Disconnect();
+                }
+                catch (Exception ex)
+                {
+                    err = ex;
+                    errDic = item;
+                    isRestartOk = false;
+                    LogHelper.logApp.Error("服务器重启失败", ex);
                 }
             }
-            return MessageModel<string>.Success("重置流量成功");
+
+            return MessageModel<string>.Success($"重置成功{(isRestartOk == false ? ",但有服务器(" + errDic.name + ")重启失败:" + err.Message : "")}");
         }
         /// <summary>
         /// 重置链接密码
@@ -316,6 +489,18 @@ namespace MyDotnet.Controllers.Trojan
         }
 
         /// <summary>
+        /// 获取所有服务器
+        /// </summary>
+        /// <param name="key"></param>
+        /// <returns></returns>
+        [HttpGet]
+        public async Task<MessageModel<object>> GetAllServers()
+        {
+            var data = await _baseServicesServers.Dal.Db.Queryable<TrojanServers>().OrderBy(t => t.servername).Select(t => new { t.id, t.servername,t.isAllUser }).ToListAsync();
+            return MessageModel<object>.Success("获取成功", data);
+        }
+
+        /// <summary>
         /// 获取Trojan服务器
         /// </summary>
         /// <param name="pagination"></param>
@@ -327,8 +512,8 @@ namespace MyDotnet.Controllers.Trojan
             var whereFind = LinqHelper.True<TrojanServers>();
             if (!string.IsNullOrEmpty(key))
                 whereFind = whereFind.And(t => t.servername.Contains(key) || t.serveraddress.Contains(key) || t.serverpath.Contains(key) || t.serverpeer.Contains(key) || t.serverremark.Contains(key));
-            var data = await _baseServicesServers.Dal.Query(whereFind);
-            data = data.OrderBy(t => t.servername).ToList();
+            var data = await _baseServicesServers.Dal.Query(whereFind, "servername asc");
+            
 
 
             var bindUsers = await _baseServicesServersUsers.Dal.Query();
@@ -346,6 +531,7 @@ namespace MyDotnet.Controllers.Trojan
 
             return MessageModel<List<TrojanServers>>.Success("获取成功", data);
         }
+
 
         /// <summary>
         /// 删除Trojan服务器
