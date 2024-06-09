@@ -204,5 +204,24 @@ namespace MyDotnet.Helper
 
             return sb.ToString();
         }
+        /// <summary>
+        /// 字符串转base64
+        /// </summary>
+        /// <param name="str"></param>
+        /// <returns></returns>
+        public static string StringToBase64(string str)
+        {
+            return Convert.ToBase64String(Encoding.UTF8.GetBytes(str));
+        }
+        /// <summary>
+        /// base64转字符串
+        /// </summary>
+        /// <param name="base64str"></param>
+        /// <returns></returns>
+        public static string Base64ToString(string base64str)
+        {
+            return Encoding.UTF8.GetString( Convert.FromBase64String(base64str));
+        }
     }
 }
+

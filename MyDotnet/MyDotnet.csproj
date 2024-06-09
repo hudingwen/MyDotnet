@@ -20,6 +20,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+		<PackageReference Include="AppStoreConnect.Net" Version="0.1.1" />
 		<PackageReference Include="AutoMapper" Version="13.0.1" />
 		<PackageReference Include="log4net" Version="2.0.16" />
 		<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="6.0.27" />
