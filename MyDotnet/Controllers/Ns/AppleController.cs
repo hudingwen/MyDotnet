@@ -93,7 +93,7 @@ namespace MyDotnet.Controllers.Ns
                 var findDevic =  info.data.relationships.devices.data.Find(t => t.attributes.udid.Equals(udid));
                 if(findDevic != null)
                 {
-                    MessageModel<ProfilesReturnAdd>.Fail("设别udid已经添加过了,无需重复添加");
+                   return MessageModel<ProfilesReturnAdd>.Fail("设别udid已经添加过了,无需重复添加");
                 }
             }
 
