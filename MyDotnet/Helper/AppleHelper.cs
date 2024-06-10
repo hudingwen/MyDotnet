@@ -54,14 +54,15 @@ namespace MyDotnet.Helper
         /// <param name="token"></param>
         /// <param name="page"></param>
         /// <param name="size"></param>
+        /// <param name="status">状态 PROCESSING-审核中 ENABLED-可用 DISABLED-禁用</param>
         /// <param name="udid"></param>
         /// <returns></returns>
-        public static async Task<DevicesListDto> GetDevices(string token, int page = 1, int size = 10, string udid = "")
+        public static async Task<DevicesListDto> GetDevices(string token, int page = 1, int size = 10,string status="", string udid = "")
         {
             var offset = $"{{\"offset\":\"{((page - 1) * size)}\"}}";
             string base64Str = StringHelper.StringToBase64(offset);
             //filter[name]=自动配置&
-            var httpRequestMessage = new HttpRequestMessage(HttpMethod.Get, baseUrl + $"/v1/devices?sort=-name&filter[status]=ENABLED{(string.IsNullOrEmpty(udid) ? "" : "&filter[udid]=" + udid)}&limit={size}{(page == 1 ? "" : "&cursor=" + base64Str)}");
+            var httpRequestMessage = new HttpRequestMessage(HttpMethod.Get, baseUrl + $"/v1/devices?sort=-name{(string.IsNullOrEmpty(status)?"": "&filter[status]="+ status)}{(string.IsNullOrEmpty(udid) ? "" : "&filter[udid]=" + udid)}&limit={size}{(page == 1 ? "" : "&cursor=" + base64Str)}");
             httpRequestMessage.Headers.Add("Authorization", "Bearer " + token);
             httpRequestMessage.Headers.Add("Accept", "application/json");
             //httpRequestMessage.Headers.Add("Content-Type", "application/json");

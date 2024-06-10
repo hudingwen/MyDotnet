@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using MyDotnet.Controllers.Base;
 using MyDotnet.Domain.Dto.Apple;
@@ -6,6 +7,7 @@ using MyDotnet.Domain.Dto.System;
 using MyDotnet.Domain.Entity.System;
 using MyDotnet.Helper;
 using MyDotnet.Services.System;
+using SixLabors.ImageSharp;
 
 namespace MyDotnet.Controllers.Ns
 {
@@ -28,7 +30,6 @@ namespace MyDotnet.Controllers.Ns
         /// </summary>
         /// <returns></returns>
         [HttpGet]
-        [AllowAnonymous]
         public async Task<MessageModel<List<DicData>>> GetAppleApiDicList()
         {
             var data = await _dictService.GetDicData(DicAppleInfo.AppleApiList);
@@ -42,7 +43,6 @@ namespace MyDotnet.Controllers.Ns
         /// <param name="size"></param>
         /// <returns></returns>
         [HttpGet]
-        [AllowAnonymous]
         public async Task<MessageModel<ProfilesListDto>> GetProfiles(string kid, int page = 1, int size = 10)
         {
             var data = await _dictService.GetDicDataOne(DicAppleInfo.AppleApiList, kid);
@@ -58,12 +58,31 @@ namespace MyDotnet.Controllers.Ns
         /// <param name="size"></param>
         /// <returns></returns>
         [HttpGet]
-        [AllowAnonymous]
         public async Task<MessageModel<DevicesListDto>> GetDevices(string kid, int page = 1, int size = 10)
         {
             var data = await _dictService.GetDicDataOne(DicAppleInfo.AppleApiList, kid);
             var token = AppleHelper.GetNewAppleToken(data.code, data.content, data.content2);
             var list = await AppleHelper.GetDevices(token, page, size);
+            return MessageModel<DevicesListDto>.Success("获取成功", list);
+        }
+        /// <summary>
+        /// 获取待审核列表
+        /// </summary>
+        /// <param name="kid"></param>
+        /// <param name="page"></param>
+        /// <param name="size"></param>
+        /// <returns></returns>
+        [HttpGet]
+        public async Task<MessageModel<DevicesListDto>> GetDevicesProcessing(string kid, int page = 1, int size = 10)
+        {
+            var data = await _dictService.GetDicDataOne(DicAppleInfo.AppleApiList, kid);
+            var token = AppleHelper.GetNewAppleToken(data.code, data.content, data.content2);
+            var list = await AppleHelper.GetDevices(token, page, size, "PROCESSING");
+            foreach (var item in list.data)
+            {
+                DateTime dateTime = DateTime.Parse(item.attributes.addedDate);
+                item.attributes.processingTime = Math.Round((DateTime.Now - dateTime).TotalHours, 1); 
+            }
             return MessageModel<DevicesListDto>.Success("获取成功", list);
         }
         /// <summary>
@@ -76,7 +95,6 @@ namespace MyDotnet.Controllers.Ns
         /// <param name="profileName">配置名称(新增用)</param>
         /// <returns></returns>
         [HttpGet]
-        [AllowAnonymous]
         public async Task<MessageModel<ProfilesReturnAdd>> AddProfileForDevice(string kid, string name, string udid,string profileId="", string profileName = "")
         {
             name = name.Trim();
@@ -102,7 +120,7 @@ namespace MyDotnet.Controllers.Ns
 
             var time = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
             //设备
-            var findDevices = await AppleHelper.GetDevices(token,1,1, udid);
+            var findDevices = await AppleHelper.GetDevices(token,1,1, "ENABLED", udid);
 
             string deviceId = "";
             if(findDevices.data == null | findDevices.data.Count == 0)
@@ -202,7 +220,6 @@ namespace MyDotnet.Controllers.Ns
         /// <param name="id"></param>
         /// <returns></returns>
         [HttpGet]
-        [AllowAnonymous]
         public async Task<ActionResult> DownloadProfile(string kid, string id)
         {
             var data = await _dictService.GetDicDataOne(DicAppleInfo.AppleApiList, kid);
@@ -222,7 +239,6 @@ namespace MyDotnet.Controllers.Ns
         /// <param name="id"></param>
         /// <returns></returns>
         [HttpGet]
-        [AllowAnonymous]
         public async Task<MessageModel<string>> DelProfile(string kid, string id)
         {
             var data = await _dictService.GetDicDataOne(DicAppleInfo.AppleApiList, kid);

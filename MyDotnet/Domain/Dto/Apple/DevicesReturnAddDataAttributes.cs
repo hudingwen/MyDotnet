@@ -27,5 +27,15 @@
         /// 状态
         /// </summary>
         public string status { get; set; }
+
+        /// <summary>
+        /// 已审核时间(单位:小时)
+        /// </summary>
+        public double processingTime { get; set; }
+        /// <summary>
+        /// 添加时间
+        /// </summary>
+
+        public string addedDate { get; set; }
     }
 }
