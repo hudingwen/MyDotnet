@@ -19,7 +19,7 @@ using System.Security.Cryptography;
 namespace MyDotnet.Tasks.QuartzJob
 {
     /// <summary>
-    /// Nightscout定时切换CDN
+    /// 苹果设备审中设备查询
     /// </summary>
     [JobDescriptionAttribute("苹果设备审中设备查询", "审核完成后通知")]
     public class Job_Nightscout_Apple_Quartz : JobBase, IJob

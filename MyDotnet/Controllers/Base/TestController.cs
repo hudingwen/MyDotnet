@@ -1,7 +1,10 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration.UserSecrets;
+using MongoDB.Bson;
+using MongoDB.Driver;
 using MyDotnet.Controllers.Ns;
+using MyDotnet.Domain.Dto.Guiji;
 using MyDotnet.Domain.Dto.Ns;
 using MyDotnet.Domain.Dto.System;
 using MyDotnet.Domain.Entity.Ns;
@@ -10,8 +13,12 @@ using MyDotnet.Helper;
 using MyDotnet.Repository;
 using MyDotnet.Repository.System;
 using MyDotnet.Services.System;
+using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.RegularExpressions;
 
 namespace MyDotnet.Controllers.Base
 {
@@ -153,7 +160,5 @@ namespace MyDotnet.Controllers.Base
             return ls;
         }
 
-
-
-    }
+    } 
 }

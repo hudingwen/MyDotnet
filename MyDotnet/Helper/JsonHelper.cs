@@ -37,10 +37,18 @@ namespace MyDotnet.Helper
         /// 对象序列化
         /// </summary>
         /// <param name="obj">对象</param> 
+        /// <param name="isLongToString">是否开启long转string</param> 
         /// <returns>返回json字符串</returns>
-        public static string ObjToJson(object obj)
+        public static string ObjToJson(object obj,bool isLongToString = true)
         {
-            return JsonConvert.SerializeObject(obj, jsonSerializerSettings);
+            if (isLongToString)
+            {
+                return JsonConvert.SerializeObject(obj, jsonSerializerSettings);
+            }
+            else
+            {
+                return JsonConvert.SerializeObject(obj);
+            }
         }
         /// <summary>
         /// json反序列化obj
