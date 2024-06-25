@@ -8,7 +8,7 @@
         public string deviceStatus { get; set; }
         public string deviceAlarmStatus { get; set; }
         public double latestGlucoseValue { get; set; }
-        public string bloodGlucoseTrend { get; set; }
+        public int bloodGlucoseTrend { get; set; }
         public long latestGlucoseTime { get; set; }
         public DateTime time { get; set; }
         public string deviceLastTime { get; set; }

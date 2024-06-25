@@ -1405,44 +1405,9 @@ namespace MyDotnet.Controllers.Ns
 
             if (dd.sgv != null)
                 dd.sgv_str = Math.Round(1.0 * dd.sgv.Value / 18, 1);
-
-
-            dd.direction_str = GetFlag(dd.direction);
-        }
-        private string GetFlag(string flag)
-        {
-            switch (flag)
-            {
-                case "NONE":
-                    return "⇼";
-                case "TripleUp":
-                    return "⤊";
-                case "DoubleUp":
-                    return "⇈";
-                case "SingleUp":
-                    return "↑";
-                case "FortyFiveUp":
-                    return "↗";
-                case "Flat":
-                    return "→";
-                case "FortyFiveDown":
-                    return "↘";
-                case "SingleDown":
-                    return "↓";
-                case "DoubleDown":
-                    return "⇊";
-                case "TripleDown":
-                    return "⤋";
-                case "NOT COMPUTABLE":
-                    return "-";
-                case "RATE OUT OF RANGE":
-                    return "⇕";
-                default:
-                    return "未知";
-            }
-        }
-
-
+             
+            dd.direction_str = _nightscoutServices.GetNsFlag(dd.direction);
+        }  
     }
 
     public class SugarDTO

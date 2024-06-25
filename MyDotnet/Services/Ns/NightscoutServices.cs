@@ -1176,9 +1176,38 @@ server {{
             return isStop;
         }
 
-
-
-        
+        public string GetNsFlag(string direction)
+        {
+            switch (direction)
+            {
+                case "NONE":
+                    return "⇼";
+                case "TripleUp":
+                    return "⤊";
+                case "DoubleUp":
+                    return "⇈";
+                case "SingleUp":
+                    return "↑";
+                case "FortyFiveUp":
+                    return "↗";
+                case "Flat":
+                    return "→";
+                case "FortyFiveDown":
+                    return "↘";
+                case "SingleDown":
+                    return "↓";
+                case "DoubleDown":
+                    return "⇊";
+                case "TripleDown":
+                    return "⤋";
+                case "NOT COMPUTABLE":
+                    return "-";
+                case "RATE OUT OF RANGE":
+                    return "⇕";
+                default:
+                    return "未知";
+            }
+        }
     }
 
     

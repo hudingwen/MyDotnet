@@ -331,5 +331,36 @@ namespace MyDotnet.Services.Ns
                 throw new ServiceException("还未实现");
             }
         }
+
+        public string GetNsFlagForGuiji(int direction)
+        {
+            switch (direction)
+            {
+                case 4:
+                    return "TripleUp";
+                case 3:
+                    return "DoubleUp";
+                case 2:
+                    return "SingleUp";
+                case 1:
+                    return "FortyFiveUp";
+                case 0:
+                    return "Flat";
+                case -1:
+                    return "FortyFiveDown";
+                case -2:
+                    return "SingleDown";
+                case -3:
+                    return "DoubleDown";
+                case -4:
+                    return "TripleDown";
+                case 1000:
+                    return "NOT COMPUTABLE";
+                case -1000:
+                    return "RATE OUT OF RANGE";
+                default:
+                    return "NOT COMPUTABLE";
+            }
+        }
     }
 }

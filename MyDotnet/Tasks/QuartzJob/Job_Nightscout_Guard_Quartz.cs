@@ -75,7 +75,7 @@ namespace MyDotnet.Tasks.QuartzJob
                                     if (pushData.Count > 0)
                                     {
                                         //推送
-                                        var send = pushData.Select(t => new NsUploadBloodInfo { date = t.t ,sgv = t.v * 18}).OrderBy(t=>t.date).ToList();
+                                        var send = pushData.Select(t => new NsUploadBloodInfo { date = t.t ,sgv = t.v * 18, direction = _nightscoutGuardService.GetNsFlagForGuiji(t.s) }).OrderBy(t=>t.date).ToList();
                                         await _nightscoutGuardService.pushBlood(user, send);
                                     }
                                 }
@@ -87,7 +87,7 @@ namespace MyDotnet.Tasks.QuartzJob
                                         //大于上次更新才更新
                                         //推送
                                         var send = new List<NsUploadBloodInfo>();
-                                        send.Add(new NsUploadBloodInfo() { date = data.data.followedDeviceGlucoseDataPO.latestGlucoseTime, sgv = data.data.followedDeviceGlucoseDataPO.latestGlucoseValue * 18 });
+                                        send.Add(new NsUploadBloodInfo() { date = data.data.followedDeviceGlucoseDataPO.latestGlucoseTime, sgv = data.data.followedDeviceGlucoseDataPO.latestGlucoseValue * 18 , direction = _nightscoutGuardService.GetNsFlagForGuiji(data.data.followedDeviceGlucoseDataPO.bloodGlucoseTrend) });
                                         await _nightscoutGuardService.pushBlood(user, send);
                                     }
 
