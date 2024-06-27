@@ -51,6 +51,22 @@ namespace MyDotnet.Controllers.Ns
 
             return MessageModel<PageModel<NightscoutGuardAccount>>.Success("获取成功",data);
         }
+
+        /// <summary>
+        /// 刷新监护账户token
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet]
+        public async Task<MessageModel<long>> refreshGuardAccount(long id)
+        {
+            var data = await _guardService._baseRepositoryAccount.QueryById(id);
+            if (data.guardType == 100)
+            {
+                //硅基
+                await _guardService.LoginGuiji(data);
+            }
+            return MessageModel<long>.Success("刷新成功");
+        }
         /// <summary>
         /// 添加监护监护账户
         /// </summary>

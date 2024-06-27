@@ -39,7 +39,7 @@ namespace MyDotnet.Domain.Entity.System
         /// <summary>
         /// 任务描述
         /// </summary>
-        [SugarColumn(Length = 1000, IsNullable = true)]
+        [SugarColumn(Length = 2000, IsNullable = true)]
         public string Remark { get; set; }
         /// <summary>
         /// 执行次数
@@ -76,7 +76,13 @@ namespace MyDotnet.Domain.Entity.System
         /// <summary>
         /// 执行传参
         /// </summary>
+        [SugarColumn(Length = 255, IsNullable = true)]
         public string JobParams { get; set; }
+        /// <summary>
+        /// 源ID,是否通过其他单据发起的
+        /// </summary>
+        [SugarColumn(IsNullable = true)]
+        public long ResourceId { get; set; }
         /// <summary>
         /// 任务内存中的状态
         /// </summary>

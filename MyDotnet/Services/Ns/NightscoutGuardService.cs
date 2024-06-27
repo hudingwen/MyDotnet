@@ -20,8 +20,8 @@ namespace MyDotnet.Services.Ns
     /// </summary>
     public class NightscoutGuardService : BaseServices<NightscoutGuardUser>
     {
-        private BaseRepository<NightscoutGuardUser> _baseRepositoryUser;
-        private BaseRepository<NightscoutGuardAccount> _baseRepositoryAccount;
+        public BaseRepository<NightscoutGuardUser> _baseRepositoryUser;
+        public BaseRepository<NightscoutGuardAccount> _baseRepositoryAccount;
         private UnitOfWorkManage _unitOfWorkManage;
         private NightscoutServices _nightscoutServices;
         public BaseServices<NightscoutServer> _nightscoutServerServices { get; set; }
@@ -89,7 +89,7 @@ namespace MyDotnet.Services.Ns
         /// <param name="data"></param>
         /// <returns></returns>
         /// <exception cref="ServiceException"></exception>
-        private async Task LoginGuiji(NightscoutGuardAccount data)
+        public async Task LoginGuiji(NightscoutGuardAccount data)
         {
             var loginRes = await GuijiHelper.loginGuiji(data.loginName, data.loginPass);
             if (!loginRes.success)
@@ -361,6 +361,18 @@ namespace MyDotnet.Services.Ns
                 default:
                     return "NOT COMPUTABLE";
             }
+        }
+        /// <summary>
+        /// 检测账户有效性
+        /// 如果失效就刷新token 没有失效则往下执行 
+        /// 如果刷新失败就抛出异常
+        /// </summary>
+        /// <param name="account"></param>
+        /// <returns></returns>
+        public async Task CheckAccount(NightscoutGuardAccount account)
+        {
+            await Task.CompletedTask;
+
         }
     }
 }

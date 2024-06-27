@@ -16,14 +16,14 @@ namespace MyDotnet.Domain.Dto.System
     /// </summary>
     public class SchedulerCenterServer
     {
-        private Task<IScheduler> _scheduler;
+        private IScheduler _scheduler;
         private readonly IJobFactory _iocjobFactory;
-        public SchedulerCenterServer(IJobFactory jobFactory)
+        public  SchedulerCenterServer(IJobFactory jobFactory)
         {
             _iocjobFactory = jobFactory;
-            _scheduler = GetSchedulerAsync();
+            _scheduler = GetSchedulerAsync().Result;
         }
-        private Task<IScheduler> GetSchedulerAsync()
+        private async Task<IScheduler> GetSchedulerAsync()
         {
             if (_scheduler != null)
                 return _scheduler;
@@ -35,7 +35,7 @@ namespace MyDotnet.Domain.Dto.System
                     { "quartz.serializer.type", "binary" },
                 };
                 StdSchedulerFactory factory = new StdSchedulerFactory(collection);
-                return _scheduler = factory.GetScheduler();
+                return _scheduler = await  factory.GetScheduler();
             }
         }
 
@@ -48,11 +48,11 @@ namespace MyDotnet.Domain.Dto.System
             var result = new MessageModel<string>();
             try
             {
-                _scheduler.Result.JobFactory = _iocjobFactory;
-                if (!_scheduler.Result.IsStarted)
+                _scheduler.JobFactory = _iocjobFactory;
+                if (!_scheduler.IsStarted)
                 {
                     //等待任务运行完成
-                    await _scheduler.Result.Start();
+                    await _scheduler.Start();
                     await Console.Out.WriteLineAsync("任务调度开启！");
                     result.success = true;
                     result.msg = $"任务调度开启成功";
@@ -80,10 +80,10 @@ namespace MyDotnet.Domain.Dto.System
             var result = new MessageModel<string>();
             try
             {
-                if (!_scheduler.Result.IsShutdown)
+                if (!_scheduler.IsShutdown)
                 {
                     //等待任务运行完成
-                    await _scheduler.Result.Shutdown();
+                    await _scheduler.Shutdown();
                     await Console.Out.WriteLineAsync("任务调度停止！");
                     result.success = true;
                     result.msg = $"任务调度停止成功";
@@ -117,7 +117,7 @@ namespace MyDotnet.Domain.Dto.System
                 try
                 {
                     JobKey jobKey = new JobKey(tasksQz.Id.ToString(), tasksQz.JobGroup);
-                    if (await _scheduler.Result.CheckExists(jobKey))
+                    if (await _scheduler.CheckExists(jobKey))
                     {
                         result.success = false;
                         result.msg = $"该任务计划已经在执行:【{tasksQz.Name}】,请勿重复启动！";
@@ -157,7 +157,7 @@ namespace MyDotnet.Domain.Dto.System
 
                     #endregion
                     //判断任务调度是否开启
-                    if (!_scheduler.Result.IsStarted)
+                    if (!_scheduler.IsStarted)
                     {
                         await StartScheduleAsync();
                     }
@@ -165,6 +165,7 @@ namespace MyDotnet.Domain.Dto.System
                     //传入反射出来的执行程序集
                     IJobDetail job = new JobDetailImpl(tasksQz.Id.ToString(), tasksQz.JobGroup, jobType);
                     job.JobDataMap.Add("JobParam", tasksQz.JobParams);
+                    job.JobDataMap.Add("Now", false);
                     ITrigger trigger;
 
                     #region 泛型传递
@@ -185,7 +186,7 @@ namespace MyDotnet.Domain.Dto.System
                     }
 
                     // 告诉Quartz使用我们的触发器来安排作业
-                    await _scheduler.Result.ScheduleJob(job, trigger);
+                    await _scheduler.ScheduleJob(job, trigger);
                     //await Task.Delay(TimeSpan.FromSeconds(120));
                     //await Console.Out.WriteLineAsync("关闭了调度器！");
                     //await _scheduler.Result.Shutdown();
@@ -215,7 +216,7 @@ namespace MyDotnet.Domain.Dto.System
         public async Task<bool> IsExistScheduleJobAsync(TasksQz sysSchedule)
         {
             JobKey jobKey = new JobKey(sysSchedule.Id.ToString(), sysSchedule.JobGroup);
-            if (await _scheduler.Result.CheckExists(jobKey))
+            if (await _scheduler.CheckExists(jobKey))
             {
                 return true;
             }
@@ -234,7 +235,7 @@ namespace MyDotnet.Domain.Dto.System
             try
             {
                 JobKey jobKey = new JobKey(sysSchedule.Id.ToString(), sysSchedule.JobGroup);
-                if (!await _scheduler.Result.CheckExists(jobKey))
+                if (!await _scheduler.CheckExists(jobKey))
                 {
                     result.success = false;
                     result.msg = $"未找到要暂停的任务:【{sysSchedule.Name}】";
@@ -242,7 +243,7 @@ namespace MyDotnet.Domain.Dto.System
                 }
                 else
                 {
-                    await _scheduler.Result.DeleteJob(jobKey);
+                    await _scheduler.DeleteJob(jobKey);
                     result.success = true;
                     result.msg = $"【{sysSchedule.Name}】成功";
                     return result;
@@ -265,13 +266,13 @@ namespace MyDotnet.Domain.Dto.System
             try
             {
                 JobKey jobKey = new JobKey(sysSchedule.Id.ToString(), sysSchedule.JobGroup);
-                if (!await _scheduler.Result.CheckExists(jobKey))
+                if (!await _scheduler.CheckExists(jobKey))
                 {
                     result.success = false;
                     result.msg = $"未找到要恢复的任务:【{sysSchedule.Name}】";
                     return result;
                 }
-                await _scheduler.Result.ResumeJob(jobKey);
+                await _scheduler.ResumeJob(jobKey);
                 result.success = true;
                 result.msg = $"【{sysSchedule.Name}】成功";
                 return result;
@@ -292,13 +293,13 @@ namespace MyDotnet.Domain.Dto.System
             try
             {
                 JobKey jobKey = new JobKey(sysSchedule.Id.ToString(), sysSchedule.JobGroup);
-                if (!await _scheduler.Result.CheckExists(jobKey))
+                if (!await _scheduler.CheckExists(jobKey))
                 {
                     result.success = false;
                     result.msg = $"未找到要暂停的任务:【{sysSchedule.Name}】";
                     return result;
                 }
-                await _scheduler.Result.PauseJob(jobKey);
+                await _scheduler.PauseJob(jobKey);
                 result.success = true;
                 result.msg = $"【{sysSchedule.Name}】成功";
                 return result;
@@ -321,20 +322,20 @@ namespace MyDotnet.Domain.Dto.System
                 triggerStatus = "不存在"
             } };
             JobKey jobKey = new JobKey(sysSchedule.Id.ToString(), sysSchedule.JobGroup);
-            IJobDetail job = await _scheduler.Result.GetJobDetail(jobKey);
+            IJobDetail job = await _scheduler.GetJobDetail(jobKey);
             if (job == null)
             {
                 return noTask;
             }
             //info.Append(string.Format("任务ID:{0}\r\n任务名称:{1}\r\n", job.Key.Name, job.Description)); 
-            var triggers = await _scheduler.Result.GetTriggersOfJob(jobKey);
+            var triggers = await _scheduler.GetTriggersOfJob(jobKey);
             if (triggers == null || triggers.Count == 0)
             {
                 return noTask;
             }
             foreach (var trigger in triggers)
             {
-                var triggerStaus = await _scheduler.Result.GetTriggerState(trigger.Key);
+                var triggerStaus = await _scheduler.GetTriggerState(trigger.Key);
                 string state = GetTriggerState(triggerStaus.ObjToString());
                 ls.Add(new TaskInfoDto
                 {
@@ -465,7 +466,7 @@ namespace MyDotnet.Domain.Dto.System
             try
             {
                 //判断任务调度是否开启
-                if (!_scheduler.Result.IsStarted)
+                if (!_scheduler.IsStarted)
                 {
                     await StartScheduleAsync();
                 }
@@ -476,13 +477,14 @@ namespace MyDotnet.Domain.Dto.System
                 //传入反射出来的执行程序集
                 IJobDetail job = new JobDetailImpl(tasksQz.Id.ToString(), tasksQz.JobGroup+"-"+ StringHelper.GetGUID(), jobType);
                 job.JobDataMap.Add("JobParam", tasksQz.JobParams);
+                job.JobDataMap.Add("Now", true);
 
                 // 定义一个立即触发的触发器
                 ITrigger trigger = TriggerBuilder.Create()
                     .WithIdentity(tasksQz.Id.ToString(), tasksQz.JobGroup + "-" + StringHelper.GetGUID())
                     .StartNow()
                     .Build();
-                await _scheduler.Result.ScheduleJob(job, trigger);
+                await _scheduler.ScheduleJob(job, trigger);
                 result.success = true;
                 result.msg = "执行成功";
             }

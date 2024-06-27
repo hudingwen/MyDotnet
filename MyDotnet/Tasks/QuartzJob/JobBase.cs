@@ -17,6 +17,7 @@ namespace MyDotnet.Tasks.QuartzJob
             _tasksQzServices = tasksQzServices;
             _tasksLogServices = tasksLogServices;
         }
+        public string error = string.Empty;
         public BaseServices<TasksQz> _tasksQzServices { get; set; }
         public BaseServices<TasksLog> _tasksLogServices { get; set; }
         /// <summary>
@@ -36,15 +37,19 @@ namespace MyDotnet.Tasks.QuartzJob
             tasksLog.JobId = jobid;
             tasksLog.RunTime = DateTime.Now;
             string jobHistory = $"【{tasksLog.RunTime.ToString("yyyy-MM-dd HH:mm:ss")}】【执行开始】【Id：{jobid}，组别：{groupName}】";
+
+            //参数
+            JobDataMap jobPars = context.JobDetail.JobDataMap;
+            bool isNowExecute = jobPars.GetBoolean("Now");
             try
             {
                 await func();//执行任务
                 tasksLog.EndTime = DateTime.Now;
                 tasksLog.RunResult = true;
-                jobHistory += $"，【{tasksLog.EndTime.ToString("yyyy-MM-dd HH:mm:ss")}】【执行成功】";
+                jobHistory += $"，【{tasksLog.EndTime.ToString("yyyy-MM-dd HH:mm:ss")}】【执行成功】{error}";
 
-                JobDataMap jobPars = context.JobDetail.JobDataMap;
                 tasksLog.RunPars = jobPars.GetString("JobParam");
+
             }
             catch (Exception ex)
             {
@@ -67,8 +72,17 @@ namespace MyDotnet.Tasks.QuartzJob
                     if (model != null)
                     {
                         model.RunTimes += 1;
-                        if (model.TriggerType == 0) model.CycleHasRunTimes += 1;
-                        if (model.TriggerType == 0 && model.CycleRunTimes != 0 && model.CycleHasRunTimes >= model.CycleRunTimes) model.IsStart = false;//循环完善,当循环任务完成后,停止该任务,防止下次启动再次执行
+                        if (!isNowExecute)
+                        {
+                            if (model.TriggerType == 0)
+                            {
+                                model.CycleHasRunTimes += 1;
+                                if (model.CycleRunTimes != 0 && model.CycleHasRunTimes >= model.CycleRunTimes)
+                                {
+                                    model.IsStart = false;//循环完善,当循环任务完成后,停止该任务,防止下次启动再次执行
+                                }
+                            } 
+                        }
                         var separator = "<br>";
                         // 这里注意数据库字段的长度问题，超过限制，会造成数据库remark不更新问题。
                         model.Remark =
