@@ -350,6 +350,15 @@ namespace MyDotnet.Domain.Dto.System
             }
             return ls;
         }
+        
+        public async Task<DateTimeOffset?> RescheduleJob(TriggerKey key, ITrigger trigger)
+        {
+            return await _scheduler.RescheduleJob(key, trigger);
+        }
+        public async Task<TriggerState> GetTriggerState(TriggerKey key)
+        {
+            return await _scheduler.GetTriggerState(key);
+        }
         public string GetTriggerState(string key)
         {
             string state = null;

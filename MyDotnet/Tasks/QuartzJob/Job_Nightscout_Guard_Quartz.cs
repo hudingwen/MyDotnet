@@ -17,6 +17,7 @@ using MyDotnet.Services.WeChat;
 using Quartz;
 using System.Net.NetworkInformation;
 using System.Security.Cryptography;
+using static Quartz.Logging.OperationName;
 
 namespace MyDotnet.Tasks.QuartzJob
 {
@@ -111,6 +112,28 @@ namespace MyDotnet.Tasks.QuartzJob
                                     userTask.EndTime = user.endTime;
                                     await _tasksQzServices.Dal.Update(userTask);
                                     await _schedulerCenter.AddScheduleJobAsync(userTask);
+                                }
+                                else
+                                { 
+                                    TriggerKey triggerKey = new TriggerKey(userTask.Id.ToString(), userTask.JobGroup);
+                                    TriggerState triggerState = await _schedulerCenter.GetTriggerState(triggerKey);
+
+
+                                    if (triggerState == TriggerState.Complete)
+                                    {
+                                        IJobDetail job = JobBuilder.Create<Job_Nightscout_Guard_User_Quartz>()
+                                        .WithIdentity(userTask.Id.ToString(), userTask.JobGroup)
+                                        .Build();
+                                        // 创建一个新的触发器，新的cron表达式为每分钟执行一次
+                                        ITrigger newTrigger = TriggerBuilder.Create()
+                                            .WithIdentity(userTask.Id.ToString(), userTask.JobGroup)
+                                            .WithCronSchedule(DateTime.Now.AddSeconds(30).ToString("ss mm HH dd MM ? yyyy"))
+                                            .ForJob(job)
+                                            .Build();
+
+                                        // 重新调度任务
+                                        await _schedulerCenter.RescheduleJob(triggerKey, newTrigger); 
+                                    }
                                 }
                             }
 
