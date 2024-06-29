@@ -441,7 +441,7 @@ namespace MyDotnet.Services.Ns
                 SannuoBloodDtoData curRow = data[i];
                 double diff;
 
-                if (i == 0 && data.Count == 1)
+                if (i == 0)
                 {
                     diff = 0;
                 }
