@@ -441,12 +441,13 @@ namespace MyDotnet.Services.Ns
                 SannuoBloodDtoData curRow = data[i];
                 double diff;
 
-                if (data.Count == 1)
+                if (i == 0 && data.Count == 1)
                 {
                     diff = 0;
-                }else 
+                }
+                else
                 {
-                    diff = (curRow.value - data[i-1].value) / 3;
+                    diff = (curRow.value - data[i - 1].value) / 3;
                 }
 
 
