@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using MyDotnet.Controllers.Base;
 using MyDotnet.Domain.Dto.Apple;
 using MyDotnet.Domain.Dto.Ns;
+using MyDotnet.Domain.Dto.Sannuo;
 using MyDotnet.Domain.Dto.System;
 using MyDotnet.Domain.Entity.Ns;
 using MyDotnet.Domain.Entity.System;
@@ -27,7 +28,6 @@ namespace MyDotnet.Controllers.Ns
     {
         public DicService _dictService;
         public NightscoutGuardService _guardService;
-
         private BaseRepository<NightscoutGuardAccount> _baseRepositoryAccount;
         private BaseRepository<Nightscout> _baseRepositoryNightscout;
         public GuardController(DicService dictService
@@ -57,15 +57,56 @@ namespace MyDotnet.Controllers.Ns
         /// </summary>
         /// <returns></returns>
         [HttpGet]
-        public async Task<MessageModel<long>> refreshGuardAccount(long id)
+        public async Task<MessageModel<bool>> refreshGuardAccount(long id)
         {
             var data = await _guardService._baseRepositoryAccount.QueryById(id);
-            if (data.guardType == 100)
+            return await _guardService.refreshGuardAccount(data);
+        }
+        /// <summary>
+        /// 获取监护类型
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet]
+        public async Task<MessageModel<List<DicData>>> getGuardAccountType()
+        {
+            var data = await _dictService.GetDicData(GuardInfoKey.GuardAccountTypeList);
+            return MessageModel<List<DicData>>.Success("获取成功", data);
+        }
+
+        /// <summary>
+        /// 发送三诺验证码
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet]
+        public async Task<MessageModel<string>> sendSannuoSms(string phone)
+        {
+            var res = await SannuoHelper.sendSms(phone);
+            if (res.success)
             {
-                //硅基
-                await _guardService.LoginGuiji(data);
+                return MessageModel<string>.Success("发送成功");
             }
-            return MessageModel<long>.Success("刷新成功");
+            else
+            {
+                return MessageModel<string>.Fail("发送失败", res.msg);
+            }
+        }
+        /// <summary>
+        /// 验证三诺验证码
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet]
+        public async Task<MessageModel<SannuoSmsLoginReturnDto>> validSannuoSms(string phone,string code)
+        {
+            var res = await SannuoHelper.login(phone, code);
+            if (!string.IsNullOrEmpty(res.access_token))
+            {
+                res.tokenExpire = DateTime.Now.AddSeconds(res.expires_in);
+                return MessageModel<SannuoSmsLoginReturnDto>.Success("登录成功", res);
+            }
+            else
+            {
+                return MessageModel<SannuoSmsLoginReturnDto>.Fail("登录失败", res);
+            }
         }
         /// <summary>
         /// 添加监护监护账户

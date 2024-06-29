@@ -66,7 +66,7 @@ namespace MyDotnet.Tasks.QuartzJob
                 if (account == null) throw new ServiceException($"监护账号获取失败:{user.gid}");
                 try
                 {
-                    if (account.guardType == 100)
+                    if ("100".Equals(account.guardType))
                     {
                         //硅基
                         #region 硅基
@@ -104,6 +104,56 @@ namespace MyDotnet.Tasks.QuartzJob
                                 }
                             }
 
+
+                            // 更新cron表达式
+                            var scheduler = context.Scheduler;
+                            var jobKey = context.JobDetail.Key;
+
+                            // 假设新的cron表达式是每分钟执行一次
+                            string newCronExpression = string.Empty;
+                            if (isTouchTime)
+                            {
+                                newCronExpression = nextTime.ToString("ss mm HH dd MM ? yyyy");
+                            }
+                            else
+                            {
+                                nextTime = DateTime.Now.AddSeconds(30);
+                                //默认30秒执行一次
+                                newCronExpression = nextTime.ToString("ss mm HH dd MM ? yyyy");
+                            }
+
+                            // 调用方法更新cron表达式
+                            UpdateJobCronExpression(scheduler, jobKey, newCronExpression).Wait();
+
+                            task.Cron = nextTime.ToString("ss mm HH dd MM ? yyyy");
+                            await _tasksQzServices.Dal.Update(task);
+                        }
+                        else
+                        {
+                            error = data.msg;
+                            LogHelper.logApp.Error($"监护用户:{user.name} 监护异常:{data.msg}");
+                        }
+                        #endregion
+                    }
+                    else if ("200".Equals(account.guardType))
+                    {
+                        //三诺
+                        #region 三诺
+                        var data = await SannuoHelper.getUserBlood(account.token, user.uid);
+                        if (data.success)
+                        {
+                            bool isTouchTime = false;
+                            var nextTime = DateTime.Now;
+                            //推送数据
+                            var pushData = data.data.Where(t => t.parsTime > user.refreshTime).OrderBy(t => t.time).ToList();
+                            if (pushData.Count > 0)
+                            {
+                                //推送
+                                var send = pushData.Select(t => new NsUploadBloodInfo { date = t.time, sgv = t.value * 18, direction = _nightscoutGuardService.GetNsFlagForSannuo(pushData) }).OrderBy(t => t.date).ToList();
+                                await _nightscoutGuardService.pushBlood(user, send);
+                                nextTime = pushData[pushData.Count - 1].parsTime.AddMinutes(3).AddSeconds(2);
+                                isTouchTime = true;
+                            }
 
                             // 更新cron表达式
                             var scheduler = context.Scheduler;

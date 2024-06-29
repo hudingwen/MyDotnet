@@ -5,11 +5,14 @@ using MyDotnet.Controllers.Base;
 using MyDotnet.Domain.Dto.ExceptionDomain;
 using MyDotnet.Domain.Dto.Guiji;
 using MyDotnet.Domain.Dto.Ns;
+using MyDotnet.Domain.Dto.Sannuo;
 using MyDotnet.Domain.Dto.System;
 using MyDotnet.Domain.Entity.Ns;
 using MyDotnet.Helper;
 using MyDotnet.Repository;
+using MyDotnet.Services.System;
 using System.Linq.Expressions;
+using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -24,12 +27,14 @@ namespace MyDotnet.Services.Ns
         public BaseRepository<NightscoutGuardAccount> _baseRepositoryAccount;
         private UnitOfWorkManage _unitOfWorkManage;
         private NightscoutServices _nightscoutServices;
+        public TasksQzServices _tasksQzServices;
         public BaseServices<NightscoutServer> _nightscoutServerServices { get; set; }
         public NightscoutGuardService(BaseRepository<NightscoutGuardUser> baseRepositoryUser
             , BaseRepository<NightscoutGuardAccount> baseRepositoryAccount
             , UnitOfWorkManage unitOfWorkManage
             , NightscoutServices nightscoutServices
-            , BaseServices<NightscoutServer> nightscoutServerServices) 
+            , BaseServices<NightscoutServer> nightscoutServerServices
+            , TasksQzServices tasksQzServices)
             : base(baseRepositoryUser)
         {
             _baseRepositoryUser = baseRepositoryUser;
@@ -37,6 +42,7 @@ namespace MyDotnet.Services.Ns
             _unitOfWorkManage = unitOfWorkManage;
             _nightscoutServices = nightscoutServices;
             _nightscoutServerServices = nightscoutServerServices;
+            _tasksQzServices = tasksQzServices;
         }
         /// <summary>
         /// 获取监护账户列表
@@ -53,6 +59,10 @@ namespace MyDotnet.Services.Ns
                 whereExpression = whereExpression.And(t => t.name.Contains(key));
             }
             var data = await _baseRepositoryAccount.QueryPage(whereExpression, page, size);
+            foreach (var item in data.data)
+            {
+                item.isEffect = await CheckAccount(item);
+            }
             return data;
         }
         /// <summary>
@@ -68,10 +78,10 @@ namespace MyDotnet.Services.Ns
                 //添加账户
                 var i = await _baseRepositoryAccount.Add(data);
                 //登录账户
-                if (data.guardType == 100)
+                if ("100".Equals(data.guardType))
                 {
                     //硅基
-                    await LoginGuiji(data);
+                    await loginGuardAccount(data);
                 }
                 _unitOfWorkManage.CommitTran();
                 return i;
@@ -89,14 +99,42 @@ namespace MyDotnet.Services.Ns
         /// <param name="data"></param>
         /// <returns></returns>
         /// <exception cref="ServiceException"></exception>
-        public async Task LoginGuiji(NightscoutGuardAccount data)
+        public async Task<MessageModel<bool>> refreshGuardAccount(NightscoutGuardAccount data)
         {
-            var loginRes = await GuijiHelper.loginGuiji(data.loginName, data.loginPass);
-            if (!loginRes.success)
-                throw new ServiceException($"硅基登录失败:{loginRes.msg}");
-            data.token = loginRes.data.access_token;
-            data.tokenExpire = DateTime.Now.AddSeconds(loginRes.data.expires_in);
-            await _baseRepositoryAccount.Update(data);
+            if("100".Equals(data.guardType))
+            {
+                //硅基
+                return await loginGuardAccount(data);
+            }
+            return MessageModel<bool>.Fail("还未实现");
+        }
+        /// <summary>
+        /// 登录硅基
+        /// </summary>
+        /// <param name="data"></param>
+        /// <returns></returns>
+        /// <exception cref="ServiceException"></exception>
+        public async Task<MessageModel<bool>> loginGuardAccount(NightscoutGuardAccount data)
+        {
+            try
+            {
+                if ("100".Equals(data.guardType))
+                {
+                    //硅基
+                    var loginRes = await GuijiHelper.loginGuiji(data.loginName, data.loginPass);
+                    if (!loginRes.success)
+                        throw new ServiceException($"硅基登录失败:{loginRes.msg}");
+                    data.token = loginRes.data.access_token;
+                    data.tokenExpire = DateTime.Now.AddSeconds(loginRes.data.expires_in);
+                    await _baseRepositoryAccount.Update(data);
+                    return MessageModel<bool>.Success("登录成功");
+                }
+                return MessageModel<bool>.Fail("还未实现");
+            }
+            catch (Exception ex)
+            {
+                return MessageModel<bool>.Fail($"登录失败:{ex.Message}");
+            }
         }
 
         /// <summary>
@@ -108,10 +146,10 @@ namespace MyDotnet.Services.Ns
         {
             var i = await _baseRepositoryAccount.Update(data);
             //登录账户
-            if (data.guardType == 100)
+            if ("100".Equals(data.guardType))
             {
                 //硅基
-                await LoginGuiji(data);
+                await loginGuardAccount(data);
             }
             return i;
         }
@@ -177,7 +215,14 @@ namespace MyDotnet.Services.Ns
         /// <returns></returns>
         public async Task<bool> delGuardUser(long id)
         {
-            var i = await _baseRepositoryUser.DeleteById(id);
+            var user = await _baseRepositoryUser.QueryById(id);
+            var i = await _baseRepositoryUser.DeleteById(user.Id);
+            var task = (await _tasksQzServices.Dal.Query(t => t.ResourceId == user.Id)).FirstOrDefault();
+            if(task != null)
+            {
+               await  _tasksQzServices.DeleteTask(task.Id);
+            }
+           
             return i;
         }
         /// <summary>
@@ -316,7 +361,7 @@ namespace MyDotnet.Services.Ns
         public async Task<PageModel<ShowKeyValueDto>> getAllNsGuardUser(long gid, int page, int size, string key)
         {
             var guardAccount = await _baseRepositoryAccount.QueryById(gid);
-            if(guardAccount.guardType == 100)
+            if("100".Equals(guardAccount.guardType))
             {
                 var ls = await GuijiHelper.getGuijiList(guardAccount.token, page, size);
                 PageModel<ShowKeyValueDto> data = new PageModel<ShowKeyValueDto>();
@@ -325,6 +370,32 @@ namespace MyDotnet.Services.Ns
                 data.size = ls.data.pageSize;
                 data.data = ls.data.records.Select(t => new ShowKeyValueDto { id = t.id, name = $"{t.otherInfo.followedRemark}-{t.followedUserInfo.userName}({t.followedUserInfo.nickName})" }).ToList();
                 return data;
+            }
+            if ("200".Equals(guardAccount.guardType))
+            {
+                var users = await SannuoHelper.getFamily(guardAccount.token);
+                if (users.success)
+                {
+
+                    PageModel<ShowKeyValueDto> data = new PageModel<ShowKeyValueDto>();
+                    if (users.data.Count > 0)
+                        users.data.Remove(users.data[users.data.Count - 1]);
+                    foreach (var user in users.data)
+                    {
+                        //获取用户信息
+                        var userInfo = await SannuoHelper.getFamilyUserInfo(guardAccount.token, user.userId);
+                        user.sannuoFamilyUserDto = userInfo;
+                    }
+                    data.page = 1;
+                    data.dataCount = users.data.Count;
+                    data.size = 10;
+                    data.data = users.data.Select(t=>new ShowKeyValueDto { id= t.sannuoFamilyUserDto.data.encryptUserId ,name=$"{t.nickName}({t.phone})"}).ToList();
+                    return data;
+                }
+                else
+                {
+                    throw new ServiceException($"获取用户失败:{users.msg}");
+                }
             }
             else
             {
@@ -362,17 +433,57 @@ namespace MyDotnet.Services.Ns
                     return "NOT COMPUTABLE";
             }
         }
+
+        public string GetNsFlagForSannuo(List<SannuoBloodDtoData> data)
+        {
+            if (data.Count == 1) return "Flat";
+            var diff = (data[data.Count - 1].value - data[data.Count - 2].value) / 3;
+
+            if (diff > 0.17)
+                return "DoubleUp";
+            else if(diff>0.1 && diff <= 0.17)
+                return "SingleUp";
+            else if (diff > 0.05 && diff <= 0.1)
+                return "FortyFiveUp";
+            if (diff < -0.17)
+                return "DoubleDown";
+            else if (diff < -0.1 && diff >= -0.17)
+                return "SingleDown";
+            else if (diff < -0.05 && diff >= -0.1)
+                return "FortyFiveDown";
+            else if (diff >= -0.05 && diff <= 0.05)
+                return "Flat";
+            else
+                return "Flat";
+        }
         /// <summary>
         /// 检测账户有效性
-        /// 如果失效就刷新token 没有失效则往下执行 
-        /// 如果刷新失败就抛出异常
         /// </summary>
         /// <param name="account"></param>
         /// <returns></returns>
-        public async Task CheckAccount(NightscoutGuardAccount account)
+        public async Task<bool> CheckAccount(NightscoutGuardAccount account)
         {
-            await Task.CompletedTask;
-
+            try
+            {
+                if("100".Equals(account.guardType))
+                {
+                    //硅基
+                    var loginInfo = await GuijiHelper.getMyInfo(account.token);
+                    return loginInfo.success;
+                }
+                else if ("200".Equals(account.guardType))
+                {
+                    //三诺
+                    var loginInfo = await SannuoHelper.getMyInfo(account.token);
+                    return loginInfo.success;
+                }
+                return false;
+            }
+            catch (Exception ex)
+            {
+                LogHelper.logApp.Error($"账户查询失败:{ex.Message}", ex);
+                return false;
+            }
         }
     }
 }

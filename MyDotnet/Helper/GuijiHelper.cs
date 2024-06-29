@@ -28,6 +28,19 @@ namespace MyDotnet.Helper
             return data;
         }
         /// <summary>
+        /// 获取token信息
+        /// </summary>
+        /// <param name="token"></param>
+        /// <returns></returns>
+        public static async Task<GuiMyInfoDto> getMyInfo(string token)
+        {
+            var request = new HttpRequestMessage(HttpMethod.Get, $"https://api.sisensing.com/auth/token/info");
+            request.Headers.Add("Authorization", token);
+            var res = await HttpHelper.SendAsync(request);
+            var data = JsonHelper.JsonToObj<GuiMyInfoDto>(res);
+            return data;
+        }
+        /// <summary>
         /// 获取监护者列表
         /// </summary>
         /// <param name="token"></param>

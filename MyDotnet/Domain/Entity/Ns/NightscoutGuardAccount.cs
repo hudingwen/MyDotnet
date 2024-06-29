@@ -31,7 +31,7 @@ namespace MyDotnet.Domain.Entity.Ns
         /// <summary>
         /// 当前登录token
         /// </summary>
-        [SugarColumn(Length = 200, IsNullable = true)]
+        [SugarColumn(Length = 1000, IsNullable = true)]
         public string token { get; set; }
         /// <summary>
         /// token过期时间
@@ -40,6 +40,11 @@ namespace MyDotnet.Domain.Entity.Ns
         /// <summary>
         /// 监护类型  100-硅基
         /// </summary>
-        public int guardType { get; set; }
+        public string guardType { get; set; }
+        /// <summary>
+        /// 是否有效
+        /// </summary>
+        [SugarColumn(IsIgnore = true)]
+        public bool isEffect { get; set; }
     }
 }

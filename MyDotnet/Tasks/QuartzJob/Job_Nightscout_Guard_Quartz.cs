@@ -64,7 +64,21 @@ namespace MyDotnet.Tasks.QuartzJob
                     {
 
                         //判断账户是否失效
-                        await _nightscoutGuardService.CheckAccount(account);
+                        var isOk = await _nightscoutGuardService.CheckAccount(account);
+                        if (isOk)
+                        {
+                            //有效,判断前一天是否过期了
+                            if(DateTime.Now.AddDays(1) > account.tokenExpire)
+                            {
+                                //刷新token 
+                                await _nightscoutGuardService.refreshGuardAccount(account);
+                            }
+                            
+                        }
+                        else
+                        {
+                            //失效后重新登录逻辑
+                        }
 
                         //获取监护用户
                         var users = await _nightscoutGuardService.Dal.Query(t=>t.gid == account.Id & t.Enabled == true);
@@ -92,7 +106,7 @@ namespace MyDotnet.Tasks.QuartzJob
                                 userTask.EndTime = user.endTime;
                                 userTask.IntervalSecond = 1;
                                 userTask.JobGroup = "监护用户任务";
-                                userTask.Name = user.name;
+                                userTask.Name = $"{user.name}({user.nidUrl})";
                                 userTask.TriggerType = 1;
                                 userTask.IsStart = true;
                                 userTask.ResourceId = user.Id;
@@ -107,7 +121,7 @@ namespace MyDotnet.Tasks.QuartzJob
                                 {
                                     //主动运行
                                     userTask.Cron = DateTime.Now.AddSeconds(30).ToString("ss mm HH dd MM ? yyyy");
-                                    userTask.Name = user.name;
+                                    userTask.Name = $"{user.name}({user.nidUrl})";
                                     userTask.BeginTime = user.startTime;
                                     userTask.EndTime = user.endTime;
                                     await _tasksQzServices.Dal.Update(userTask);
@@ -118,7 +132,7 @@ namespace MyDotnet.Tasks.QuartzJob
                                     TriggerKey triggerKey = new TriggerKey(userTask.Id.ToString(), userTask.JobGroup);
                                     TriggerState triggerState = await _schedulerCenter.GetTriggerState(triggerKey);
 
-
+                                    //某些情况导致需要重新启动
                                     if (triggerState == TriggerState.Complete)
                                     {
                                         IJobDetail job = JobBuilder.Create<Job_Nightscout_Guard_User_Quartz>()
