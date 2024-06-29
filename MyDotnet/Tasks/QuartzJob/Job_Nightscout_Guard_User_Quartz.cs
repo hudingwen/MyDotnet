@@ -144,12 +144,17 @@ namespace MyDotnet.Tasks.QuartzJob
                         {
                             bool isTouchTime = false;
                             var nextTime = DateTime.Now;
+                            
+
+                            //趋势计算
+                            _nightscoutGuardService.GetNsFlagForSannuo(data.data);
+
                             //推送数据
                             var pushData = data.data.Where(t => t.parsTime > user.refreshTime).OrderBy(t => t.time).ToList();
                             if (pushData.Count > 0)
                             {
                                 //推送
-                                var send = pushData.Select(t => new NsUploadBloodInfo { date = t.time, sgv = t.value * 18, direction = _nightscoutGuardService.GetNsFlagForSannuo(pushData) }).OrderBy(t => t.date).ToList();
+                                var send = pushData.Select(t => new NsUploadBloodInfo { date = t.time, sgv = t.value * 18, direction = t.direction }).OrderBy(t => t.date).ToList();
                                 await _nightscoutGuardService.pushBlood(user, send);
                                 nextTime = pushData[pushData.Count - 1].parsTime.AddMinutes(3).AddSeconds(2);
                                 isTouchTime = true;

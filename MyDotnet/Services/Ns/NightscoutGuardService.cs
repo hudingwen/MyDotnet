@@ -434,27 +434,39 @@ namespace MyDotnet.Services.Ns
             }
         }
 
-        public string GetNsFlagForSannuo(List<SannuoBloodDtoData> data)
+        public void GetNsFlagForSannuo(List<SannuoBloodDtoData> data)
         {
-            if (data.Count == 1) return "Flat";
-            var diff = (data[data.Count - 1].value - data[data.Count - 2].value) / 3;
+            for (int i = 0; i < data.Count; i++)
+            {
+                SannuoBloodDtoData curRow = data[i];
+                double diff;
 
-            if (diff > 0.17)
-                return "DoubleUp";
-            else if(diff>0.1 && diff <= 0.17)
-                return "SingleUp";
-            else if (diff > 0.05 && diff <= 0.1)
-                return "FortyFiveUp";
-            if (diff < -0.17)
-                return "DoubleDown";
-            else if (diff < -0.1 && diff >= -0.17)
-                return "SingleDown";
-            else if (diff < -0.05 && diff >= -0.1)
-                return "FortyFiveDown";
-            else if (diff >= -0.05 && diff <= 0.05)
-                return "Flat";
-            else
-                return "Flat";
+                if (data.Count == 1)
+                {
+                    diff = 0;
+                }else 
+                {
+                    diff = (curRow.value - data[i-1].value) / 3;
+                }
+
+
+                if (diff > 0.17)
+                    curRow.direction = "DoubleUp";
+                else if (diff > 0.1 && diff <= 0.17)
+                    curRow.direction = "SingleUp";
+                else if (diff > 0.05 && diff <= 0.1)
+                    curRow.direction = "FortyFiveUp";
+                if (diff < -0.17)
+                    curRow.direction = "DoubleDown";
+                else if (diff < -0.1 && diff >= -0.17)
+                    curRow.direction = "SingleDown";
+                else if (diff < -0.05 && diff >= -0.1)
+                    curRow.direction = "FortyFiveDown";
+                else if (diff >= -0.05 && diff <= 0.05)
+                    curRow.direction = "Flat";
+                else
+                    curRow.direction = "Flat";
+            }
         }
         /// <summary>
         /// 检测账户有效性

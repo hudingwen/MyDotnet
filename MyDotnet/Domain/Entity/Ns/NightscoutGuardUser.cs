@@ -39,7 +39,7 @@ namespace MyDotnet.Domain.Entity.Ns
         /// <summary>
         /// 绑定监护用户
         /// </summary>
-        [SugarColumn(Length = 100, IsNullable = true)]
+        [SugarColumn(Length = 1000, IsNullable = true)]
         public string uid { get; set; }
         /// <summary>
         /// 绑定监护用户名称
