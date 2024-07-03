@@ -77,7 +77,7 @@ namespace MyDotnet.Tasks.QuartzJob
                             bool isTouchTime = false;
                             var nextTime = DateTime.Now;
                             //推送数据
-                            if (data.data.followedDeviceGlucoseDataPO.glucoseInfos != null && data.data.followedDeviceGlucoseDataPO.glucoseInfos.Count > 0)
+                            if (data.data.followedDeviceGlucoseDataPO.glucoseInfos != null && data.data.followedDeviceGlucoseDataPO.glucoseInfos.Count > 0 && data.data.followedDeviceGlucoseDataPO.time == data.data.followedDeviceGlucoseDataPO.glucoseInfos[0].time)
                             {
                                 //正常
                                 var pushData = data.data.followedDeviceGlucoseDataPO.glucoseInfos.Where(t => t.time > user.refreshTime).OrderBy(t => t.time).ToList();
