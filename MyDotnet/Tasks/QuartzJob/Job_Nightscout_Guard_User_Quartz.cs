@@ -265,7 +265,7 @@ namespace MyDotnet.Tasks.QuartzJob
                             if (pushData.Count > 0)
                             {
                                 //推送
-                                var send = pushData.Select(t => new NsUploadBloodInfo { date = (new DateTimeOffset(t.appCreateTime).ToUnixTimeMilliseconds()), sgv = t.glucose * 18, direction = t.direction }).OrderBy(t => t.date).ToList();
+                                var send = pushData.Select(t => new NsUploadBloodInfo { date = (new DateTimeOffset(t.appCreateTime).ToUnixTimeMilliseconds()), sgv = t.glucose, direction = t.direction }).OrderBy(t => t.date).ToList();
                                 await _nightscoutGuardService.pushBlood(user, send);
                                 nextTime = pushData[pushData.Count - 1].appCreateTime.AddMinutes(2);
                                 isTouchTime = true;
