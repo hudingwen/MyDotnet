@@ -56,14 +56,27 @@ namespace MyDotnet.Helper
                 httpContent.Dispose();
             }
         }
-        public static async Task<string> SendAsync(HttpRequestMessage request)
+        public static async Task<string> SendAsync(HttpRequestMessage request,Dictionary<string,string> responseHeaderDic=null)
         {
             try
             {
                 using (var response = await httpClient.SendAsync(request))
                 {
                     var status = response.EnsureSuccessStatusCode();
-                    return await response.Content.ReadAsStringAsync();
+                    var data = await response.Content.ReadAsStringAsync();
+                    if(responseHeaderDic != null)
+                    {
+                        //提取responseHeader所需内容
+                        foreach (var key in responseHeaderDic.Keys)
+                        {
+                            IEnumerable<string>? values;
+                            if(response.Headers.TryGetValues(key, out values))
+                            {
+                                responseHeaderDic[key] = string.Join("",values);
+                            } 
+                        }
+                    }
+                    return data;
                 }
             }
             catch (Exception)

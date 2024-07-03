@@ -16,6 +16,7 @@ using MyDotnet.Services.Ns;
 using MyDotnet.Services.System;
 using MyDotnet.Services.WeChat;
 using Quartz;
+using System;
 using System.Net.NetworkInformation;
 using System.Security.Cryptography;
 
@@ -174,6 +175,116 @@ namespace MyDotnet.Tasks.QuartzJob
                             {
                                 nextTime = DateTime.Now.AddSeconds(30);
                                 //默认30秒执行一次
+                                newCronExpression = nextTime.ToString("ss mm HH dd MM ? yyyy");
+                            }
+
+                            // 调用方法更新cron表达式
+                            UpdateJobCronExpression(scheduler, jobKey, newCronExpression).Wait();
+
+                            task.Cron = nextTime.ToString("ss mm HH dd MM ? yyyy");
+                            await _tasksQzServices.Dal.Update(task);
+                        }
+                        else
+                        {
+                            error = data.msg;
+                            LogHelper.logApp.Error($"监护用户:{user.name} 监护异常:{data.msg}");
+                        }
+                        #endregion
+                    }
+                    else if ("300".Equals(account.guardType))
+                    {
+                        //微泰1
+                        #region 微泰1
+                        var data = await Weitai1Helper.getBlood(account.token, user.uid);
+                        if ("100000".Equals(data.info?.code))
+                        {
+                            bool isTouchTime = false;
+                            var nextTime = DateTime.Now;
+
+                            var pushData = data.content.records.Where(t => t.eventType == 7 && t.deviceTime > user.refreshTime).OrderBy(t => t.deviceTime).ToList();
+                            //趋势计算
+                            _nightscoutGuardService.GetNsFlagForWeitai1(pushData);
+
+                            //推送数据
+                          
+                            if (pushData.Count > 0)
+                            {
+                                //推送
+                                var send = pushData.Select(t => new NsUploadBloodInfo { date = (new DateTimeOffset(t.deviceTime).ToUnixTimeMilliseconds()), sgv = t.eventData * 18, direction = t.direction }).OrderBy(t => t.date).ToList();
+                                await _nightscoutGuardService.pushBlood(user, send);
+                                nextTime = pushData[pushData.Count - 1].deviceTime.AddMinutes(5);
+                                isTouchTime = true;
+                            }
+
+                            // 更新cron表达式
+                            var scheduler = context.Scheduler;
+                            var jobKey = context.JobDetail.Key;
+
+                            // 假设新的cron表达式是每分钟执行一次
+                            string newCronExpression = string.Empty;
+                            if (isTouchTime)
+                            {
+                                newCronExpression = nextTime.ToString("ss mm HH dd MM ? yyyy");
+                            }
+                            else
+                            {
+                                nextTime = DateTime.Now.AddSeconds(60);
+                                //默认60秒执行一次
+                                newCronExpression = nextTime.ToString("ss mm HH dd MM ? yyyy");
+                            }
+
+                            // 调用方法更新cron表达式
+                            UpdateJobCronExpression(scheduler, jobKey, newCronExpression).Wait();
+
+                            task.Cron = nextTime.ToString("ss mm HH dd MM ? yyyy");
+                            await _tasksQzServices.Dal.Update(task);
+                        }
+                        else
+                        {
+                            error = data.info?.msg;
+                            LogHelper.logApp.Error($"监护用户:{user.name} 监护异常:{data.info?.msg}");
+                        }
+                        #endregion
+                    }
+                    else if ("400".Equals(account.guardType))
+                    {
+                        //微泰2
+                        #region 微泰2
+                        var data = await Weitai2Helper.getBlood(account.token, user.uid);
+                        if (data.code == 200)
+                        {
+                            bool isTouchTime = false;
+                            var nextTime = DateTime.Now;
+
+                            var pushData = data.data.Where(t => t.appCreateTime > user.refreshTime).OrderBy(t => t.appCreateTime).ToList();
+                            //趋势计算
+                            _nightscoutGuardService.GetNsFlagForWeitai2(pushData);
+
+                            //推送数据
+
+                            if (pushData.Count > 0)
+                            {
+                                //推送
+                                var send = pushData.Select(t => new NsUploadBloodInfo { date = (new DateTimeOffset(t.appCreateTime).ToUnixTimeMilliseconds()), sgv = t.glucose * 18, direction = t.direction }).OrderBy(t => t.date).ToList();
+                                await _nightscoutGuardService.pushBlood(user, send);
+                                nextTime = pushData[pushData.Count - 1].appCreateTime.AddMinutes(2);
+                                isTouchTime = true;
+                            }
+
+                            // 更新cron表达式
+                            var scheduler = context.Scheduler;
+                            var jobKey = context.JobDetail.Key;
+
+                            // 假设新的cron表达式是每分钟执行一次
+                            string newCronExpression = string.Empty;
+                            if (isTouchTime)
+                            {
+                                newCronExpression = nextTime.ToString("ss mm HH dd MM ? yyyy");
+                            }
+                            else
+                            {
+                                nextTime = DateTime.Now.AddSeconds(30);
+                                //默认60秒执行一次
                                 newCronExpression = nextTime.ToString("ss mm HH dd MM ? yyyy");
                             }
 

@@ -160,5 +160,50 @@ namespace MyDotnet.Controllers.Base
             return ls;
         }
 
+        /// <summary>
+        /// 自服务层储测试
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet]
+        [AllowAnonymous]
+        public async Task<object> Test(string phone,string pass)
+        {
+            var data = await Weitai2Helper.Login(phone, pass);
+            return data;
+        }
+        /// <summary>
+        /// 自服务层储测试
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet]
+        [AllowAnonymous]
+        public async Task<object> Test2(string token)
+        {
+            var data = await Weitai2Helper.getMyInfo(token);
+            return data;
+        }
+        /// <summary>
+        /// 自服务层储测试
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet]
+        [AllowAnonymous]
+        public async Task<object> Test3(string token,string gid)
+        {
+            var data = await Weitai2Helper.getFamily(token,gid);
+            return data;
+        }
+        /// <summary>
+        /// 自服务层储测试
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet]
+        [AllowAnonymous]
+        public async Task<object> Test4(string token,string uid)
+        {
+            var data = await Weitai2Helper.getBlood(token,uid);
+            return data;
+        }
+
     } 
 }

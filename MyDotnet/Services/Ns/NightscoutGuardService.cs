@@ -1,4 +1,5 @@
-﻿using MongoDB.Bson;
+﻿using AppStoreConnect.Model;
+using MongoDB.Bson;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
 using MyDotnet.Controllers.Base;
@@ -7,6 +8,8 @@ using MyDotnet.Domain.Dto.Guiji;
 using MyDotnet.Domain.Dto.Ns;
 using MyDotnet.Domain.Dto.Sannuo;
 using MyDotnet.Domain.Dto.System;
+using MyDotnet.Domain.Dto.Weitai1;
+using MyDotnet.Domain.Dto.Weitai2;
 using MyDotnet.Domain.Entity.Ns;
 using MyDotnet.Helper;
 using MyDotnet.Repository;
@@ -82,6 +85,15 @@ namespace MyDotnet.Services.Ns
                 {
                     //硅基
                     await loginGuardAccount(data);
+                }else if ("300".Equals(data.guardType))
+                {
+                    //微泰1
+                    await loginGuardAccount(data);
+                }
+                else if ("400".Equals(data.guardType))
+                {
+                    //微泰1
+                    await loginGuardAccount(data);
                 }
                 _unitOfWorkManage.CommitTran();
                 return i;
@@ -106,6 +118,16 @@ namespace MyDotnet.Services.Ns
                 //硅基
                 return await loginGuardAccount(data);
             }
+            if ("300".Equals(data.guardType))
+            {
+                //微泰1
+                return await loginGuardAccount(data);
+            }
+            if ("400".Equals(data.guardType))
+            {
+                //微泰2
+                return await loginGuardAccount(data);
+            }
             return MessageModel<bool>.Fail("还未实现");
         }
         /// <summary>
@@ -128,6 +150,28 @@ namespace MyDotnet.Services.Ns
                     data.tokenExpire = DateTime.Now.AddSeconds(loginRes.data.expires_in);
                     await _baseRepositoryAccount.Update(data);
                     return MessageModel<bool>.Success("登录成功");
+                }else if ("300".Equals(data.guardType))
+                {
+                    //微泰1
+                    var loginRes = await Weitai1Helper.Login(data.loginName, data.loginPass);
+                    if (!"100000".Equals(loginRes.info.code))
+                        throw new ServiceException($"微泰1登录失败:{loginRes.info.msg}");
+                    data.token = loginRes.token;
+                    data.tokenExpire = loginRes.tokenExpire;
+                    await _baseRepositoryAccount.Update(data);
+                    return MessageModel<bool>.Success("登录成功");
+                }
+                else if ("400".Equals(data.guardType))
+                {
+                    //微泰2
+                    var loginRes = await Weitai2Helper.Login(data.loginName, data.loginPass);
+                    if (loginRes.code != 200)
+                        throw new ServiceException($"微泰2登录失败:{loginRes.msg}");
+                    data.token = loginRes.data.token;
+                    data.tokenExpire = loginRes.data.tokenExpire;
+                    data.loginId = loginRes.data.userId;
+                    await _baseRepositoryAccount.Update(data);
+                    return MessageModel<bool>.Success("登录成功");
                 }
                 return MessageModel<bool>.Fail("还未实现");
             }
@@ -145,12 +189,6 @@ namespace MyDotnet.Services.Ns
         public async Task<bool> editGuardAccount(NightscoutGuardAccount data)
         {
             var i = await _baseRepositoryAccount.Update(data);
-            //登录账户
-            if ("100".Equals(data.guardType))
-            {
-                //硅基
-                await loginGuardAccount(data);
-            }
             return i;
         }
         /// <summary>
@@ -363,7 +401,9 @@ namespace MyDotnet.Services.Ns
             var guardAccount = await _baseRepositoryAccount.QueryById(gid);
             if("100".Equals(guardAccount.guardType))
             {
+                //硅基
                 var ls = await GuijiHelper.getGuijiList(guardAccount.token, page, size);
+                if(ls.code  != 200) throw new ServiceException($"获取用户失败:{ls.msg}");
                 PageModel<ShowKeyValueDto> data = new PageModel<ShowKeyValueDto>();
                 data.page = ls.data.currentPage;
                 data.dataCount = ls.data.total;
@@ -371,31 +411,55 @@ namespace MyDotnet.Services.Ns
                 data.data = ls.data.records.Select(t => new ShowKeyValueDto { id = t.id, name = $"{t.otherInfo.followedRemark}-{t.followedUserInfo.userName}({t.followedUserInfo.nickName})" }).ToList();
                 return data;
             }
-            if ("200".Equals(guardAccount.guardType))
+            else if ("200".Equals(guardAccount.guardType))
             {
+                //三诺
                 var users = await SannuoHelper.getFamily(guardAccount.token);
-                if (users.success)
-                {
+                if (!users.success) throw new ServiceException($"获取用户失败:{users.msg}");
 
-                    PageModel<ShowKeyValueDto> data = new PageModel<ShowKeyValueDto>();
-                    if (users.data.Count > 0)
-                        users.data.Remove(users.data[users.data.Count - 1]);
-                    foreach (var user in users.data)
-                    {
-                        //获取用户信息
-                        var userInfo = await SannuoHelper.getFamilyUserInfo(guardAccount.token, user.userId);
-                        user.sannuoFamilyUserDto = userInfo;
-                    }
-                    data.page = 1;
-                    data.dataCount = users.data.Count;
-                    data.size = 10;
-                    data.data = users.data.Select(t=>new ShowKeyValueDto { id= t.sannuoFamilyUserDto.data.encryptUserId ,name=$"{t.nickName}({t.phone})"}).ToList();
-                    return data;
-                }
-                else
+                PageModel<ShowKeyValueDto> data = new PageModel<ShowKeyValueDto>();
+                if (users.data.Count > 0)
+                    users.data.Remove(users.data[users.data.Count - 1]);
+                foreach (var user in users.data)
                 {
-                    throw new ServiceException($"获取用户失败:{users.msg}");
+                    //获取用户信息
+                    var userInfo = await SannuoHelper.getFamilyUserInfo(guardAccount.token, user.userId);
+                    user.sannuoFamilyUserDto = userInfo;
                 }
+                data.page = 1;
+                data.dataCount = users.data.Count;
+                data.size = 10;
+                data.data = users.data.Select(t => new ShowKeyValueDto { id = t.sannuoFamilyUserDto.data.encryptUserId, name = $"{t.nickName}({t.phone})" }).ToList();
+                return data;
+            }
+            else if ("300".Equals(guardAccount.guardType))
+            {
+                //微泰1
+                var users = await Weitai1Helper.getFamily(guardAccount.token);
+                if (!"100000".Equals(users.info.code)) throw new ServiceException($"获取用户失败:{users.info.msg}");
+
+                PageModel<ShowKeyValueDto> data = new PageModel<ShowKeyValueDto>();
+                
+                
+                data.page = 1;
+                data.dataCount = users.content.records.Count;
+                data.size = 10;
+                data.data = users.content.records.Select(t => new ShowKeyValueDto { id = t.id, name = $"{t.userAlias}({t.user.phoneNumber})" }).ToList();
+                return data;
+            }
+            else if ("400".Equals(guardAccount.guardType))
+            {
+                //微泰2
+                var users = await Weitai2Helper.getFamily(guardAccount.token, guardAccount.loginId,page,size);
+                if (users.code != 200) throw new ServiceException($"获取用户失败:{users.msg}");
+
+                PageModel<ShowKeyValueDto> data = new PageModel<ShowKeyValueDto>();
+                 
+                data.page = page;
+                data.dataCount = users.count;
+                data.size = size;
+                data.data = users.data.Select(t => new ShowKeyValueDto { id = t.dataProviderId, name = $"{t.readerAlias}-{t.providerAlias}({t.providerUserName})" }).ToList();
+                return data;
             }
             else
             {
@@ -434,41 +498,7 @@ namespace MyDotnet.Services.Ns
             }
         }
 
-        public void GetNsFlagForSannuo(List<SannuoBloodDtoData> data)
-        {
-            for (int i = 0; i < data.Count; i++)
-            {
-                SannuoBloodDtoData curRow = data[i];
-                double diff;
-
-                if (i == 0)
-                {
-                    diff = 0;
-                }
-                else
-                {
-                    diff = (curRow.value - data[i - 1].value) / 3;
-                }
-
-
-                if (diff > 0.17)
-                    curRow.direction = "DoubleUp";
-                else if (diff > 0.1 && diff <= 0.17)
-                    curRow.direction = "SingleUp";
-                else if (diff > 0.05 && diff <= 0.1)
-                    curRow.direction = "FortyFiveUp";
-                if (diff < -0.17)
-                    curRow.direction = "DoubleDown";
-                else if (diff < -0.1 && diff >= -0.17)
-                    curRow.direction = "SingleDown";
-                else if (diff < -0.05 && diff >= -0.1)
-                    curRow.direction = "FortyFiveDown";
-                else if (diff >= -0.05 && diff <= 0.05)
-                    curRow.direction = "Flat";
-                else
-                    curRow.direction = "Flat";
-            }
-        }
+        
         /// <summary>
         /// 检测账户有效性
         /// </summary>
@@ -490,12 +520,130 @@ namespace MyDotnet.Services.Ns
                     var loginInfo = await SannuoHelper.getMyInfo(account.token);
                     return loginInfo.success;
                 }
+                else if ("300".Equals(account.guardType))
+                {
+                    //微泰1
+                    var loginInfo = await Weitai1Helper.getMyInfo(account.token);
+                    return "100000".Equals(loginInfo.info.code);
+                }
+                else if ("400".Equals(account.guardType))
+                {
+                    //微泰2
+                    var loginInfo = await Weitai2Helper.getMyInfo(account.token);
+                    return loginInfo.code == 200;
+                }
                 return false;
             }
             catch (Exception ex)
             {
                 LogHelper.logApp.Error($"账户查询失败:{ex.Message}", ex);
                 return false;
+            }
+        }
+        public void GetNsFlagForSannuo(List<SannuoBloodDtoData> pushData)
+        {
+            for (int i = 0; i < pushData.Count; i++)
+            {
+                SannuoBloodDtoData curRow = pushData[i];
+                double diff;
+
+                if (i == 0)
+                {
+                    diff = 0;
+                }
+                else
+                {
+                    diff = (curRow.value - pushData[i - 1].value) / 3;
+                }
+
+
+                if (diff > 0.17)
+                    curRow.direction = "DoubleUp";
+                else if (diff > 0.1 && diff <= 0.17)
+                    curRow.direction = "SingleUp";
+                else if (diff > 0.05 && diff <= 0.1)
+                    curRow.direction = "FortyFiveUp";
+                if (diff < -0.17)
+                    curRow.direction = "DoubleDown";
+                else if (diff < -0.1 && diff >= -0.17)
+                    curRow.direction = "SingleDown";
+                else if (diff < -0.05 && diff >= -0.1)
+                    curRow.direction = "FortyFiveDown";
+                else if (diff >= -0.05 && diff <= 0.05)
+                    curRow.direction = "Flat";
+                else
+                    curRow.direction = "Flat";
+            }
+        }
+        public void GetNsFlagForWeitai1(List<Weitai1BloodDtoContentRecord> pushData)
+        {
+            for (int i = 0; i < pushData.Count; i++)
+            {
+                Weitai1BloodDtoContentRecord curRow = pushData[i];
+                double diff;
+
+                if (i == 0)
+                {
+                    diff = 0;
+                }
+                else
+                {
+                    diff = (curRow.eventData - pushData[i - 1].eventData) / 5;
+                }
+
+
+                if (diff > 0.17)
+                    curRow.direction = "DoubleUp";
+                else if (diff > 0.1 && diff <= 0.17)
+                    curRow.direction = "SingleUp";
+                else if (diff > 0.05 && diff <= 0.1)
+                    curRow.direction = "FortyFiveUp";
+                if (diff < -0.17)
+                    curRow.direction = "DoubleDown";
+                else if (diff < -0.1 && diff >= -0.17)
+                    curRow.direction = "SingleDown";
+                else if (diff < -0.05 && diff >= -0.1)
+                    curRow.direction = "FortyFiveDown";
+                else if (diff >= -0.05 && diff <= 0.05)
+                    curRow.direction = "Flat";
+                else
+                    curRow.direction = "Flat";
+            }
+        }
+
+        public void GetNsFlagForWeitai2(List<Weitai2BloodDtoData> pushData)
+        {
+            for (int i = 0; i < pushData.Count; i++)
+            {
+                Weitai2BloodDtoData curRow = pushData[i];
+                double diff;
+
+                if (i == 0)
+                {
+                    diff = 0;
+                }
+                else
+                {
+                    diff = (curRow.glucose - pushData[i - 1].glucose) / 1 /18;
+                }
+
+
+                if (diff > 0.17)
+                    curRow.direction = "DoubleUp";
+                else if (diff > 0.1 && diff <= 0.17)
+                    curRow.direction = "SingleUp";
+                else if (diff > 0.05 && diff <= 0.1)
+                    curRow.direction = "FortyFiveUp";
+                if (diff < -0.17)
+                    curRow.direction = "DoubleDown";
+                else if (diff < -0.1 && diff >= -0.17)
+                    curRow.direction = "SingleDown";
+                else if (diff < -0.05 && diff >= -0.1)
+                    curRow.direction = "FortyFiveDown";
+                else if (diff >= -0.05 && diff <= 0.05)
+                    curRow.direction = "Flat";
+                else
+                    curRow.direction = "Flat";
             }
         }
     }

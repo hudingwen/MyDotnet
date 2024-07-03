@@ -26,8 +26,10 @@ namespace MyDotnet.Helper
         /// 32位MD5加密
         /// </summary>
         /// <param name="password"></param>
+        /// <param name="isToLower">是否小写</param>
         /// <returns></returns>
-        public static string MD5Encrypt32(string password = "")
+        /// <exception cref="Exception"></exception>
+        public static string MD5Encrypt32(string password,bool isToLower=false)
         {
             string pwd = string.Empty;
             try
@@ -43,6 +45,7 @@ namespace MyDotnet.Helper
                         // 将得到的字符串使用十六进制类型格式。格式后的字符是小写的字母，如果使用大写（X）则格式后的字符是大写字符 
                         pwd = string.Concat(pwd, item.ToString("X2"));
                     }
+                    if(isToLower) pwd= pwd.ToLower();
                 }
             }
             catch

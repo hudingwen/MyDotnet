@@ -29,6 +29,11 @@ namespace MyDotnet.Domain.Entity.Ns
         [SugarColumn(Length = 100, IsNullable = true)]
         public string loginPass { get; set; }
         /// <summary>
+        /// 登录成功后的id(有些需要)
+        /// </summary>
+        [SugarColumn(Length = 100, IsNullable = true)]
+        public string loginId { get; set; }
+        /// <summary>
         /// 当前登录token
         /// </summary>
         [SugarColumn(Length = 1000, IsNullable = true)]
