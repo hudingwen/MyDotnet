@@ -71,7 +71,7 @@ namespace MyDotnet.Tasks.QuartzJob
                     {
                         //硅基
                         #region 硅基
-                        var data = await GuijiHelper.getGuijiUser(account.token, user.uid);
+                        var data = await GuijiHelper.getUserBlood(account.token, user.uid);
                         if (data.success)
                         {
                             bool isTouchTime = false;

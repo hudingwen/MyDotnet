@@ -61,7 +61,7 @@ namespace MyDotnet.Helper
         /// <param name="token"></param>
         /// <param name="uid"></param>
         /// <returns></returns>
-        public static async Task<GuiBloodDto> getGuijiUser(string token, string uid)
+        public static async Task<GuiBloodDto> getUserBlood(string token, string uid)
         {
             var request = new HttpRequestMessage(HttpMethod.Get, $"https://api.sisensing.com/follow/app/{uid}/v2");
             request.Headers.Add("Authorization", token);

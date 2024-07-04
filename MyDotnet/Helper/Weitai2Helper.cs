@@ -81,7 +81,7 @@ namespace MyDotnet.Helper
         /// <returns></returns>
         public static async Task<Weitai2BloodDto> getBlood(string token, string uid)
         {
-            var request = new HttpRequestMessage(HttpMethod.Get, $"https://china.pancares.com/backend/aidex-x/cgmRecord/getCgmRecordsByPageInfo?orderStrategy=DESC&pageNum=1&pageSize=100&userId={uid}");
+            var request = new HttpRequestMessage(HttpMethod.Get, $"https://china.pancares.com/backend/aidex-x/cgmRecord/getCgmRecordsByPageInfo?orderStrategy=DESC&pageNum=1&pageSize=300&userId={uid}");
             request.Headers.Add("token", token); 
 
             var res = await HttpHelper.SendAsync(request);

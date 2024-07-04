@@ -143,22 +143,14 @@ namespace MyDotnet.Controllers.Base
         {
             var ls = await _roleModulePermissionServices.Dal.Query();
             return ls;
-        }
+        } 
 
-        /// <summary>
-        /// 自服务层储测试
-        /// </summary>
-        /// <returns></returns>
         [HttpGet]
         [AllowAnonymous]
-        public async Task<List<EntriesEntity>> Get8()
+        public async Task<object> MyTest()
         {
-            var request = new HttpRequestMessage(HttpMethod.Get, $"https://xxx.com/api/v1/entries?count=900");
-            request.Headers.Add("Accept", "application/json");
-            var data = await HttpHelper.SendAsync(request);
-            var ls = JsonHelper.JsonToObj<List<EntriesEntity>>(data);
-            return ls;
-        } 
+            return null;
+        }
 
     } 
 }

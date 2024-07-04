@@ -4,6 +4,7 @@ using MongoDB.Driver;
 using MongoDB.Driver.Linq;
 using MyDotnet.Controllers.Base;
 using MyDotnet.Domain.Dto.ExceptionDomain;
+using MyDotnet.Domain.Dto.Guard;
 using MyDotnet.Domain.Dto.Guiji;
 using MyDotnet.Domain.Dto.Ns;
 using MyDotnet.Domain.Dto.Sannuo;
@@ -577,9 +578,11 @@ namespace MyDotnet.Services.Ns
         }
         public void GetNsFlagForWeitai1(List<Weitai1BloodDtoContentRecord> pushData)
         {
-            for (int i = 0; i < pushData.Count; i++)
+            var data = pushData.OrderBy(t => t.deviceTime).ToList();
+            for (int i = 0; i < data.Count; i++)
             {
-                Weitai1BloodDtoContentRecord curRow = pushData[i];
+                Weitai1BloodDtoContentRecord curRow = data[i];
+                
                 double diff;
 
                 if (i == 0)
@@ -588,7 +591,7 @@ namespace MyDotnet.Services.Ns
                 }
                 else
                 {
-                    diff = (curRow.eventData - pushData[i - 1].eventData) / 5;
+                    diff = (curRow.eventData - data[i - 1].eventData) / 5;
                 }
 
 
@@ -613,9 +616,10 @@ namespace MyDotnet.Services.Ns
 
         public void GetNsFlagForWeitai2(List<Weitai2BloodDtoData> pushData)
         {
-            for (int i = 0; i < pushData.Count; i++)
+            var data = pushData.OrderBy(t => t.appCreateTime).ToList();
+            for (int i = 0; i < data.Count; i++)
             {
-                Weitai2BloodDtoData curRow = pushData[i];
+                Weitai2BloodDtoData curRow = data[i];
                 double diff;
 
                 if (i == 0)
@@ -624,7 +628,7 @@ namespace MyDotnet.Services.Ns
                 }
                 else
                 {
-                    diff = (curRow.glucose - pushData[i - 1].glucose) / 1 /18;
+                    diff = (curRow.glucose - data[i - 1].glucose) / 1 /18;
                 }
 
 
@@ -644,6 +648,86 @@ namespace MyDotnet.Services.Ns
                     curRow.direction = "Flat";
                 else
                     curRow.direction = "Flat";
+            }
+        }
+
+        public async Task<List<GuardBloodInfo>> getUserNowBloodList(long guardUserid)
+        {
+            var user = await _baseRepositoryUser.QueryById(guardUserid);
+            var guard = await _baseRepositoryAccount.QueryById(user.gid);
+            List<GuardBloodInfo> ls = new List<GuardBloodInfo>();
+            if ("100".Equals(guard.guardType))
+            {
+                //硅基
+                var data = await GuijiHelper.getUserBlood(guard.token, user.uid);
+
+                if (data.data.followedDeviceGlucoseDataPO.glucoseInfos != null && data.data.followedDeviceGlucoseDataPO.glucoseInfos.Count > 0 && data.data.followedDeviceGlucoseDataPO.time == data.data.followedDeviceGlucoseDataPO.glucoseInfos[0].time)
+                {
+                    //正常
+                    ls = data.data.followedDeviceGlucoseDataPO.glucoseInfos.OrderByDescending(t => t.time).ToList().Select(t => new GuardBloodInfo { time = t.time, blood = t.v, trend = GetNsFlag(GetNsFlagForGuiji(t.s)) }).ToList();
+                }
+                else
+                {
+                    //延期
+                    ls.Add(new GuardBloodInfo() { time = data.data.followedDeviceGlucoseDataPO.time, blood = data.data.followedDeviceGlucoseDataPO.latestGlucoseValue, trend = GetNsFlag(GetNsFlagForGuiji(data.data.followedDeviceGlucoseDataPO.bloodGlucoseTrend)) });
+                }
+            }
+            else if ("200".Equals(guard.guardType))
+            {
+                //三诺
+                var data = await SannuoHelper.getUserBlood(guard.token, user.uid);
+                GetNsFlagForSannuo(data.data);
+                ls = data.data.OrderByDescending(t=>t.time).Select(t => new GuardBloodInfo() { time = t.parsTime,blood = t.value,trend = GetNsFlag(t.direction ) }).ToList();
+            }
+            else if ("300".Equals(guard.guardType))
+            {
+                //微泰1
+                var data = await Weitai1Helper.getBlood(guard.token, user.uid);
+                var pushData = data.content.records.Where(t => t.eventType == 7).OrderByDescending(t => t.deviceTime).ToList();
+                GetNsFlagForWeitai1(pushData);
+                ls = pushData.Select(t => new GuardBloodInfo() { time =t.deviceTime,blood = t.eventData ,trend = GetNsFlag(t.direction)}).ToList();
+            }
+            else if ("400".Equals(guard.guardType))
+            {
+                //微泰2
+                var data = await Weitai2Helper.getBlood(guard.token, user.uid);
+                var pushData = data.data.OrderByDescending(t => t.appCreateTime).ToList();
+                //趋势计算
+                GetNsFlagForWeitai2(pushData);
+                ls = pushData.Select(t => new GuardBloodInfo() { time = t.appCreateTime, blood = Math.Round(t.glucose / 18, 1), trend = GetNsFlag(t.direction) }).ToList();
+            }
+            return ls;
+        }
+        public string GetNsFlag(string direction)
+        {
+            switch (direction)
+            {
+                case "NONE":
+                    return "⇼";
+                case "TripleUp":
+                    return "⤊";
+                case "DoubleUp":
+                    return "⇈";
+                case "SingleUp":
+                    return "↑";
+                case "FortyFiveUp":
+                    return "↗";
+                case "Flat":
+                    return "→";
+                case "FortyFiveDown":
+                    return "↘";
+                case "SingleDown":
+                    return "↓";
+                case "DoubleDown":
+                    return "⇊";
+                case "TripleDown":
+                    return "⤋";
+                case "NOT COMPUTABLE":
+                    return "-";
+                case "RATE OUT OF RANGE":
+                    return "⇕";
+                default:
+                    return "未知";
             }
         }
     }

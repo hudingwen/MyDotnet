@@ -87,6 +87,7 @@ namespace MyDotnet.Helper
 
             Weitai1SearchBloodDto bloodDto = new Weitai1SearchBloodDto();
             bloodDto.authorizationId = uid;
+            bloodDto.pageSize = 300;
             request.Content = new StringContent(JsonHelper.ObjToJson(bloodDto), Encoding.UTF8, "application/json");
 
             var res = await HttpHelper.SendAsync(request);

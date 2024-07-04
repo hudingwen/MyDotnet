@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using MyDotnet.Controllers.Base;
 using MyDotnet.Domain.Dto.Apple;
+using MyDotnet.Domain.Dto.Guard;
 using MyDotnet.Domain.Dto.Ns;
 using MyDotnet.Domain.Dto.Sannuo;
 using MyDotnet.Domain.Dto.System;
@@ -39,17 +40,6 @@ namespace MyDotnet.Controllers.Ns
             _guardService = guardService;
             _baseRepositoryAccount = baseRepositoryAccount;
             _baseRepositoryNightscout = baseRepositoryNightscout;
-        }
-        /// <summary>
-        /// 获取监护账户列表
-        /// </summary>
-        /// <returns></returns>
-        [HttpGet]
-        public async Task<MessageModel<PageModel<NightscoutGuardAccount>>> getGuardAccountList(int page,int size,string key)
-        {
-            var data = await _guardService.getGuardAccountList(page, size, key);
-
-            return MessageModel<PageModel<NightscoutGuardAccount>>.Success("获取成功",data);
         }
 
         /// <summary>
@@ -107,6 +97,29 @@ namespace MyDotnet.Controllers.Ns
             {
                 return MessageModel<SannuoSmsLoginReturnDto>.Fail("登录失败", res);
             }
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet]
+        public async Task<MessageModel<List<GuardBloodInfo>>> getUserNowBloodList(long guardUserid)
+        {
+            var data = await _guardService.getUserNowBloodList(guardUserid);
+            return MessageModel<List<GuardBloodInfo>>.Success("获取成功",data);
+        }
+
+
+        /// <summary>
+        /// 获取监护账户列表
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet]
+        public async Task<MessageModel<PageModel<NightscoutGuardAccount>>> getGuardAccountList(int page, int size, string key)
+        {
+            var data = await _guardService.getGuardAccountList(page, size, key);
+
+            return MessageModel<PageModel<NightscoutGuardAccount>>.Success("获取成功", data);
         }
         /// <summary>
         /// 添加监护监护账户
