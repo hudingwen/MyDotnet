@@ -29,18 +29,24 @@ namespace MyDotnet.Tasks.QuartzJob
     {
         public NightscoutGuardService _nightscoutGuardService;
         public BaseRepository<NightscoutGuardAccount> _baseRepositoryAccount;
-        public SchedulerCenterServer _schedulerCenter; 
+        public SchedulerCenterServer _schedulerCenter;
+        public DicService _dicService;
+        public WeChatConfigServices _weChatConfigServices { get; set; }
         public Job_Nightscout_Guard_Quartz(
             BaseServices<TasksQz> tasksQzServices
             , BaseServices<TasksLog> tasksLogServices  
             , NightscoutGuardService nightscoutGuardService
             , BaseRepository<NightscoutGuardAccount> baseRepositoryAccount
             , SchedulerCenterServer schedulerCenter 
+            , DicService dicService
+            , WeChatConfigServices weChatConfigServices
             ) : base(tasksQzServices, tasksLogServices)
         {
             _nightscoutGuardService = nightscoutGuardService;
             _baseRepositoryAccount = baseRepositoryAccount;
-            _schedulerCenter = schedulerCenter; 
+            _schedulerCenter = schedulerCenter;
+            _dicService = dicService;
+            _weChatConfigServices = weChatConfigServices;
         } 
 
 
@@ -67,11 +73,56 @@ namespace MyDotnet.Tasks.QuartzJob
                         var isOk = await _nightscoutGuardService.CheckAccount(account);
                         if (isOk)
                         {
-                            //有效,判断前一天是否过期了
-                            if(DateTime.Now.AddDays(1) > account.tokenExpire)
+                            //有效,判断前三天是否过期了
+                            if((account.tokenExpire - DateTime.Now).TotalDays<=3)
                             {
                                 //刷新token 
-                                await _nightscoutGuardService.refreshGuardAccount(account);
+                                var isRefresh = await _nightscoutGuardService.refreshGuardAccount(account);
+
+                                try
+                                {
+                                    var nsInfo = await _dicService.GetDicData(NsInfo.KEY);
+                                    var frontPage = nsInfo.Find(t => t.code.Equals(NsInfo.frontPage)).content;
+                                    var pushTemplateID_Alert = nsInfo.Find(t => t.code.Equals(NsInfo.pushTemplateID_Alert)).content;
+                                    var pushWechatID = nsInfo.Find(t => t.code.Equals(NsInfo.pushWechatID)).content;
+                                    var pushCompanyCode = nsInfo.Find(t => t.code.Equals(NsInfo.pushCompanyCode)).content;
+
+                                    var preDayInfo = await _dicService.GetDicDataOne(NsInfo.KEY, NsInfo.preDays);
+                                    var preDay = preDayInfo.content.ObjToInt();
+
+                                    var preInnerUser = await _dicService.GetDicDataOne(NsInfo.KEY, NsInfo.preInnerUser);
+
+                                    var pushUsers = preInnerUser.content.Split(",", StringSplitOptions.RemoveEmptyEntries);
+                                    //恢复推送
+                                    if (pushUsers.Length > 0)
+                                    {
+                                        foreach (var userid in pushUsers)
+                                        {
+                                            var pushData = new WeChatCardMsgDataDto();
+                                            pushData.cardMsg = new WeChatCardMsgDetailDto();
+                                            if (isRefresh.response)
+                                            {
+                                                pushData.cardMsg.keyword1 = $"{account.name} token 刷新成功";
+                                            }
+                                            else
+                                            {
+                                                pushData.cardMsg.keyword1 = $"{account.name} token 刷新失败,有可能是需要手动输入验证-{isRefresh.msg}";
+                                            }
+                                            pushData.cardMsg.keyword2 = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+                                            pushData.cardMsg.url = frontPage;
+                                            pushData.cardMsg.template_id = pushTemplateID_Alert;
+                                            pushData.info = new WeChatUserInfo();
+                                            pushData.info.id = pushWechatID;
+                                            pushData.info.companyCode = pushCompanyCode;
+                                            pushData.info.userID = userid;
+                                            await _weChatConfigServices.PushCardMsg(pushData);
+                                        }
+                                    }
+                                }
+                                catch (Exception ex)
+                                {
+                                    LogHelper.logSys.Error($"推送失败,{ex.Message}", ex);
+                                }
                             }
                             
                         }

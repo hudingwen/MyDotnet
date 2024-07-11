@@ -97,7 +97,6 @@ namespace MyDotnet.Tasks.QuartzJob
                     {
                         //成功
                         errCount = 0;
-
                         if (canSwitch == true)
                         {
                             //网络正常切换回原来的
@@ -143,6 +142,10 @@ namespace MyDotnet.Tasks.QuartzJob
                             //恢复
                             canSwitch = false;
                             isEnterErrTime = false;
+                        }
+                        else
+                        {
+                            enterErrTime = DateTime.Now;
                         }
                     }
                     else
