@@ -74,7 +74,7 @@ namespace MyDotnet.Tasks.QuartzJob
                         if (isOk)
                         {
                             //有效,判断前三天是否过期了
-                            if((account.tokenExpire - DateTime.Now).TotalDays<=3)
+                            if((account.tokenExpire - DateTime.Now).TotalDays<3)
                             {
                                 //刷新token 
                                 var isRefresh = await _nightscoutGuardService.refreshGuardAccount(account);
@@ -100,13 +100,13 @@ namespace MyDotnet.Tasks.QuartzJob
                                         {
                                             var pushData = new WeChatCardMsgDataDto();
                                             pushData.cardMsg = new WeChatCardMsgDetailDto();
-                                            if (isRefresh.response)
+                                            if (isRefresh.success)
                                             {
                                                 pushData.cardMsg.keyword1 = $"{account.name} token 刷新成功";
                                             }
                                             else
                                             {
-                                                pushData.cardMsg.keyword1 = $"{account.name} token 刷新失败,有可能是需要手动输入验证-{isRefresh.msg}";
+                                                pushData.cardMsg.keyword1 = $"{account.name} token 刷新失败,可能需要手动操作-{isRefresh.msg}";
                                             }
                                             pushData.cardMsg.keyword2 = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
                                             pushData.cardMsg.url = frontPage;
