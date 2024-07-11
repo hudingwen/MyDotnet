@@ -76,11 +76,12 @@ namespace MyDotnet.Tasks.QuartzJob
                             //有效,判断前三天是否过期了
                             if((account.tokenExpire - DateTime.Now).TotalDays<3)
                             {
-                                //刷新token 
-                                var isRefresh = await _nightscoutGuardService.refreshGuardAccount(account);
+                                
 
                                 try
                                 {
+                                    //刷新token 
+                                    var isRefresh = await _nightscoutGuardService.refreshGuardAccount(account);
                                     var nsInfo = await _dicService.GetDicData(NsInfo.KEY);
                                     var frontPage = nsInfo.Find(t => t.code.Equals(NsInfo.frontPage)).content;
                                     var pushTemplateID_Alert = nsInfo.Find(t => t.code.Equals(NsInfo.pushTemplateID_Alert)).content;
@@ -102,11 +103,11 @@ namespace MyDotnet.Tasks.QuartzJob
                                             pushData.cardMsg = new WeChatCardMsgDetailDto();
                                             if (isRefresh.success)
                                             {
-                                                pushData.cardMsg.keyword1 = $"{account.name} token 刷新成功";
+                                                pushData.cardMsg.keyword1 = $"{account.name} token 自动刷新成功";
                                             }
                                             else
                                             {
-                                                pushData.cardMsg.keyword1 = $"{account.name} token 刷新失败,可能需要手动操作-{isRefresh.msg}";
+                                                pushData.cardMsg.keyword1 = $"{account.name} token 自动刷新失败,{isRefresh.msg}";
                                             }
                                             pushData.cardMsg.keyword2 = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
                                             pushData.cardMsg.url = frontPage;

@@ -85,16 +85,19 @@ namespace MyDotnet.Services.Ns
                 if ("100".Equals(data.guardType))
                 {
                     //硅基
-                    await loginGuardAccount(data);
+                    var res = await loginGuardAccount(data);
+                    if (!res.success) throw new ServiceException(res.msg);
                 }else if ("300".Equals(data.guardType))
                 {
                     //微泰1
-                    await loginGuardAccount(data);
+                    var res = await loginGuardAccount(data);
+                    if (!res.success) throw new ServiceException(res.msg);
                 }
                 else if ("400".Equals(data.guardType))
                 {
                     //微泰1
-                    await loginGuardAccount(data);
+                    var res = await loginGuardAccount(data);
+                    if (!res.success) throw new ServiceException(res.msg);
                 }
                 _unitOfWorkManage.CommitTran();
                 return i;
@@ -146,7 +149,7 @@ namespace MyDotnet.Services.Ns
                     //硅基
                     var loginRes = await GuijiHelper.loginGuiji(data.loginName, data.loginPass);
                     if (!loginRes.success)
-                        throw new ServiceException($"硅基登录失败:{loginRes.msg}");
+                        return MessageModel<bool>.Success($"硅基登录失败:{loginRes.msg}");
                     data.token = loginRes.data.access_token;
                     data.tokenExpire = DateTime.Now.AddSeconds(loginRes.data.expires_in);
                     await _baseRepositoryAccount.Update(data);
@@ -156,7 +159,7 @@ namespace MyDotnet.Services.Ns
                     //微泰1
                     var loginRes = await Weitai1Helper.Login(data.loginName, data.loginPass);
                     if (!"100000".Equals(loginRes.info.code))
-                        throw new ServiceException($"微泰1登录失败:{loginRes.info.msg}");
+                        return MessageModel<bool>.Success($"微泰1登录失败:{loginRes.info.msg}");
                     data.token = loginRes.token;
                     data.tokenExpire = loginRes.tokenExpire;
                     await _baseRepositoryAccount.Update(data);
@@ -167,7 +170,7 @@ namespace MyDotnet.Services.Ns
                     //微泰2
                     var loginRes = await Weitai2Helper.Login(data.loginName, data.loginPass);
                     if (loginRes.code != 200)
-                        throw new ServiceException($"微泰2登录失败:{loginRes.msg}");
+                        return MessageModel<bool>.Success($"微泰2登录失败:{loginRes.msg}");
                     data.token = loginRes.data.token;
                     data.tokenExpire = loginRes.data.tokenExpire;
                     data.loginId = loginRes.data.userId;
