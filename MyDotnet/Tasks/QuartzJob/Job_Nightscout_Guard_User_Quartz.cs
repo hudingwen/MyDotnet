@@ -62,7 +62,12 @@ namespace MyDotnet.Tasks.QuartzJob
 
                 //获取监护用户
                 var user = await _nightscoutGuardService.Dal.QueryById(task.ResourceId);
-                if (user == null) throw new ServiceException($"监护用户获取失败:{jobid}"); 
+                if (user == null) throw new ServiceException($"监护用户获取失败:{jobid}");
+                if(!user.Enabled)
+                {
+                    error = "用户未启用,任务结束";
+                    return;
+                }
                 var account = await _baseRepositoryAccount.QueryById(user.gid);
                 if (account == null) throw new ServiceException($"监护账号获取失败:{user.gid}");
                 try
