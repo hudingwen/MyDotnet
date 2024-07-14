@@ -119,6 +119,11 @@ namespace MyDotnet.Tasks.QuartzJob
                             string newCronExpression = string.Empty;
                             if (isTouchTime)
                             {
+                                if(DateTime.Now >= nextTime)
+                                {
+                                    //调度时间异常处理
+                                    nextTime = DateTime.Now.AddSeconds(30);
+                                }
                                 newCronExpression = nextTime.ToString("ss mm HH dd MM ? yyyy");
                             }
                             else
@@ -174,6 +179,11 @@ namespace MyDotnet.Tasks.QuartzJob
                             string newCronExpression = string.Empty;
                             if (isTouchTime)
                             {
+                                if (DateTime.Now >= nextTime)
+                                {
+                                    //调度时间异常处理
+                                    nextTime = DateTime.Now.AddSeconds(30);
+                                }
                                 newCronExpression = nextTime.ToString("ss mm HH dd MM ? yyyy");
                             }
                             else
@@ -229,6 +239,11 @@ namespace MyDotnet.Tasks.QuartzJob
                             string newCronExpression = string.Empty;
                             if (isTouchTime)
                             {
+                                if (DateTime.Now >= nextTime)
+                                {
+                                    //调度时间异常处理
+                                    nextTime = DateTime.Now.AddSeconds(60);
+                                }
                                 newCronExpression = nextTime.ToString("ss mm HH dd MM ? yyyy");
                             }
                             else
@@ -284,6 +299,11 @@ namespace MyDotnet.Tasks.QuartzJob
                             string newCronExpression = string.Empty;
                             if (isTouchTime)
                             {
+                                if (DateTime.Now >= nextTime)
+                                {
+                                    //调度时间异常处理
+                                    nextTime = DateTime.Now.AddSeconds(30);
+                                }
                                 newCronExpression = nextTime.ToString("ss mm HH dd MM ? yyyy");
                             }
                             else
