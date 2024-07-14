@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Quartz;
+using System;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
@@ -10,7 +12,15 @@ namespace MyDotnet.Helper
     /// </summary>
     public static class HttpHelper
     {
-        private static HttpClient httpClient = new HttpClient();
+        private static HttpClient httpClient { get
+            {
+                using (var scope = AppHelper.appService.CreateScope())
+                {
+                    var data = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>();
+                    return data.CreateClient();
+                }
+            }
+        }
         /// <summary>
         /// 发送get请求
         /// </summary>
