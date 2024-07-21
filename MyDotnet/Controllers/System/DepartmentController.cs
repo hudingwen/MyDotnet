@@ -1,4 +1,5 @@
 ﻿
+using AppStoreConnect.Model;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MyDotnet.Controllers.Base;
@@ -31,9 +32,7 @@ namespace MyDotnet.Controllers.System
         {
 
 
-            Expression<Func<Department, bool>> whereExpression = a => true;
-
-            whereExpression = whereExpression.And(t => !t.IsDeleted);
+            Expression<Func<Department, bool>> whereExpression = a => true; 
             if (!string.IsNullOrEmpty(key) && !string.IsNullOrWhiteSpace(key))
             {
                 whereExpression = whereExpression.And(t => t.Name.Contains(key.Trim()));
@@ -45,99 +44,6 @@ namespace MyDotnet.Controllers.System
                 response = await _departmentServices.Dal.QueryPage(whereExpression, page, size)
             };
 
-        }
-
-        [HttpGet("{id}")]
-        public async Task<MessageModel<Department>> Get(string id)
-        {
-            return new MessageModel<Department>()
-            {
-                msg = "获取成功",
-                success = true,
-                response = await _departmentServices.Dal.QueryById(id)
-            };
-        }
-
-        /// <summary>
-        /// 查询树形 Table
-        /// </summary>
-        /// <param name="f">父节点</param>
-        /// <param name="key">关键字</param>
-        /// <returns></returns>
-        [HttpGet]
-        [AllowAnonymous]
-        public async Task<MessageModel<List<Department>>> GetTreeTable(long f = 0, string key = "")
-        {
-            List<Department> departments = new List<Department>();
-            var departmentList = await _departmentServices.Dal.Query(d => d.IsDeleted == false);
-            if (string.IsNullOrEmpty(key) || string.IsNullOrWhiteSpace(key))
-            {
-                key = "";
-            }
-
-            if (key != "")
-            {
-                departments = departmentList.Where(a => a.Name.Contains(key)).OrderBy(a => a.OrderSort).ToList();
-            }
-            else
-            {
-                departments = departmentList.Where(a => a.Pid == f).OrderBy(a => a.OrderSort).ToList();
-            }
-
-            foreach (var item in departments)
-            {
-                List<long> pidarr = new() { };
-                var parent = departmentList.FirstOrDefault(d => d.Id == item.Pid);
-
-                while (parent != null)
-                {
-                    pidarr.Add(parent.Id);
-                    parent = departmentList.FirstOrDefault(d => d.Id == parent.Pid);
-                }
-
-                pidarr.Reverse();
-                pidarr.Insert(0, 0);
-                item.PidArr = pidarr;
-
-                item.hasChildren = departmentList.Where(d => d.Pid == item.Id).Any();
-            }
-
-
-            return Success(departments, "获取成功");
-        }
-
-        /// <summary>
-        /// 获取部门树
-        /// </summary>
-        /// <param name="pid"></param>
-        /// <returns></returns>
-        [HttpGet]
-        public async Task<MessageModel<DepartmentTree>> GetDepartmentTree(long pid = 0)
-        {
-            var departments = await _departmentServices.Dal.Query(d => d.IsDeleted == false);
-            var departmentTrees = (from child in departments
-                                   where child.IsDeleted == false
-                                   orderby child.Id
-                                   select new DepartmentTree
-                                   {
-                                       value = child.Id,
-                                       label = child.Name,
-                                       Pid = child.Pid,
-                                       order = child.OrderSort,
-                                   }).ToList();
-            DepartmentTree rootRoot = new DepartmentTree
-            {
-                value = 0,
-                Pid = 0,
-                label = "根节点"
-            };
-
-            departmentTrees = departmentTrees.OrderBy(d => d.order).ToList();
-
-
-            RecursionHelper.LoopToAppendChildren(departmentTrees, rootRoot, pid);
-
-            return Success(rootRoot, "获取成功");
         }
 
         [HttpPost]
@@ -182,9 +88,92 @@ namespace MyDotnet.Controllers.System
                 data.msg = "删除成功";
                 data.response = model?.Id.ObjToString();
             }
-
-
             return data;
+        }
+
+
+        /// <summary>
+        /// 查询树形 Table
+        /// </summary>
+        /// <param name="pid">父节点</param>
+        /// <param name="key">关键字</param>
+        /// <returns></returns>
+        [HttpGet]
+        public async Task<MessageModel<List<Department>>> GetTreeTable(long pid = 0, string key = "")
+        {
+            List<Department> rootDepartments = new List<Department>();
+            var departmentList = await _departmentServices.Dal.Query();
+            key = key.ObjToString().Trim();
+             
+            if (string.IsNullOrEmpty(key))
+            {
+                rootDepartments = departmentList.Where(a => a.Pid == pid).OrderBy(a => a.OrderSort).ToList();
+            }
+            else
+            {
+                rootDepartments = departmentList.Where(a => a.Name.Contains(key)).OrderBy(a => a.OrderSort).ToList();
+            }
+            HandleDepartment(rootDepartments, departmentList);
+            return Success(rootDepartments, "获取成功");
+        }
+        private void HandleDepartment(List<Department> rootDepartments, List<Department> departmentList)
+        {
+            foreach (var item in rootDepartments)
+            {
+                departmentList.Remove(item);
+                if (item.Id >0) {
+                    var parent = departmentList.Find(t => t.Id == item.Pid);
+                    if (parent != null)  item.PidName = parent.Name;
+                }
+
+                var childList = departmentList.FindAll(t => t.Pid == item.Id).OrderBy(t=>t.OrderSort).ToList();
+                if (childList.Count > 0)
+                {
+                    //子节点
+                    //item.hasChildren = true;
+                    item.children = childList;
+                    item.children.ForEach(child => { child.PidName = item.Name; });
+                    HandleDepartment(item.children, departmentList);
+                }
+                else
+                {
+                    //叶子结点
+                    //item.hasChildren = false;
+                }
+            }
+        }
+
+        /// <summary>
+        /// 获取部门树
+        /// </summary>
+        /// <param name="pid"></param>
+        /// <returns></returns>
+        [HttpGet]
+        public async Task<MessageModel<DepartmentTree>> GetDepartmentTree(long pid = 0)
+        {
+            var departments = await _departmentServices.Dal.Query();
+            var departmentTrees = (from child in departments
+                                   orderby child.OrderSort
+                                   select new DepartmentTree
+                                   {
+                                       value = child.Id,
+                                       label = child.Name,
+                                       Pid = child.Pid,
+                                       order = child.OrderSort,
+                                   }).ToList();
+            DepartmentTree rootRoot = new DepartmentTree
+            {
+                value = 0,
+                Pid = 0,
+                label = "根节点"
+            };
+
+            departmentTrees = departmentTrees.OrderBy(d => d.order).ToList();
+
+
+            RecursionHelper.LoopToAppendChildren(departmentTrees, rootRoot, pid);
+
+            return Success(rootRoot, "获取成功");
         }
     }
 }

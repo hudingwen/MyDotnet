@@ -97,9 +97,6 @@ namespace MyDotnet.Controllers.System
 
             data.data = sysUserInfos;
 
-
-
-            var oldData =  data.ConvertTo<SysUserInfoDto>(_mapper);
             return Success(data);
         }
 
@@ -135,15 +132,29 @@ namespace MyDotnet.Controllers.System
             if (!string.IsNullOrEmpty(token))
             {
                 var tokenModel = JWTHelper.SerializeJwtStr(token);
+                
                 if (tokenModel != null && tokenModel.Uid > 0)
                 {
                     var userinfo = await _sysUserInfoServices.Dal.QueryById(tokenModel.Uid);
                     if (userinfo != null)
                     {
 
+
                         var allUserRoles = await _userRoleServices.Dal.Query(d => d.IsDeleted == false);
+                        var allRoles = await _roleServices.Dal.Query(d => d.IsDeleted == false);
+                        var allDepartments = await _departmentServices.Dal.Query(d => d.IsDeleted == false);
+
+
                         var currentUserRoles = allUserRoles.Where(d => d.UserId == userinfo.Id).Select(d => d.RoleId).ToList();
                         userinfo.RIDs = currentUserRoles;
+                        userinfo.RoleNames = allRoles.Where(d => currentUserRoles.Contains(d.Id)).Select(d => d.Name).ToList();
+                        var departmentNameAndIds = GetFullDepartmentName(allDepartments, userinfo.DepartmentId);
+                        userinfo.DepartmentName = departmentNameAndIds.Item1;
+                        userinfo.Dids = departmentNameAndIds.Item2;
+
+                        //var currentUserRoles = (await _userRoleServices.Dal.Query(d => d.UserId == userinfo.Id)).Select(d => d.RoleId).ToList();
+                        //var d = _roleServices.Dal.Query(d => currentUserRoles.Contains(d.Id));
+                        //userinfo.RIDs = currentUserRoles;
 
                         data.response = userinfo;
                         data.success = true;
@@ -296,7 +307,7 @@ namespace MyDotnet.Controllers.System
                 return Failed<string>("用户不存在或已被删除");
             }
             sysUserInfo.Id = uid;
-            data.success = await _sysUserInfoServices.Dal.Update(sysUserInfo,t=>new {t.RealName,t.LoginName,t.Sex,t.Age,t.Birth,t.Address,t.Remark});
+            data.success = await _sysUserInfoServices.Dal.Update(sysUserInfo,t=>new {t.RealName,t.LoginName,t.Birth,t.Address,t.Remark});
             if(data.success)
             {
                 data.msg = "更新成功";

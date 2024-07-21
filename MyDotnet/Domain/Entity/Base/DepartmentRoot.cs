@@ -12,7 +12,4 @@ public class DepartmentRoot<Tkey> : RootEntityTkey<Tkey> where Tkey : IEquatable
     /// </summary>
     public Tkey Pid { get; set; }
 
-    [SugarColumn(IsIgnore = true)]
-    public List<Tkey> PidArr { get; set; }
-
 }

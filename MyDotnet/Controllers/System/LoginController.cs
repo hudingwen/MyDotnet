@@ -81,7 +81,7 @@ namespace MyDotnet.Controllers.System
 
             pass = MD5Helper.MD5Encrypt32(pass);
 
-            var user = await _sysUserInfoServices.Dal.Query(d => d.LoginName == name && d.IsDeleted == false);
+            var user = await _sysUserInfoServices.Dal.Query(d => d.LoginName == name);
             if (user.Count == 1)
             {
                 if (!user[0].LoginPWD.Equals(pass)) return Failed<TokenInfoViewModel>("认证失败");
@@ -96,9 +96,9 @@ namespace MyDotnet.Controllers.System
                     }
 
                 }
-                var userRoles = await _sysUserInfoServices.GetUserRoleNameStr(name, pass);
+                var userRoles = await _sysUserInfoServices.GetUserRoleNameStr(user[0].Id);
 
-                JwtUserInfo jwtUserInfo = new JwtUserInfo() { Uid = user[0].Id, Name = name, Roles = userRoles.Split(',').ToList() };
+                JwtUserInfo jwtUserInfo = new JwtUserInfo() { DepartmentId = user[0].DepartmentId,  Uid = user[0].Id, Name = name, Roles = userRoles.Split(',').ToList() };
                 var token = JWTHelper.IssueJwt(jwtUserInfo);
 
                 TokenInfoViewModel msg = new TokenInfoViewModel { success = true, token = token, token_type = "Bearer", expires_in = _requirement.Expiration.TotalSeconds };

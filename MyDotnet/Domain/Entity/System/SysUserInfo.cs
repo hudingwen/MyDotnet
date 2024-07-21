@@ -7,14 +7,13 @@ namespace MyDotnet.Domain.Entity.System
     /// <summary>
     /// 用户信息表
     /// </summary>
-    //[SugarTable("SysUserInfo")]
     [SugarTable("SysUserInfo", "用户表")] //('数据库表名'，'数据库表备注')
     public class SysUserInfo : BaseEntity
     {
         public SysUserInfo()
         {
-        }
 
+        }
         public SysUserInfo(string loginName, string loginPWD)
         {
             LoginName = loginName;
@@ -58,7 +57,7 @@ namespace MyDotnet.Domain.Entity.System
         /// 部门
         /// </summary>
         [SugarColumn(IsNullable = true)]
-        public int DepartmentId { get; set; } = -1;
+        public long DepartmentId { get; set; } = -1;
 
         /// <summary>
         /// 备注
@@ -88,21 +87,23 @@ namespace MyDotnet.Domain.Entity.System
         [SugarColumn(Length = 200, IsNullable = true)]
         public string Name { get; set; }
 
-        // 性别
+        /// <summary>
+        /// 性别
+        /// </summary>
         [SugarColumn(IsNullable = true)]
         public int Sex { get; set; } = 0;
 
-        // 年龄
-        [SugarColumn(IsNullable = true)]
-        public int Age { get; set; }
-
-        // 生日
+        /// <summary>
+        /// 生日
+        /// </summary>
         [SugarColumn(IsNullable = true)]
         public DateTime Birth { get; set; } = DateTime.Now;
 
 
 
-        // 头像
+        /// <summary>
+        /// 头像
+        /// </summary>
         [SugarColumn(IsNullable = true)]
         public string logo { get; set; }
 

@@ -12,7 +12,7 @@ namespace MyDotnet.Helper
         /// <summary>
         /// 颁发JWT
         /// </summary>
-        /// <param name="tokenModel">当前颁发对象的用户信息</param>
+        /// <param name="jwtUserInfo">当前颁发对象的用户信息</param>
         /// <returns>JWT字符串</returns>
         public static string IssueJwt(JwtUserInfo jwtUserInfo)
         {
@@ -30,9 +30,9 @@ namespace MyDotnet.Helper
                 new Claim(JwtRegisteredClaimNames.Exp,$"{new DateTimeOffset(DateTime.Now.AddSeconds(3600*AuthConfig.expire)).ToUnixTimeSeconds()}"),//JWT到期时间
                 new Claim(ClaimTypes.Expiration,$"{new DateTimeOffset(DateTime.Now.AddSeconds(3600*AuthConfig.expire)).ToUnixTimeSeconds()}"),//JWT到期时间
                 new Claim(JwtRegisteredClaimNames.Iss,iss), //颁发者
-                new Claim(JwtRegisteredClaimNames.Aud,aud)//使用者
+                new Claim(JwtRegisteredClaimNames.Aud,aud),//使用者
+                new Claim(JwtCustomConfig.Dept,jwtUserInfo.DepartmentId.ObjToString())//部门
             };
-
 
             //添加用户角色
             var claimRoleList = jwtUserInfo.Roles.Select(role => new Claim(ClaimTypes.Role, role)).ToList();

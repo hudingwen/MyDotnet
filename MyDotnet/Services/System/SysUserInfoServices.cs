@@ -47,14 +47,13 @@ namespace MyDotnet.Services.System
         /// <summary>
         /// 
         /// </summary>
-        /// <param name="loginName"></param>
-        /// <param name="loginPwd"></param>
+        /// <param name="uid"></param>
         /// <returns></returns>
-        public async Task<string> GetUserRoleNameStr(string loginName, string loginPwd)
+        public async Task<string> GetUserRoleNameStr(long uid)
         {
             string roleName = "";
-            var user = (await Dal.Query(a => a.LoginName == loginName && a.LoginPWD == loginPwd)).FirstOrDefault();
-            var roleList = await _roleRepository.Query(a => a.IsDeleted == false);
+            var user = await Dal.QueryById(uid);
+            var roleList = await _roleRepository.Query();
             if (user != null)
             {
                 var userRoles = await _userRoleRepository.Query(ur => ur.UserId == user.Id);

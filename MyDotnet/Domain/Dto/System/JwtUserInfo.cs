@@ -12,12 +12,17 @@ namespace MyDotnet.Domain.Dto.System
     public class JwtUserInfo
     {
         /// <summary>
-        /// ID
+        /// 用户id
         /// </summary>
         public long Uid { get; set; }
 
         /// <summary>
-        /// Name
+        /// 部门id
+        /// </summary>
+        public long DepartmentId { get; set; }
+
+        /// <summary>
+        /// 账号
         /// </summary>
         public string Name { get; set; }
         /// <summary>
