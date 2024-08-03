@@ -42,7 +42,7 @@ namespace MyDotnet.Services.System
             }
 
             //创建表：根据实体类CodeFirstTable1  (所有数据库都支持)
-            Type type = typeof(Department);
+            Type type = typeof(TCode);
             var tempAttr = Attribute.GetCustomAttribute(type, typeof(SugarTable));
             var attrTable = string.Empty;
             if (tempAttr != null)
@@ -55,13 +55,13 @@ namespace MyDotnet.Services.System
                 //查特性
                 if (!db.DbMaintenance.IsAnyTable(attrTable))
                 {
-                    db.CodeFirst.InitTables<Department>();
+                    db.CodeFirst.InitTables<TCode>();
                 }
             }
             else if (!db.DbMaintenance.IsAnyTable(type.Name))
             {
                 //直接查反射名
-                db.CodeFirst.InitTables<Department>();
+                db.CodeFirst.InitTables<TCode>();
             }
 
             await Task.CompletedTask;

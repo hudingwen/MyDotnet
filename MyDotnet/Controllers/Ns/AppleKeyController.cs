@@ -150,7 +150,7 @@ namespace MyDotnet.Controllers.Ns
 
 
         [HttpGet] 
-        public async Task<MessageModel<string>> CreateKey(string id, string key, bool needTime, long times)
+        public async Task<MessageModel<TCode>> CreateKey(string id, string key, bool needTime, long times,int day, int hour, int min, int sec)
         {
             int intId = int.Parse(id);
             int intKey = int.Parse(key);
@@ -164,8 +164,25 @@ namespace MyDotnet.Controllers.Ns
                 hexStringBuilder.Append(times);
                 hexString = hexStringBuilder.ToString();
             }
-            await Task.CompletedTask;
-            return MessageModel<string>.Success("获取成功", Encrypt(hexString));
+            var auth_code = Encrypt(hexString);
+
+            TCode code = new TCode();
+              
+            code.id = StringHelper.GetGUID().ToLower();
+            code.record_id = id;
+            code.record_key = key;
+            code.auth_code = auth_code;
+            code.create_date = DateTime.Now;
+            code.expiry_date = DateTime.Now.AddMilliseconds(times);
+            code.create_day = day;
+            code.create_hour = hour;
+            code.create_min = min;
+            code.create_sec = sec;
+
+            await baseServices.Dal.Db.Insertable(code).ExecuteCommandAsync();
+
+
+            return MessageModel<TCode>.Success("添加成功", code);
 
         }
 
