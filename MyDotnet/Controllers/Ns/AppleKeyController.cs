@@ -8,6 +8,8 @@ using MyDotnet.Helper;
 using MyDotnet.Services;
 using MyDotnet.Services.Ns;
 using System.Linq.Expressions;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace MyDotnet.Controllers.Ns
 {
@@ -128,6 +130,71 @@ namespace MyDotnet.Controllers.Ns
             else
             {
                 return MessageModel<string>.Success("删除失败");
+            }
+        }
+
+        [HttpGet]
+        public async Task<MessageModel<string>> GetCalcKey(string[] ids)
+        {
+            var isOk = await baseServices.Dal.DeleteByIds(ids);
+            if (isOk)
+            {
+                return MessageModel<string>.Success("删除成功");
+            }
+            else
+            {
+                return MessageModel<string>.Success("删除失败");
+            }
+        }
+
+
+
+        [HttpGet] 
+        public async Task<MessageModel<string>> CreateKey(string id, string key, bool needTime, long times)
+        {
+            int intId = int.Parse(id);
+            int intKey = int.Parse(key);
+            string hexString = ((intId / 2) + intKey).ToString("X").ToLower();
+
+            if (needTime)
+            {
+                StringBuilder hexStringBuilder = new StringBuilder();
+                hexStringBuilder.Append(hexString);
+                hexStringBuilder.Append("z");
+                hexStringBuilder.Append(times);
+                hexString = hexStringBuilder.ToString();
+            }
+            await Task.CompletedTask;
+            return MessageModel<string>.Success("获取成功", Encrypt(hexString));
+
+        }
+
+        private static string Byte2Hex(byte[] byteArray)
+        {
+            StringBuilder hex = new StringBuilder(byteArray.Length * 2);
+            foreach (byte b in byteArray)
+            {
+                hex.AppendFormat("{0:x2}", b);
+            }
+            return hex.ToString().ToUpper();
+        }
+
+        private static string Encrypt(string plainText)
+        {
+            string key = "Format2044153997";
+            byte[] keyBytes = Encoding.ASCII.GetBytes(key);
+            using (Aes aes = Aes.Create())
+            {
+                aes.Key = keyBytes;
+                aes.Mode = CipherMode.ECB;
+                aes.Padding = PaddingMode.PKCS7;
+
+                using (ICryptoTransform encryptor = aes.CreateEncryptor())
+                {
+                    byte[] plainBytes = Encoding.UTF8.GetBytes(plainText);
+                    byte[] encryptedBytes = encryptor.TransformFinalBlock(plainBytes, 0, plainBytes.Length);
+                    return Byte2Hex(encryptedBytes).ToLower();
+                }
             }
         }
 
