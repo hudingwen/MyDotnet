@@ -9,6 +9,7 @@ using System.Text;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using MyDotnet.Domain.Filter;
 using MyDotnet.Domain.Middleware;
+using Microsoft.AspNetCore.Http.Features;
 
 namespace MyDotnet
 {
@@ -19,6 +20,17 @@ namespace MyDotnet
             var builder = WebApplication.CreateBuilder(args);
 
             // Add services to the container.
+            
+            //内置web大小限制
+            builder.WebHost.ConfigureKestrel(serverOptions =>
+            {
+                serverOptions.Limits.MaxRequestBodySize = 10737418240; // 10GB
+            });
+            //表单大小限制
+            builder.Services.Configure<FormOptions>(options =>
+            {
+                options.MultipartBodyLengthLimit = 10737418240; // 10GB
+            });
 
             //配置
             ConfigHelper.Configuration = builder.Configuration;

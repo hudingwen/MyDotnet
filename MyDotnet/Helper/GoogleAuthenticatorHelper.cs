@@ -11,7 +11,7 @@ namespace MyDotnet.Helper
     public static class GoogleAuthenticatorHelper
     {
         private readonly static DateTime _epoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
-        private readonly static TimeSpan DefaultClockDriftTolerance = TimeSpan.FromSeconds(30);
+        private readonly static TimeSpan DefaultClockDriftTolerance = TimeSpan.FromSeconds(60);
 
         /// <summary>
         /// 生成双因子验证

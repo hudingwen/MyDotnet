@@ -105,23 +105,7 @@ namespace MyDotnet.Helper
 
             return 0;
         }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="thisValue"></param>
-        /// <param name="errorValue"></param>
-        /// <returns></returns>
-        public static double ObjToMoney(this object thisValue, double errorValue)
-        {
-            double reval = 0;
-            if (thisValue != null && thisValue != DBNull.Value && double.TryParse(thisValue.ToString(), out reval))
-            {
-                return reval;
-            }
-
-            return errorValue;
-        }
+ 
 
         /// <summary>
         /// 

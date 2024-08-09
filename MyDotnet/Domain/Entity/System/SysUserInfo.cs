@@ -144,5 +144,8 @@ namespace MyDotnet.Domain.Entity.System
 
         [SugarColumn(IsIgnore = true)]
         public List<long> RIDs { get; set; }
+
+        [SugarColumn(IsIgnore = true)]
+        public string OldPWD { get; set; }
     }
 }

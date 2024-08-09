@@ -326,6 +326,66 @@ namespace MyDotnet.Tasks.QuartzJob
                         }
                         #endregion
                     }
+                    else if ("500".Equals(account.guardType))
+                    {
+                        //欧泰
+                        #region 欧泰
+                        var data = await OutaiHelper.getBlood(account.token, account.loginName, user.uid);
+                        if (data.state == 1)
+                        {
+                            bool isTouchTime = false;
+                            var nextTime = DateTime.Now;
+
+                            var pushData = data.content.bloodSugarRecords.records.Where(t => t.timeFormat > user.refreshTime).OrderBy(t => t.timeFormat).ToList();
+                            //趋势计算
+                            _nightscoutGuardService.GetNsFlagForOutai(pushData);
+
+                            //推送数据
+
+                            if (pushData.Count > 0)
+                            {
+                                //推送
+                                var send = pushData.Select(t => new NsUploadBloodInfo { date = (new DateTimeOffset(t.timeFormat).ToUnixTimeMilliseconds()), sgv = t.value * 18, direction = t.direction }).OrderBy(t => t.date).ToList();
+                                await _nightscoutGuardService.pushBlood(user, send);
+                                nextTime = pushData[pushData.Count - 1].timeFormat.AddMinutes(5);
+                                isTouchTime = true;
+                            }
+
+                            // 更新cron表达式
+                            var scheduler = context.Scheduler;
+                            var jobKey = context.JobDetail.Key;
+
+                            // 假设新的cron表达式是每分钟执行一次
+                            string newCronExpression = string.Empty;
+                            if (isTouchTime)
+                            {
+                                if (DateTime.Now >= nextTime)
+                                {
+                                    //调度时间异常处理
+                                    nextTime = DateTime.Now.AddSeconds(30);
+                                }
+                                newCronExpression = nextTime.ToString("ss mm HH dd MM ? yyyy");
+                            }
+                            else
+                            {
+                                nextTime = DateTime.Now.AddSeconds(30);
+                                //默认60秒执行一次
+                                newCronExpression = nextTime.ToString("ss mm HH dd MM ? yyyy");
+                            }
+
+                            // 调用方法更新cron表达式
+                            UpdateJobCronExpression(scheduler, jobKey, newCronExpression).Wait();
+
+                            task.Cron = nextTime.ToString("ss mm HH dd MM ? yyyy");
+                            await _tasksQzServices.Dal.Update(task);
+                        }
+                        else
+                        {
+                            error = data.msg;
+                            LogHelper.logApp.Error($"监护用户:{user.name} 监护异常:{data.msg}");
+                        }
+                        #endregion
+                    }
                 }
                 catch (Exception ex)
                 {

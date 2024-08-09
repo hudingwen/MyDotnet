@@ -276,6 +276,10 @@ namespace MyDotnet.Controllers.System
             {
                 return Failed<string>("用户不存在或已被删除");
             }
+            if (!oldUser.LoginPWD.Equals(MD5Helper.MD5Encrypt32(sysUserInfo.OldPWD)))
+            {
+                return Failed<string>("旧密码错误");
+            }
             sysUserInfo.Id = uid;
             sysUserInfo.LoginPWD = MD5Helper.MD5Encrypt32(sysUserInfo.LoginPWD);
             await _sysUserInfoServices.Dal.Update(sysUserInfo, t => new { t.LoginPWD });

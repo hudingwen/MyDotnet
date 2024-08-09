@@ -229,7 +229,7 @@ namespace MyDotnet.Helper
         /// <summary>
         /// 拷贝文件
         /// </summary>
-        /// <param name="OrignFile">原始文件</param>
+        /// <param name="orignFile">原始文件</param>
         /// <param name="NewFile">新文件路径</param>
         public static void FileCoppy(string orignFile, string NewFile)
         {
@@ -275,6 +275,14 @@ namespace MyDotnet.Helper
         public static void FileMove(string orignFile, string NewFile)
         {
             File.Move(orignFile, NewFile);
+        }
+        /// <summary>
+        /// 文件是否存在
+        /// </summary>
+        /// <param name="filePath">文件路径</param> 
+        public static bool FileExists(string filePath)
+        {
+            return File.Exists(filePath);
         }
         #endregion
 
@@ -378,10 +386,40 @@ namespace MyDotnet.Helper
                 throw new Exception(ee.ToString());
             }
         }
+        public static void MoveDirectory(string sourceDir, string destinationDir)
+        {
+            // 检查目标文件夹是否存在，不存在则创建
+            if (!Directory.Exists(destinationDir))
+            {
+                Directory.CreateDirectory(destinationDir);
+            }
+
+            // 移动所有文件
+            foreach (var file in Directory.GetFiles(sourceDir))
+            {
+                string destFile = Path.Combine(destinationDir, Path.GetFileName(file));
+                File.Move(file, destFile);
+            }
+
+            // 移动所有子文件夹
+            foreach (var dir in Directory.GetDirectories(sourceDir))
+            {
+                string destDir = Path.Combine(destinationDir, Path.GetFileName(dir));
+                MoveDirectory(dir, destDir);
+            }
+
+            // 删除源文件夹
+            Directory.Delete(sourceDir, true);
+        }
 
         public static Stream OpenRead(string localFilePath)
         {
             return File.OpenRead(localFilePath);
+        }
+
+        public static FileStream Create(string saveToPath)
+        {
+             return File.Create(saveToPath);
         }
         #endregion
     }

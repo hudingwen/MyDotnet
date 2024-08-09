@@ -38,7 +38,11 @@ namespace MyDotnet.Domain.Dto.System
         }
 
         public long ID => GetClaimValueByType(JwtRegisteredClaimNames.Jti).FirstOrDefault().ObjToLong();
+
         public long TenantId => GetClaimValueByType("TenantId").FirstOrDefault().ObjToLong();
+
+        public long DeptId => GetClaimValueByType(JwtCustomConfig.Dept).FirstOrDefault().ObjToLong();
+         
 
         public bool IsAuthenticated()
         {

@@ -7,6 +7,7 @@ using MyDotnet.Domain.Dto.ExceptionDomain;
 using MyDotnet.Domain.Dto.Guard;
 using MyDotnet.Domain.Dto.Guiji;
 using MyDotnet.Domain.Dto.Ns;
+using MyDotnet.Domain.Dto.Outai;
 using MyDotnet.Domain.Dto.Sannuo;
 using MyDotnet.Domain.Dto.System;
 using MyDotnet.Domain.Dto.Weitai1;
@@ -99,6 +100,12 @@ namespace MyDotnet.Services.Ns
                     var res = await loginGuardAccount(data);
                     if (!res.success) throw new ServiceException(res.msg);
                 }
+                else if ("500".Equals(data.guardType))
+                {
+                    //欧泰
+                    var res = await loginGuardAccount(data);
+                    if (!res.success) throw new ServiceException(res.msg);
+                }
                 _unitOfWorkManage.CommitTran();
                 return i;
             }
@@ -121,15 +128,18 @@ namespace MyDotnet.Services.Ns
             {
                 //硅基
                 return await loginGuardAccount(data);
-            }
-            if ("300".Equals(data.guardType))
+            }else if ("300".Equals(data.guardType))
             {
                 //微泰1
                 return await loginGuardAccount(data);
-            }
-            if ("400".Equals(data.guardType))
+            }else if("400".Equals(data.guardType))
             {
                 //微泰2
+                return await loginGuardAccount(data);
+            }
+            else if ("500".Equals(data.guardType))
+            {
+                //欧泰
                 return await loginGuardAccount(data);
             }
             return MessageModel<bool>.Fail("还未实现");
@@ -174,6 +184,17 @@ namespace MyDotnet.Services.Ns
                     data.token = loginRes.data.token;
                     data.tokenExpire = loginRes.data.tokenExpire;
                     data.loginId = loginRes.data.userId;
+                    await _baseRepositoryAccount.Update(data);
+                    return MessageModel<bool>.Success("登录成功");
+                }
+                else if ("500".Equals(data.guardType))
+                {
+                    //欧泰
+                    var loginRes = await OutaiHelper.Login(data.loginName, data.loginPass);
+                    if (loginRes.state != 1)
+                        return MessageModel<bool>.Success($"欧泰登录失败:{loginRes.msg}");
+                    data.token = loginRes.token;
+                    data.tokenExpire = loginRes.tokenExpire; 
                     await _baseRepositoryAccount.Update(data);
                     return MessageModel<bool>.Success("登录成功");
                 }
@@ -465,6 +486,20 @@ namespace MyDotnet.Services.Ns
                 data.data = users.data.Select(t => new ShowKeyValueDto { id = t.dataProviderId, name = $"{t.readerAlias}-{t.providerAlias}({t.providerUserName})" }).ToList();
                 return data;
             }
+            else if ("500".Equals(guardAccount.guardType))
+            {
+                //欧泰
+                var users = await OutaiHelper.getFamily(guardAccount.token, guardAccount.loginName);
+                if (users.state != 1) throw new ServiceException($"获取用户失败:{users.msg}");
+
+                PageModel<ShowKeyValueDto> data = new PageModel<ShowKeyValueDto>();
+
+                data.page = 1;
+                data.dataCount = users.associateFriendList.Count;
+                data.size = 9999;
+                data.data = users.associateFriendList.Select(t => new ShowKeyValueDto { id = t.friendUserId, name = $"{t.phone}-{t.remarkName}({t.name})" }).ToList();
+                return data;
+            }
             else
             {
                 throw new ServiceException("还未实现");
@@ -535,6 +570,12 @@ namespace MyDotnet.Services.Ns
                     //微泰2
                     var loginInfo = await Weitai2Helper.getMyInfo(account.token);
                     return loginInfo.code == 200;
+                }
+                else if ("500".Equals(account.guardType))
+                {
+                    //微泰2
+                    var loginInfo = await OutaiHelper.getMyInfo(account.token, account.loginName);
+                    return loginInfo.state == 1;
                 }
                 return false;
             }
@@ -654,6 +695,43 @@ namespace MyDotnet.Services.Ns
             }
         }
 
+        public void GetNsFlagForOutai(List<OutaiBloodDtoContentRecordItem> pushData)
+        {
+            var data = pushData.OrderBy(t => t.timeFormat).ToList();
+            for (int i = 0; i < data.Count; i++)
+            {
+                OutaiBloodDtoContentRecordItem curRow = data[i];
+                double diff;
+
+                if (i == 0)
+                {
+                    diff = 0;
+                }
+                else
+                {
+                    diff = (curRow.value - data[i - 1].value) / 5;
+                }
+
+
+                if (diff > 0.17)
+                    curRow.direction = "DoubleUp";
+                else if (diff > 0.1 && diff <= 0.17)
+                    curRow.direction = "SingleUp";
+                else if (diff > 0.05 && diff <= 0.1)
+                    curRow.direction = "FortyFiveUp";
+                if (diff < -0.17)
+                    curRow.direction = "DoubleDown";
+                else if (diff < -0.1 && diff >= -0.17)
+                    curRow.direction = "SingleDown";
+                else if (diff < -0.05 && diff >= -0.1)
+                    curRow.direction = "FortyFiveDown";
+                else if (diff >= -0.05 && diff <= 0.05)
+                    curRow.direction = "Flat";
+                else
+                    curRow.direction = "Flat";
+            }
+        }
+
         public async Task<List<GuardBloodInfo>> getUserNowBloodList(long guardUserid)
         {
             var user = await _baseRepositoryUser.QueryById(guardUserid);
@@ -698,6 +776,15 @@ namespace MyDotnet.Services.Ns
                 //趋势计算
                 GetNsFlagForWeitai2(pushData);
                 ls = pushData.Select(t => new GuardBloodInfo() { time = t.appCreateTime, blood = Math.Round(t.glucose / 18, 1), trend = GetNsFlag(t.direction) }).ToList();
+            }
+            else if ("500".Equals(guard.guardType))
+            {
+                //欧泰
+                var data = await OutaiHelper.getBlood(guard.token, guard.loginName, user.uid);
+                var pushData = data.content.bloodSugarRecords.records.OrderByDescending(t => t.timeFormat).ToList();
+                //趋势计算
+                GetNsFlagForOutai(pushData);
+                ls = pushData.Select(t => new GuardBloodInfo() { time = t.timeFormat, blood = t.value, trend = GetNsFlag(t.direction) }).ToList();
             }
             return ls;
         }

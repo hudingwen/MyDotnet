@@ -36,7 +36,7 @@ namespace MyDotnet.Controllers.Ns
             key = key.ObjToString().Trim();
             if(!string.IsNullOrEmpty(key) )
             {
-                whereExpression = whereExpression.And(t => t.auth_code.Contains(key));
+                whereExpression = whereExpression.And(t => t.auth_code.Contains(key) || t.record_id.Contains(key) || t.record_key.Contains(key));
             }
             if(status != null )
             {

@@ -20,7 +20,7 @@ namespace MyDotnet.Controllers.Ns
 {
 
     /// <summary>
-    /// 苹果api
+    /// 监护api
     /// </summary>
     [Route("api/[controller]/[action]")]
     [ApiController]
