@@ -336,9 +336,11 @@ namespace MyDotnet.Tasks.QuartzJob
                             bool isTouchTime = false;
                             var nextTime = DateTime.Now;
 
-                            var pushData = data.content.bloodSugarRecords.records.Where(t => t.timeFormat > user.refreshTime).OrderBy(t => t.timeFormat).ToList();
                             //趋势计算
-                            _nightscoutGuardService.GetNsFlagForOutai(pushData);
+                            _nightscoutGuardService.GetNsFlagForOutai(data.content.bloodSugarRecords.records);
+
+                            var pushData = data.content.bloodSugarRecords.records.Where(t => t.timeFormat > user.refreshTime).OrderBy(t => t.timeFormat).ToList();
+                            
 
                             //推送数据
 
