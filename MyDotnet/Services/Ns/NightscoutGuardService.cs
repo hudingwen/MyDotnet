@@ -106,6 +106,12 @@ namespace MyDotnet.Services.Ns
                     var res = await loginGuardAccount(data);
                     if (!res.success) throw new ServiceException(res.msg);
                 }
+                else if ("110".Equals(data.guardType))
+                {
+                    //硅基轻享
+                    var res = await loginGuardAccount(data);
+                    if (!res.success) throw new ServiceException(res.msg);
+                }
                 _unitOfWorkManage.CommitTran();
                 return i;
             }
@@ -140,6 +146,11 @@ namespace MyDotnet.Services.Ns
             else if ("500".Equals(data.guardType))
             {
                 //欧泰
+                return await loginGuardAccount(data);
+            }
+            else if ("110".Equals(data.guardType))
+            {
+                //硅基轻享
                 return await loginGuardAccount(data);
             }
             return MessageModel<bool>.Fail("还未实现");
@@ -195,6 +206,17 @@ namespace MyDotnet.Services.Ns
                         return MessageModel<bool>.Success($"欧泰登录失败:{loginRes.msg}");
                     data.token = loginRes.token;
                     data.tokenExpire = loginRes.tokenExpire; 
+                    await _baseRepositoryAccount.Update(data);
+                    return MessageModel<bool>.Success("登录成功");
+                }
+                else if ("110".Equals(data.guardType))
+                {
+                    //硅基轻享
+                    var loginRes = await GuijiLiteHelper.loginGuiji(data.loginName, data.loginPass);
+                    if (!loginRes.success)
+                        return MessageModel<bool>.Success($"硅基轻享登录失败:{loginRes.msg}");
+                    data.token = loginRes.data.access_token;
+                    data.tokenExpire = DateTime.Now.AddSeconds(loginRes.data.expires_in);
                     await _baseRepositoryAccount.Update(data);
                     return MessageModel<bool>.Success("登录成功");
                 }
@@ -500,6 +522,20 @@ namespace MyDotnet.Services.Ns
                 data.data = users.associateFriendList.Select(t => new ShowKeyValueDto { id = t.friendUserId, name = $"{t.phone}-{t.remarkName}({t.name})" }).ToList();
                 return data;
             }
+            else if ("110".Equals(guardAccount.guardType))
+            {
+                //硅基轻享
+                var users = await GuijiLiteHelper.getGuijiList(guardAccount.token,page,size);
+                if (!users.success) throw new ServiceException($"获取用户失败:{users.msg}");
+
+                PageModel<ShowKeyValueDto> data = new PageModel<ShowKeyValueDto>();
+
+                data.page = page;
+                data.dataCount = users.data.total;
+                data.size = size;
+                data.data = users.data.records.Select(t => new ShowKeyValueDto { id = t.id, name = $"{t.followedUserInfo.userName}-{t.followedUserInfo.nickName}" }).ToList();
+                return data;
+            }
             else
             {
                 throw new ServiceException("还未实现");
@@ -576,6 +612,12 @@ namespace MyDotnet.Services.Ns
                     //微泰2
                     var loginInfo = await OutaiHelper.getMyInfo(account.token, account.loginName);
                     return loginInfo.state == 1;
+                }
+                else if ("110".Equals(account.guardType))
+                {
+                    //硅基轻享
+                    var loginInfo = await GuijiLiteHelper.getMyInfo(account.token);
+                    return loginInfo.success;
                 }
                 return false;
             }
@@ -785,6 +827,21 @@ namespace MyDotnet.Services.Ns
                 //趋势计算
                 GetNsFlagForOutai(pushData);
                 ls = pushData.Select(t => new GuardBloodInfo() { time = t.timeFormat, blood = t.value, trend = GetNsFlag(t.direction) }).ToList();
+            }else if ("110".Equals(guard.guardType))
+            {
+                //硅基轻享
+                var data = await GuijiLiteHelper.getUserBlood(guard.token, user.uid);
+
+                if (data.data.followedDeviceGlucoseDataPO.glucoseInfos != null && data.data.followedDeviceGlucoseDataPO.glucoseInfos.Count > 0 && data.data.followedDeviceGlucoseDataPO.time == data.data.followedDeviceGlucoseDataPO.glucoseInfos[0].time)
+                {
+                    //正常
+                    ls = data.data.followedDeviceGlucoseDataPO.glucoseInfos.OrderByDescending(t => t.time).ToList().Select(t => new GuardBloodInfo { time = t.time, blood = t.v, trend = GetNsFlag(GetNsFlagForGuiji(t.s)) }).ToList();
+                }
+                else
+                {
+                    //延期
+                    ls.Add(new GuardBloodInfo() { time = data.data.followedDeviceGlucoseDataPO.time, blood = data.data.followedDeviceGlucoseDataPO.latestGlucoseValue, trend = GetNsFlag(GetNsFlagForGuiji(data.data.followedDeviceGlucoseDataPO.bloodGlucoseTrend)) });
+                }
             }
             return ls;
         }
