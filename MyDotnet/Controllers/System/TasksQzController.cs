@@ -2,6 +2,7 @@
 using System.Reflection;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using MyDotnet.Config;
 using MyDotnet.Domain.Attr;
 using MyDotnet.Domain.Dto.System;
 using MyDotnet.Domain.Entity.Nginx;
@@ -51,7 +52,7 @@ namespace MyDotnet.Controllers.System
         {
 
 
-            var whereFind = LinqHelper.True<TasksQz>().And(t => t.IsDeleted == false);
+            var whereFind = LinqHelper.True<TasksQz>().And(t => t.DistributeCode == QuartzConfig.DistributeCode);
 
             if (!string.IsNullOrEmpty(key))
             {
@@ -75,6 +76,7 @@ namespace MyDotnet.Controllers.System
         [HttpPost]
         public async Task<MessageModel<string>> Post([FromBody] TasksQz tasksQz)
         {
+            tasksQz.DistributeCode = QuartzConfig.DistributeCode;
             return await _tasksQzServices.AddTask(tasksQz);
         }
 

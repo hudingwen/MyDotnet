@@ -1,6 +1,7 @@
 ﻿
 
 using Microsoft.Extensions.DependencyInjection;
+using MyDotnet.Config;
 using MyDotnet.Domain.Dto.System;
 using MyDotnet.Domain.Entity.System;
 using MyDotnet.Helper;
@@ -38,7 +39,7 @@ namespace MyDotnet.Tasks.HostJob
                     using (var scope = _services.CreateScope())
                     {
                         BaseServices<TasksQz> _tasksQzServices = scope.ServiceProvider.GetRequiredService<BaseServices<TasksQz>>();
-                        var allQzServices = await _tasksQzServices.Dal.Query();
+                        var allQzServices = await _tasksQzServices.Dal.Query(t=>t.DistributeCode == QuartzConfig.DistributeCode);
                         foreach (var item in allQzServices)
                         {
                             if (item.IsStart)

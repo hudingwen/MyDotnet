@@ -79,6 +79,11 @@ namespace MyDotnet.Domain.Entity.System
         [SugarColumn(Length = 255, IsNullable = true)]
         public string JobParams { get; set; }
         /// <summary>
+        /// 分布任务,不用api执行不用的调度任务
+        /// </summary>
+        [SugarColumn(Length = 100, IsNullable = true)]
+        public string DistributeCode { get; set; }
+        /// <summary>
         /// 源ID,是否通过其他单据发起的
         /// </summary>
         [SugarColumn(IsNullable = true)]

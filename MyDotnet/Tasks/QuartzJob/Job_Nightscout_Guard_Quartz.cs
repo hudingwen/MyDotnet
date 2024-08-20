@@ -1,6 +1,7 @@
 ﻿
 using Amazon.Runtime.Internal.Util;
 using AppStoreConnect.Model;
+using MyDotnet.Config;
 using MyDotnet.Domain.Attr;
 using MyDotnet.Domain.Dto.Apple;
 using MyDotnet.Domain.Dto.Ns;
@@ -162,6 +163,7 @@ namespace MyDotnet.Tasks.QuartzJob
                                 userTask.TriggerType = 1;
                                 userTask.IsStart = true;
                                 userTask.ResourceId = user.Id;
+                                userTask.DistributeCode = QuartzConfig.DistributeCode;
                                 //添加任务
                                 await _tasksQzServices.Dal.Add(userTask);
                                 await _schedulerCenter.AddScheduleJobAsync(userTask);

@@ -150,8 +150,11 @@ namespace MyDotnet.Controllers.Trojan
             user.download = 0;
             user.password = passEcrypt;
             user.passwordshow = pass;
+            user.CreateTime = DateTime.Now;
+            user.CreateId = _user.ID;
+            user.CreateBy = _user.Name;
 
-           
+
             try
             {
                 _unitOfWorkManage.BeginTran();

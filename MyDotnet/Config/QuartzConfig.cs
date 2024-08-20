@@ -1,4 +1,5 @@
 ﻿using MyDotnet.Domain.Dto.System;
+using MyDotnet.Helper;
 using Quartz;
 using Quartz.Spi;
 using System.Reflection;
@@ -10,6 +11,10 @@ namespace MyDotnet.Config
     /// </summary>
     public static class QuartzConfig
     {
+        /// <summary>
+        /// 分布任务表示,每个api可能不一样
+        /// </summary>
+        public static string DistributeCode = ConfigHelper.GetValue(new string[] { "Tasksqz", "DistributeCode" }).ObjToString();
         /// <summary>
         /// 注入调度任务
         /// </summary>
