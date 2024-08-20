@@ -163,7 +163,7 @@ namespace MyDotnet.Tasks.QuartzJob
                                 userTask.TriggerType = 1;
                                 userTask.IsStart = true;
                                 userTask.ResourceId = user.Id;
-                                userTask.DistributeCode = QuartzConfig.DistributeCode;
+                                userTask.DistributeCode = QuartzConfig.guarCode;
                                 //添加任务
                                 await _tasksQzServices.Dal.Add(userTask);
                                 await _schedulerCenter.AddScheduleJobAsync(userTask);

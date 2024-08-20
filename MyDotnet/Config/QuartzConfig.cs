@@ -15,6 +15,10 @@ namespace MyDotnet.Config
         /// 分布任务表示,每个api可能不一样
         /// </summary>
         public static string DistributeCode = ConfigHelper.GetValue(new string[] { "Tasksqz", "DistributeCode" }).ObjToString();
+
+
+        public static string guarCode = "nightscoutGuard";
+        public static string defaultCode = "default";
         /// <summary>
         /// 注入调度任务
         /// </summary>
