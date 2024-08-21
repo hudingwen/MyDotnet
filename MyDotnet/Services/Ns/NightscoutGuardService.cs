@@ -262,7 +262,11 @@ namespace MyDotnet.Services.Ns
             Expression<Func<NightscoutGuardUser, bool>> whereExpression = a => true;
             if (!string.IsNullOrEmpty(key))
             {
-                whereExpression = whereExpression.And(t => t.name.Contains(key));
+                whereExpression = whereExpression.And(t => t.name.Contains(key) 
+                || t.gidName.Contains(key) 
+                || t.nidName.Contains(key)
+                || t.uidName.Contains(key)
+                || t.nidUrl.Contains(key));
             }
             var data = await _baseRepositoryUser.QueryPage(whereExpression, page, size);
             return data;
