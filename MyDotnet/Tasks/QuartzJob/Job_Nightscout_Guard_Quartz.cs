@@ -180,7 +180,8 @@ namespace MyDotnet.Tasks.QuartzJob
                                 {
                                     //主动运行
                                     userTask.Cron = DateTime.Now.AddSeconds(30).ToString("ss mm HH dd MM ? yyyy");
-                                    userTask.Name = $"{user.name}({user.nidUrl})";
+                                    var typeName = accountTypes.Find(t => t.code.Equals(account.guardType));
+                                    userTask.Name = $"{user.name}({user.nidUrl})|{typeName?.name}";
                                     userTask.BeginTime = user.startTime;
                                     userTask.EndTime = user.endTime;
                                     await _tasksQzServices.Dal.Update(userTask);
