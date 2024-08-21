@@ -65,6 +65,10 @@ namespace MyDotnet.Tasks.QuartzJob
             {
                 //获取监护账户
                 var accounts = await _baseRepositoryAccount.Query();
+
+                var accountTypes = await _dicService.GetDicData(GuardInfoKey.GuardAccountTypeList);
+
+
                 foreach ( var account in accounts)
                 {
                     try
@@ -159,7 +163,8 @@ namespace MyDotnet.Tasks.QuartzJob
                                 userTask.EndTime = user.endTime;
                                 userTask.IntervalSecond = 1;
                                 userTask.JobGroup = "监护用户任务";
-                                userTask.Name = $"{user.name}({user.nidUrl})";
+                                var typeName = accountTypes.Find(t => t.code.Equals(account.guardType));
+                                userTask.Name = $"{user.name}({user.nidUrl})|{typeName?.name}";
                                 userTask.TriggerType = 1;
                                 userTask.IsStart = true;
                                 userTask.ResourceId = user.Id;

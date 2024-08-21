@@ -43,7 +43,7 @@ namespace MyDotnet.Domain.Entity.Ns
         /// </summary>
         public DateTime tokenExpire { get; set; }
         /// <summary>
-        /// 监护类型  100-硅基 200-三诺 300-微泰1 400-微泰2
+        /// 监护类型  100-硅基 200-三诺 300-微泰1 400-微泰2 110-硅基轻享
         /// </summary>
         public string guardType { get; set; }
         /// <summary>
