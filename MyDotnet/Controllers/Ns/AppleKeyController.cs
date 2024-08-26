@@ -161,7 +161,17 @@ namespace MyDotnet.Controllers.Ns
                 StringBuilder hexStringBuilder = new StringBuilder();
                 hexStringBuilder.Append(hexString);
                 hexStringBuilder.Append("z");
-                hexStringBuilder.Append(times);
+                if (times > 0)
+                {
+                    hexStringBuilder.Append(times);
+                }
+                else
+                {
+                    times = day * 60 * 60 * 24 * 1000 + hour * 60 * 60 * 1000 + min * 60 * 1000 + sec * 1000;
+
+                }
+               
+
                 hexString = hexStringBuilder.ToString();
             }
             var auth_code = Encrypt(hexString);
@@ -173,7 +183,15 @@ namespace MyDotnet.Controllers.Ns
             code.record_key = key;
             code.auth_code = auth_code;
             code.create_date = DateTime.Now;
-            code.expiry_date = DateTime.Now.AddMilliseconds(times);
+            if (needTime)
+            {
+                code.expiry_date = DateTime.Now.AddMilliseconds(times);
+            }
+            else
+            {
+                code.expiry_date = DateTime.MaxValue;
+            }
+            
             code.create_day = day;
             code.create_hour = hour;
             code.create_min = min;
@@ -181,6 +199,9 @@ namespace MyDotnet.Controllers.Ns
 
             await baseServices.Dal.Db.Insertable(code).ExecuteCommandAsync();
 
+            var codetemp  = new TCode();
+            codetemp.auth_code = code.auth_code;
+            codetemp.expiry_date = code.expiry_date;
 
             return MessageModel<TCode>.Success("添加成功", code);
 
