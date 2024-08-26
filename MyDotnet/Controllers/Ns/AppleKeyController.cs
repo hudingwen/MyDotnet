@@ -203,7 +203,7 @@ namespace MyDotnet.Controllers.Ns
             codetemp.auth_code = code.auth_code;
             codetemp.expiry_date = code.expiry_date;
 
-            return MessageModel<TCode>.Success("添加成功", code);
+            return MessageModel<TCode>.Success("添加成功", codetemp);
 
         }
 
