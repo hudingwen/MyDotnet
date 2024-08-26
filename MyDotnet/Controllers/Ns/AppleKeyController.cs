@@ -167,8 +167,7 @@ namespace MyDotnet.Controllers.Ns
                 }
                 else
                 {
-                    times = day * 60 * 60 * 24 * 1000 + hour * 60 * 60 * 1000 + min * 60 * 1000 + sec * 1000;
-
+                     times = ((long)day) * 60 * 60 * 24 * 1000 + ((long)hour) * 60 * 60 * 1000 + ((long)min) * 60 * 1000 + ((long)sec) * 1000;
                 }
                
 
