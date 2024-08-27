@@ -453,12 +453,12 @@ namespace MyDotnet.Services.Ns
             resMaster += cmdMaster.Execute(excNginx);
 
             resMaster += cmdMaster.Execute("docker exec -t nginxserver nginx -s reload");
-            NsInfo.ngCount = NsInfo.ngCount + 1;
-            if (NsInfo.ngCount >= 10)
-            {
-                NsInfo.ngCount = 0;
-                resMaster += cmdMaster.Execute("docker exec -t nginxserver nginx -s stop");
-            }
+            //NsInfo.ngCount = NsInfo.ngCount + 1;
+            //if (NsInfo.ngCount >= 10)
+            //{
+            //    NsInfo.ngCount = 0;
+            //    resMaster += cmdMaster.Execute("docker exec -t nginxserver nginx -s quit");
+            //}
             sb.AppendLine($"刷新域名:{resMaster}");
         }
 
@@ -745,12 +745,12 @@ EOF
 ";
             resMaster += cmdMaster.Execute(excNginx);
             resMaster += cmdMaster.Execute("docker exec -t nginxserver nginx -s reload");
-            NsInfo.ngCount = NsInfo.ngCount + 1;
-            if (NsInfo.ngCount >= 5)
-            {
-                NsInfo.ngCount = 0;
-                resMaster += cmdMaster.Execute("docker exec -t nginxserver nginx -s stop");
-            }
+            //NsInfo.ngCount = NsInfo.ngCount + 1;
+            //if (NsInfo.ngCount >= 5)
+            //{
+            //    NsInfo.ngCount = 0;
+            //    resMaster += cmdMaster.Execute("docker exec -t nginxserver nginx -s quit");
+            //}
             sb.AppendLine($"刷新域名:{resMaster}");
         }
 
