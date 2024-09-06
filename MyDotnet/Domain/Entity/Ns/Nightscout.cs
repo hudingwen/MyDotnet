@@ -172,5 +172,17 @@ namespace MyDotnet.Domain.Entity.Ns
         /// 探头使用时间
         /// </summary>
         public DateTime? probeStartTime { get; set; }
+        /// <summary>
+        /// 德康账号
+        /// </summary>
+        public string bridgeUserName { get; set; }
+        /// <summary>
+        /// 德康密码
+        /// </summary>
+        public string bridgePassword { get; set; }
+        /// <summary>
+        /// 德康服务地区 US-美国 EU-美国以外
+        /// </summary>
+        public string bridgeServer { get; set; }
     }
 }

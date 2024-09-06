@@ -1008,6 +1008,12 @@ EOF
             args.Add($"-e LOOP_DEVELOPER_TEAM_ID='{appleRemote.Find(t => AppleRemote.apTeamID.Equals(t.code)).content}'");
             args.Add($"-e LOOP_PUSH_SERVER_ENVIRONMENT='{appleRemote.Find(t => AppleRemote.apEnv.Equals(t.code)).content}'");
 
+            //康德远程
+            args.Add($"-e BRIDGE_USER_NAME={nightscout.bridgeUserName}");
+            args.Add($"-e BRIDGE_PASSWORD={nightscout.bridgePassword}");
+            args.Add($"-e BRIDGE_SERVER={nightscout.bridgeServer}");
+
+
             //ns启动版本
             //args.Add($"-d nightscout/cgm-remote-monitor:latest");
             args.Add($"-d {nsInfo.Find(t => NsInfo.image.Equals(t.code)).content}{(string.IsNullOrEmpty(nightscout.nsVersion) ? (":" + defaultNsVersion.content) : (":" + nightscout.nsVersion))}");
