@@ -168,6 +168,7 @@ namespace MyDotnet.Controllers.Ns
                 else
                 {
                      times = ((long)day) * 60 * 60 * 24 * 1000 + ((long)hour) * 60 * 60 * 1000 + ((long)min) * 60 * 1000 + ((long)sec) * 1000;
+                     hexStringBuilder.Append(times);
                 }
                
 
