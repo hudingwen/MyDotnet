@@ -756,7 +756,7 @@ namespace MyDotnet.Controllers.Ns
                 key = key.Trim();
                 whereExpression = whereExpression.And(t => t.serverName.Contains(key));
             }
-            var data = await _nightscoutServerServices.Dal.QueryPage(whereExpression, page, size);
+            var data = await _nightscoutServerServices.Dal.QueryPage(whereExpression, page, size,t=>t.serverName, OrderByType.Asc);
             return MessageModel<PageModel<NightscoutServer>>.Success("获取成功", data);
         }
         [HttpDelete]
@@ -899,7 +899,7 @@ namespace MyDotnet.Controllers.Ns
             if(data == null)
             {
                 //缓存穿透
-                data = await _nightscoutServerServices.Dal.Db.Queryable<NightscoutServer>().Select(t => new NightscoutServer { Id = t.Id, serverName = t.serverName, holdCount = t.holdCount }).ToListAsync();
+                data = await _nightscoutServerServices.Dal.Db.Queryable<NightscoutServer>().OrderBy(t=>t.serverName).Select(t => new NightscoutServer { Id = t.Id, serverName = t.serverName, holdCount = t.holdCount }).ToListAsync();
                 await _caching.SetAsync(CacheKeyList.allNsServer, data);
             }
 
