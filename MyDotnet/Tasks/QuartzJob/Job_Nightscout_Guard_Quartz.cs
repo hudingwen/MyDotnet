@@ -227,9 +227,10 @@ namespace MyDotnet.Tasks.QuartzJob
                                     }
                                     else
                                     {
-                                        if (nightscout.endTime > DateTime.Now)
+
+                                        //过期停止任务
+                                        if (DateTime.Now > nightscout.endTime)
                                         {
-                                            //过期停止任务
                                             await _schedulerCenter.StopScheduleJobAsync(userTask);
                                         }
                                     }
