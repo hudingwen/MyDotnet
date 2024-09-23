@@ -98,7 +98,10 @@ namespace MyDotnet.Domain.Entity.Ns
         /// 删除(冻结)时间
         /// </summary>
         public DateTime delete_time { get; set; }
-
+        /// <summary>
+        /// 注册机类型
+        /// </summary>
+        public string pass_type { get; set; }
         /// <summary>
         /// 创建数量
         /// </summary>

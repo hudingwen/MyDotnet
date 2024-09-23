@@ -8,6 +8,7 @@ using MyDotnet.Helper;
 using MyDotnet.Services;
 using MyDotnet.Services.Ns;
 using System.Linq.Expressions;
+using System.Numerics;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -149,6 +150,19 @@ namespace MyDotnet.Controllers.Ns
 
 
 
+
+        /// <summary>
+        /// 注册机1
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="key"></param>
+        /// <param name="needTime"></param>
+        /// <param name="times"></param>
+        /// <param name="day"></param>
+        /// <param name="hour"></param>
+        /// <param name="min"></param>
+        /// <param name="sec"></param>
+        /// <returns></returns>
         [HttpGet] 
         public async Task<MessageModel<TCode>> CreateKey(string id, string key, bool needTime, long times,int day, int hour, int min, int sec)
         {
@@ -177,7 +191,8 @@ namespace MyDotnet.Controllers.Ns
             var auth_code = Encrypt(hexString);
 
             TCode code = new TCode();
-              
+
+            code.pass_type = "auth001";
             code.id = StringHelper.GetGUID().ToLower();
             code.record_id = id;
             code.record_key = key;
@@ -205,6 +220,71 @@ namespace MyDotnet.Controllers.Ns
 
             return MessageModel<TCode>.Success("添加成功", codetemp);
 
+        }
+
+
+        /// <summary>
+        /// 注册机2
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        [HttpGet]
+
+        public async Task<MessageModel<TCode>> CreateKey2(string id)
+        {
+             
+
+            TCode code = new TCode();
+
+            code.pass_type = "auth002";
+            string auth_code;
+            using (var md5 = MD5.Create())
+            {
+                byte[] inputBytes = Encoding.UTF8.GetBytes(id);
+                byte[] var6 = md5.ComputeHash(inputBytes);
+                //BigInteger bigInt = new BigInteger(hashBytes.Reverse().ToArray()); // Reverse to handle endianness
+                BigInteger var3;
+                // 检查 var6 的首字节是否会影响符号（如果最高位为 1，它会被解释为负数）
+                if ((var6[0] & 0x80) != 0)  // 检查最高位是否为1
+                {
+                    // 创建一个新的数组，长度比 var6 多 1，并在开头添加 0x00
+                    byte[] var6WithZero = new byte[var6.Length + 1];
+                    var6WithZero[0] = 0x00;  // 确保正数
+                    Array.Copy(var6, 0, var6WithZero, 1, var6.Length);
+
+                    // 使用修改后的数组创建 BigInteger
+                    var3 = new BigInteger(var6WithZero, isBigEndian: true);
+                }
+                else
+                {
+                    // 如果不需要添加 0x00，直接创建 BigInteger
+                    var3 = new BigInteger(var6, isBigEndian: true);
+
+                }
+
+                auth_code = var3.ToString();
+                if (auth_code.Length > 6)
+                {
+                    auth_code = auth_code.Substring(0, 6);
+                }
+            }
+
+            code.id = StringHelper.GetGUID().ToLower();
+            code.record_id = id;
+            code.record_key = "";
+            code.auth_code = auth_code;
+            code.create_date = DateTime.Now;
+            code.expiry_date = DateTime.MaxValue;
+
+            await baseServices.Dal.Db.Insertable(code).ExecuteCommandAsync();
+
+            var codetemp = new TCode();
+            codetemp.auth_code = code.auth_code;
+            codetemp.expiry_date = code.expiry_date;
+
+            return MessageModel<TCode>.Success("添加成功", codetemp);
+
+             
         }
 
         private static string Byte2Hex(byte[] byteArray)
