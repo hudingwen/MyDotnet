@@ -74,6 +74,10 @@ namespace MyDotnet.Controllers.Ns
             _caching = caching;
         }
 
+
+        
+         
+
         [AllowAnonymous]
         [HttpGet]
         public async Task<MessageModel<NsPreRemindDto>> GetNsExpireInfo(long id)
@@ -124,7 +128,7 @@ namespace MyDotnet.Controllers.Ns
         }
 
         [HttpGet]
-        public async Task<MessageModel<PageModel<Nightscout>>> Get(int page = 1, string key = "",long serverId=0,long? customerId = null, bool? isStop = null, string cdn ="", int size = 10)
+        public async Task<MessageModel<PageModel<Nightscout>>> Get(int page = 1, string key = "",long serverId=0,long? customerId = null, bool? isStop = null, string cdn ="", int size = 10,bool isShowExpire = false,bool isShowSoonExpire=false)
         {
 
 
@@ -150,6 +154,19 @@ namespace MyDotnet.Controllers.Ns
             if(isStop != null)
             {
                 whereExpression = whereExpression.And(t => t.isStop == isStop);
+            }
+            //显示过期
+            if (isShowExpire)
+            {
+                whereExpression = whereExpression.And(t => DateTime.Now.Date >= t.endTime);
+            }
+            //显示即将过期
+            if (isShowSoonExpire)
+            {
+                var preDayInfo = await _dictService.GetDicDataOne(NsInfo.KEY, NsInfo.preDays);
+                var preDay = preDayInfo.content.ObjToInt(); 
+
+                whereExpression = whereExpression.And(t =>  t.endTime > DateTime.Now.Date && t.endTime < DateTime.Now.Date.AddDays(preDay));
             }
             var data = await _nightscoutServices.Dal.QueryPage(whereExpression, page, size);
 
