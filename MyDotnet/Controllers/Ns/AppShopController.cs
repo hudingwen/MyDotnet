@@ -45,7 +45,7 @@ namespace MyDotnet.Controllers.Ns
             {
                 whereExpression = whereExpression.And(t => t.Enabled == isOnlyEnable);
             }
-            var data =await _appShopService.Dal.QueryPage(whereExpression,page,size);
+            var data =await _appShopService.Dal.QueryPage(whereExpression,page,size,t=>t.appSort, SqlSugar.OrderByType.Asc);
             return Success(data);
         } 
         [HttpPost]

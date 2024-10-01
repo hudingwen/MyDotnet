@@ -44,5 +44,10 @@ namespace MyDotnet.Domain.Entity.Ns
         /// </summary>
         [SugarColumn(Length = 200, IsNullable = false)]
         public string appIcon { get; set; }
+        /// <summary>
+        /// app排序
+        /// </summary>
+        [SugarColumn(IsNullable = false,DefaultValue = "0")]
+        public int appSort { get; set; }
     }
 }
