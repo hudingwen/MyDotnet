@@ -40,5 +40,29 @@ namespace MyDotnet.Domain.Entity.Trojan
         /// </summary>
         [SugarColumn(IsIgnore = true)]
         public List<long> serverIdsExclude { get; set; }
+
+
+        /// <summary>
+        /// 绑定Cus服务器
+        /// </summary>
+        [SugarColumn(IsIgnore = true)]
+        public List<long> serverCusIds { get; set; }
+        /// <summary>
+        /// 排除Cus服务器
+        /// </summary>
+        [SugarColumn(IsIgnore = true)]
+        public List<long> serverCusIdsExclude { get; set; }
+
+
+        /// <summary>
+        /// 绑定Url服务器
+        /// </summary>
+        [SugarColumn(IsIgnore = true)]
+        public List<long> serverUrlIds { get; set; }
+        /// <summary>
+        /// 排除Url服务器
+        /// </summary>
+        [SugarColumn(IsIgnore = true)]
+        public List<long> serverUrlIdsExclude { get; set; }
     }
 }

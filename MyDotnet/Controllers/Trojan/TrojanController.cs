@@ -33,7 +33,9 @@ namespace MyDotnet.Controllers.Trojan
         public BaseServices<TrojanServersUsers> _baseServicesServersUsers;
         public BaseServices<TrojanServersUsersExclude> _baseServicesServersUsersExclude;
         public BaseServices<TrojanCusServersUsers> _baseServicesCusServersUsers;
+        public BaseServices<TrojanCusServersUsersExclude> _baseServicesCusServersUsersExclude;
         public BaseServices<TrojanUrlServersUsers> _baseServicesUrlServersUsers;
+        public BaseServices<TrojanUrlServersUsersExclude> _baseServicesUrlServersUsersExclude;
         public UnitOfWorkManage _unitOfWorkManage { get; set; }
 
         public TrojanController(BaseServices<TrojanUsers> trojanUsersServices
@@ -44,10 +46,12 @@ namespace MyDotnet.Controllers.Trojan
             , AspNetUser user
             , DicService dicService
             , BaseServices<TrojanServersUsers> baseServicesServersUsers
-            , BaseServices<TrojanCusServersUsers> baseServicesCusServersUsers
-            , BaseServices<TrojanUrlServersUsers> baseServicesUrlServersUsers
-            , UnitOfWorkManage unitOfWorkManage
             , BaseServices<TrojanServersUsersExclude> baseServicesServersUsersExclude
+            , BaseServices<TrojanCusServersUsers> baseServicesCusServersUsers
+            , BaseServices<TrojanCusServersUsersExclude> baseServicesCusServersUsersExclude
+            , BaseServices<TrojanUrlServersUsers> baseServicesUrlServersUsers
+            , BaseServices<TrojanUrlServersUsersExclude> baseServicesUrlServersUsersExclude
+            , UnitOfWorkManage unitOfWorkManage
             )
         {
             _trojanUsersServices = trojanUsersServices;
@@ -58,10 +62,12 @@ namespace MyDotnet.Controllers.Trojan
             _user = user;
             _dicService = dicService;
             _baseServicesServersUsers = baseServicesServersUsers;
-            _baseServicesCusServersUsers = baseServicesCusServersUsers;
-            _baseServicesUrlServersUsers = baseServicesUrlServersUsers;
-            _unitOfWorkManage = unitOfWorkManage;
             _baseServicesServersUsersExclude = baseServicesServersUsersExclude;
+            _baseServicesCusServersUsers = baseServicesCusServersUsers;
+            _baseServicesCusServersUsersExclude = baseServicesCusServersUsersExclude;
+            _baseServicesUrlServersUsers = baseServicesUrlServersUsers;
+            _baseServicesUrlServersUsersExclude = baseServicesUrlServersUsersExclude;
+            _unitOfWorkManage = unitOfWorkManage;
         }
 
 
@@ -99,6 +105,26 @@ namespace MyDotnet.Controllers.Trojan
                 var serverUserExclude = await _baseServicesServersUsersExclude.Dal.Query(whereServerUserExclude);
 
 
+                //获取绑cus定服务器
+                var whereCusServerUser = LinqHelper.True<TrojanCusServersUsers>();
+                whereCusServerUser = whereCusServerUser.And(t => ids.Contains(t.userid));
+                var serverCusUser = await _baseServicesCusServersUsers.Dal.Query(whereCusServerUser);
+                //获取排除cus服务器
+                var whereCusServerUserExclude = LinqHelper.True<TrojanCusServersUsersExclude>();
+                whereCusServerUserExclude = whereCusServerUserExclude.And(t => ids.Contains(t.userid));
+                var serverCusUserExclude = await _baseServicesCusServersUsersExclude.Dal.Query(whereCusServerUserExclude);
+
+
+                //获取绑定url服务器
+                var whereUrlServerUser = LinqHelper.True<TrojanUrlServersUsers>();
+                whereUrlServerUser = whereUrlServerUser.And(t => ids.Contains(t.userid));
+                var serverUrlUser = await _baseServicesUrlServersUsers.Dal.Query(whereUrlServerUser);
+                //获取排除url服务器
+                var whereUrlServerUserExclude = LinqHelper.True<TrojanUrlServersUsersExclude>();
+                whereUrlServerUserExclude = whereUrlServerUserExclude.And(t => ids.Contains(t.userid));
+                var serverUrlUserExclude = await _baseServicesUrlServersUsersExclude.Dal.Query(whereUrlServerUserExclude);
+
+
                 foreach (var trojanUser in data.data)
                 {
                     //流量统计
@@ -115,6 +141,18 @@ namespace MyDotnet.Controllers.Trojan
                     trojanUser.serverIds = serverUser.FindAll(t => t.userid == trojanUser.id).Select(t => t.serverid).ToList();
                     //排除服务器
                     trojanUser.serverIdsExclude = serverUserExclude.FindAll(t => t.userid == trojanUser.id).Select(t => t.serverid).ToList();
+
+
+                    //绑定cus服务器
+                    trojanUser.serverCusIds = serverCusUser.FindAll(t => t.userid == trojanUser.id).Select(t => t.serverid).ToList();
+                    //排除cus服务器
+                    trojanUser.serverCusIdsExclude = serverCusUserExclude.FindAll(t => t.userid == trojanUser.id).Select(t => t.serverid).ToList();
+
+
+                    //绑定url服务器
+                    trojanUser.serverUrlIds = serverUrlUser.FindAll(t => t.userid == trojanUser.id).Select(t => t.serverid).ToList();
+                    //排除url服务器
+                    trojanUser.serverUrlIdsExclude = serverUrlUserExclude.FindAll(t => t.userid == trojanUser.id).Select(t => t.serverid).ToList();
 
                 }
 
@@ -159,6 +197,7 @@ namespace MyDotnet.Controllers.Trojan
             {
                 _unitOfWorkManage.BeginTran();
                 var data = await _trojanUsersServices.Dal.Db.Insertable<TrojanUsers>(user).ExecuteCommandIdentityIntoEntityAsync();
+
                 //绑定服务器
                 List<TrojanServersUsers> trojanServersUsers = new List<TrojanServersUsers>();
                 user.serverIds.ForEach(t =>
@@ -168,7 +207,6 @@ namespace MyDotnet.Controllers.Trojan
 
                 await _baseServicesServersUsers.Dal.Delete(t => t.userid == user.id);
                 await _baseServicesServersUsers.Dal.Add(trojanServersUsers);
-
                 //排除服务器
                 List<TrojanServersUsersExclude> trojanServersUsersExcludes = new List<TrojanServersUsersExclude>();
                 user.serverIdsExclude.ForEach(t =>
@@ -177,6 +215,46 @@ namespace MyDotnet.Controllers.Trojan
                 });
                 await _baseServicesServersUsersExclude.Dal.Delete(t => t.userid == user.id);
                 await _baseServicesServersUsersExclude.Dal.Add(trojanServersUsersExcludes);
+
+
+                //绑定cus服务器
+                List<TrojanCusServersUsers> trojanCusServersUsers = new List<TrojanCusServersUsers>();
+                user.serverCusIds.ForEach(t =>
+                {
+                    trojanCusServersUsers.Add(new TrojanCusServersUsers { serverid = t, userid = user.id });
+                });
+
+                await _baseServicesCusServersUsers.Dal.Delete(t => t.userid == user.id);
+                await _baseServicesCusServersUsers.Dal.Add(trojanCusServersUsers);
+                //排除cus服务器
+                List<TrojanCusServersUsersExclude> trojanCusServersUsersExcludes = new List<TrojanCusServersUsersExclude>();
+                user.serverCusIdsExclude.ForEach(t =>
+                {
+                    trojanCusServersUsersExcludes.Add(new TrojanCusServersUsersExclude { serverid = t, userid = user.id });
+                });
+                await _baseServicesCusServersUsersExclude.Dal.Delete(t => t.userid == user.id);
+                await _baseServicesCusServersUsersExclude.Dal.Add(trojanCusServersUsersExcludes);
+
+
+                //绑定url服务器
+                List<TrojanUrlServersUsers> trojanUrlServersUsers = new List<TrojanUrlServersUsers>();
+                user.serverUrlIds.ForEach(t =>
+                {
+                    trojanUrlServersUsers.Add(new TrojanUrlServersUsers { serverid = t, userid = user.id });
+                });
+
+                await _baseServicesUrlServersUsers.Dal.Delete(t => t.userid == user.id);
+                await _baseServicesUrlServersUsers.Dal.Add(trojanUrlServersUsers);
+
+                //排除url服务器
+                List<TrojanUrlServersUsersExclude> trojanUrlServersUsersExcludes = new List<TrojanUrlServersUsersExclude>();
+                user.serverUrlIdsExclude.ForEach(t =>
+                {
+                    trojanUrlServersUsersExcludes.Add(new TrojanUrlServersUsersExclude { serverid = t, userid = user.id });
+                });
+                await _baseServicesUrlServersUsersExclude.Dal.Delete(t => t.userid == user.id);
+                await _baseServicesUrlServersUsersExclude.Dal.Add(trojanUrlServersUsersExcludes);
+
 
                 _unitOfWorkManage.CommitTran();
             }
@@ -201,15 +279,16 @@ namespace MyDotnet.Controllers.Trojan
             {
                 _unitOfWorkManage.BeginTran();
                 var data = await _trojanUsersServices.Dal.Update(user);
+
                 //绑定服务器
                 List<TrojanServersUsers> trojanServersUsers = new List<TrojanServersUsers>();
                 user.serverIds.ForEach(t =>
                 {
                     trojanServersUsers.Add(new TrojanServersUsers { serverid = t, userid = user.id });
                 });
+
                 await _baseServicesServersUsers.Dal.Delete(t => t.userid == user.id);
                 await _baseServicesServersUsers.Dal.Add(trojanServersUsers);
-
                 //排除服务器
                 List<TrojanServersUsersExclude> trojanServersUsersExcludes = new List<TrojanServersUsersExclude>();
                 user.serverIdsExclude.ForEach(t =>
@@ -218,6 +297,45 @@ namespace MyDotnet.Controllers.Trojan
                 });
                 await _baseServicesServersUsersExclude.Dal.Delete(t => t.userid == user.id);
                 await _baseServicesServersUsersExclude.Dal.Add(trojanServersUsersExcludes);
+
+
+                //绑定cus服务器
+                List<TrojanCusServersUsers> trojanCusServersUsers = new List<TrojanCusServersUsers>();
+                user.serverCusIds.ForEach(t =>
+                {
+                    trojanCusServersUsers.Add(new TrojanCusServersUsers { serverid = t, userid = user.id });
+                });
+
+                await _baseServicesCusServersUsers.Dal.Delete(t => t.userid == user.id);
+                await _baseServicesCusServersUsers.Dal.Add(trojanCusServersUsers);
+                //排除cus服务器
+                List<TrojanCusServersUsersExclude> trojanCusServersUsersExcludes = new List<TrojanCusServersUsersExclude>();
+                user.serverCusIdsExclude.ForEach(t =>
+                {
+                    trojanCusServersUsersExcludes.Add(new TrojanCusServersUsersExclude { serverid = t, userid = user.id });
+                });
+                await _baseServicesCusServersUsersExclude.Dal.Delete(t => t.userid == user.id);
+                await _baseServicesCusServersUsersExclude.Dal.Add(trojanCusServersUsersExcludes);
+
+
+                //绑定url服务器
+                List<TrojanUrlServersUsers> trojanUrlServersUsers = new List<TrojanUrlServersUsers>();
+                user.serverUrlIds.ForEach(t =>
+                {
+                    trojanUrlServersUsers.Add(new TrojanUrlServersUsers { serverid = t, userid = user.id });
+                });
+
+                await _baseServicesUrlServersUsers.Dal.Delete(t => t.userid == user.id);
+                await _baseServicesUrlServersUsers.Dal.Add(trojanUrlServersUsers);
+
+                //排除url服务器
+                List<TrojanUrlServersUsersExclude> trojanUrlServersUsersExcludes = new List<TrojanUrlServersUsersExclude>();
+                user.serverUrlIdsExclude.ForEach(t =>
+                {
+                    trojanUrlServersUsersExcludes.Add(new TrojanUrlServersUsersExclude { serverid = t, userid = user.id });
+                });
+                await _baseServicesUrlServersUsersExclude.Dal.Delete(t => t.userid == user.id);
+                await _baseServicesUrlServersUsersExclude.Dal.Add(trojanUrlServersUsersExcludes);
 
                 _unitOfWorkManage.CommitTran();
             }
@@ -272,11 +390,21 @@ namespace MyDotnet.Controllers.Trojan
             {
                 _unitOfWorkManage.BeginTran();
                 await _trojanUsersServices.Dal.DeleteById(id);
+
                 //绑定服务器 
                 await _baseServicesServersUsers.Dal.Delete(t => t.userid == id);
-
                 //排除服务器
                 await _baseServicesServersUsersExclude.Dal.Delete(t => t.userid == id);
+
+                //绑定cus服务器 
+                await _baseServicesCusServersUsers.Dal.Delete(t => t.userid == id);
+                //排除cus服务器
+                await _baseServicesCusServersUsersExclude.Dal.Delete(t => t.userid == id);
+
+                //绑定url服务器 
+                await _baseServicesUrlServersUsers.Dal.Delete(t => t.userid == id);
+                //排除服务器
+                await _baseServicesUrlServersUsersExclude.Dal.Delete(t => t.userid == id);
 
                 _unitOfWorkManage.CommitTran();
             }
@@ -331,12 +459,22 @@ namespace MyDotnet.Controllers.Trojan
             try
             {
                 _unitOfWorkManage.BeginTran();
-                await _trojanUsersServices.Dal.DeleteByIds(ids);
+                await _trojanUsersServices.Dal.DeleteByIds(ids); 
+
                 //绑定服务器 
                 await _baseServicesServersUsers.Dal.Delete(t => ids.Contains(t.userid));
-
                 //排除服务器
                 await _baseServicesServersUsersExclude.Dal.Delete(t => ids.Contains(t.userid));
+
+                //绑定cus服务器 
+                await _baseServicesCusServersUsers.Dal.Delete(t => ids.Contains(t.userid));
+                //排除cus服务器
+                await _baseServicesCusServersUsersExclude.Dal.Delete(t => ids.Contains(t.userid));
+
+                //绑定url服务器 
+                await _baseServicesUrlServersUsers.Dal.Delete(t => ids.Contains(t.userid));
+                //排除服务器
+                await _baseServicesUrlServersUsersExclude.Dal.Delete(t => ids.Contains(t.userid));
 
                 _unitOfWorkManage.CommitTran();
             }
@@ -499,7 +637,13 @@ namespace MyDotnet.Controllers.Trojan
         [HttpGet]
         public async Task<MessageModel<object>> GetAllServers()
         {
-            var data = await _baseServicesServers.Dal.Db.Queryable<TrojanServers>().OrderBy(t => t.servername).Select(t => new { t.id, t.servername,t.isAllUser }).ToListAsync();
+            var dataServer = await _baseServicesServers.Dal.Db.Queryable<TrojanServers>().Where(t=>t.serverenable).OrderBy(t => t.servername).Select(t => new { t.id, t.servername,t.isAllUser }).ToListAsync();
+
+            var dataCus = await _baseServicesServers.Dal.Db.Queryable<TrojanCusServers>().Where(t => t.serverenable).OrderBy(t => t.servername).Select(t => new { t.id, t.servername, t.isAllUser }).ToListAsync();
+
+            var dataUrl = await _baseServicesServers.Dal.Db.Queryable<TrojanUrlServers>().Where(t => t.serverenable).OrderBy(t => t.servername).Select(t => new { t.id, t.servername, t.isAllUser }).ToListAsync();
+
+            var data = new { dataServer, dataCus, dataUrl };
             return MessageModel<object>.Success("获取成功", data);
         }
 
@@ -516,8 +660,6 @@ namespace MyDotnet.Controllers.Trojan
             if (!string.IsNullOrEmpty(key))
                 whereFind = whereFind.And(t => t.servername.Contains(key) || t.serveraddress.Contains(key) || t.serverpath.Contains(key) || t.serverpeer.Contains(key) || t.serverremark.Contains(key));
             var data = await _baseServicesServers.Dal.Query(whereFind, "servername asc");
-            
-
 
             var bindUsers = await _baseServicesServersUsers.Dal.Query();
             foreach (var server in data)
@@ -675,11 +817,16 @@ namespace MyDotnet.Controllers.Trojan
             data = data.OrderBy(t => t.servername).ToList();
 
 
-            List<long> sersInts = data.Select(x => x.id).ToList();
-            var bindUsers = await _baseServicesCusServersUsers.Dal.Query(t => sersInts.Contains(t.serverid));
+            var bindUsers = await _baseServicesCusServersUsers.Dal.Query();
             foreach (var server in data)
             {
                 server.bindUsers = bindUsers.FindAll(t => t.serverid == server.id).Select(t => t.userid).ToList();
+            }
+
+            var excludeUsers = await _baseServicesCusServersUsersExclude.Dal.Query();
+            foreach (var server in data)
+            {
+                server.excludeUsers = excludeUsers.FindAll(t => t.serverid == server.id).Select(t => t.userid).ToList();
             }
 
 
@@ -697,7 +844,8 @@ namespace MyDotnet.Controllers.Trojan
             {
                 _unitOfWorkManage.BeginTran();
                 var data = await _baseServicesCusServers.Dal.DeleteById(id);
-                await _baseServicesCusServersUsers.Dal.Delete(t => t.serverid == id);
+                await _baseServicesCusServersUsers.Dal.Delete(t => t.serverid == id); 
+                await _baseServicesCusServersUsersExclude.Dal.Delete(t => t.serverid == id);
                 _unitOfWorkManage.CommitTran();
                 if (data)
                     return MessageModel<List<TrojanCusServers>>.Success("删除成功");
@@ -725,6 +873,7 @@ namespace MyDotnet.Controllers.Trojan
                 _unitOfWorkManage.BeginTran();
                 var data = await _baseServicesCusServers.Dal.DeleteByIds(servers);
                 await _baseServicesCusServersUsers.Dal.Delete(t => servers.Contains(t.serverid));
+                await _baseServicesCusServersUsersExclude.Dal.Delete(t => servers.Contains(t.serverid));
                 _unitOfWorkManage.CommitTran();
                 if (data)
                     return MessageModel<List<TrojanCusServers>>.Success("删除成功");
@@ -754,6 +903,13 @@ namespace MyDotnet.Controllers.Trojan
                 server.bindUsers.ForEach(uid => trojanServersUsers.Add(new TrojanCusServersUsers { userid = uid, serverid = server.id }));
                 await _baseServicesCusServersUsers.Dal.Delete(t => t.serverid == server.id);
                 await _baseServicesCusServersUsers.Dal.Add(trojanServersUsers);
+
+
+                List<TrojanCusServersUsersExclude> trojanCusServersUsersExclude = new List<TrojanCusServersUsersExclude>();
+                server.excludeUsers.ForEach(uid => trojanCusServersUsersExclude.Add(new TrojanCusServersUsersExclude { userid = uid, serverid = server.id }));
+                await _baseServicesCusServersUsersExclude.Dal.Delete(t => t.serverid == server.id);
+                await _baseServicesCusServersUsersExclude.Dal.Add(trojanCusServersUsersExclude);
+
                 _unitOfWorkManage.CommitTran();
 
                 return MessageModel<List<TrojanCusServers>>.Success("更新成功");
@@ -781,6 +937,12 @@ namespace MyDotnet.Controllers.Trojan
                 server.bindUsers.ForEach(uid => trojanServersUsers.Add(new TrojanCusServersUsers { userid = uid, serverid = server.id }));
                 await _baseServicesCusServersUsers.Dal.Delete(t => t.serverid == server.id);
                 await _baseServicesCusServersUsers.Dal.Add(trojanServersUsers);
+
+                List<TrojanCusServersUsersExclude> trojanCusServersUsersExclude = new List<TrojanCusServersUsersExclude>();
+                server.excludeUsers.ForEach(uid => trojanCusServersUsersExclude.Add(new TrojanCusServersUsersExclude { userid = uid, serverid = server.id }));
+                await _baseServicesCusServersUsersExclude.Dal.Delete(t => t.serverid == server.id);
+                await _baseServicesCusServersUsersExclude.Dal.Add(trojanCusServersUsersExclude);
+
                 _unitOfWorkManage.CommitTran();
 
                 return MessageModel<List<TrojanCusServers>>.Success("添加成功");
@@ -806,11 +968,16 @@ namespace MyDotnet.Controllers.Trojan
             var data = await _baseServicesUrlServers.Dal.Query(whereFind);
             data = data.OrderBy(t => t.servername).ToList();
 
-            List<long> sersInts = data.Select(x => x.id).ToList();
-            var bindUsers = await _baseServicesUrlServersUsers.Dal.Query(t => sersInts.Contains(t.serverid));
+
+            var bindUsers = await _baseServicesUrlServersUsers.Dal.Query();
             foreach (var server in data)
             {
                 server.bindUsers = bindUsers.FindAll(t => t.serverid == server.id).Select(t => t.userid).ToList();
+            }
+            var excludeUsers = await _baseServicesUrlServersUsersExclude.Dal.Query();
+            foreach (var server in data)
+            {
+                server.excludeUsers = excludeUsers.FindAll(t => t.serverid == server.id).Select(t => t.userid).ToList();
             }
 
             return MessageModel<List<TrojanUrlServers>>.Success("获取成功", data);
@@ -829,6 +996,7 @@ namespace MyDotnet.Controllers.Trojan
                 _unitOfWorkManage.BeginTran();
                 var data = await _baseServicesUrlServers.Dal.DeleteById(id);
                 await _baseServicesUrlServersUsers.Dal.Delete(t => t.serverid == id);
+                await _baseServicesUrlServersUsersExclude.Dal.Delete(t => t.serverid == id);
                 _unitOfWorkManage.CommitTran();
                 if (data)
                     return MessageModel<List<TrojanUrlServers>>.Success("删除成功");
@@ -854,6 +1022,7 @@ namespace MyDotnet.Controllers.Trojan
                 _unitOfWorkManage.BeginTran();
                 var data = await _baseServicesUrlServers.Dal.DeleteByIds(servers);
                 await _baseServicesUrlServersUsers.Dal.Delete(t => servers.Contains(t.serverid));
+                await _baseServicesUrlServersUsersExclude.Dal.Delete(t => servers.Contains(t.serverid));
                 _unitOfWorkManage.CommitTran();
                 if (data)
                     return MessageModel<List<TrojanUrlServers>>.Success("删除成功");
@@ -884,6 +1053,12 @@ namespace MyDotnet.Controllers.Trojan
                 server.bindUsers.ForEach(uid => trojanServersUsers.Add(new TrojanUrlServersUsers { userid = uid, serverid = server.id }));
                 await _baseServicesUrlServersUsers.Dal.Delete(t => t.serverid == server.id);
                 await _baseServicesUrlServersUsers.Dal.Add(trojanServersUsers);
+
+
+                List<TrojanUrlServersUsersExclude> trojanUrlServersUsersExclude = new List<TrojanUrlServersUsersExclude>();
+                server.excludeUsers.ForEach(uid => trojanUrlServersUsersExclude.Add(new TrojanUrlServersUsersExclude { userid = uid, serverid = server.id }));
+                await _baseServicesUrlServersUsersExclude.Dal.Delete(t => t.serverid == server.id);
+                await _baseServicesUrlServersUsersExclude.Dal.Add(trojanUrlServersUsersExclude);
                 _unitOfWorkManage.CommitTran();
 
                 return MessageModel<List<TrojanUrlServers>>.Success("更新成功");
@@ -907,10 +1082,18 @@ namespace MyDotnet.Controllers.Trojan
             {
                 _unitOfWorkManage.BeginTran();
                 var data = await _baseServicesUrlServers.Dal.Add(server);
+
                 List<TrojanUrlServersUsers> trojanServersUsers = new List<TrojanUrlServersUsers>();
                 server.bindUsers.ForEach(uid => trojanServersUsers.Add(new TrojanUrlServersUsers { userid = uid, serverid = server.id }));
                 await _baseServicesUrlServersUsers.Dal.Delete(t => t.serverid == server.id);
                 await _baseServicesUrlServersUsers.Dal.Add(trojanServersUsers);
+
+
+                List<TrojanUrlServersUsersExclude> trojanUrlServersUsersExclude = new List<TrojanUrlServersUsersExclude>();
+                server.excludeUsers.ForEach(uid => trojanUrlServersUsersExclude.Add(new TrojanUrlServersUsersExclude { userid = uid, serverid = server.id }));
+                await _baseServicesUrlServersUsersExclude.Dal.Delete(t => t.serverid == server.id);
+                await _baseServicesUrlServersUsersExclude.Dal.Add(trojanUrlServersUsersExclude);
+
                 _unitOfWorkManage.CommitTran();
 
             }
@@ -967,7 +1150,10 @@ namespace MyDotnet.Controllers.Trojan
                 }
                 //自定义服务器
                 var bindCusUsers = await _baseServicesCusServersUsers.Dal.Db.Queryable<TrojanCusServersUsers>().Where(t => t.userid == user.id).Select(t => t.serverid).ToListAsync();
-                var cusData = await _baseServicesCusServers.Dal.Query(t => t.serverenable && (t.isAllUser || bindCusUsers.Contains(t.id)));
+
+                var excludeCusUsers = await _baseServicesCusServersUsersExclude.Dal.Db.Queryable<TrojanCusServersUsersExclude>().Where(t => t.userid == user.id).Select(t => t.serverid).ToListAsync();
+
+                var cusData = await _baseServicesCusServers.Dal.Query(t => t.serverenable && (t.isAllUser || bindCusUsers.Contains(t.id)) && !excludeCusUsers.Contains(t.id));
                 if (cusData != null)
                 {
                     cusData = cusData.OrderBy(t => t.servername).ToList();
@@ -978,7 +1164,8 @@ namespace MyDotnet.Controllers.Trojan
                 }
                 //url服务器
                 var bindUrlUsers = await _baseServicesUrlServersUsers.Dal.Db.Queryable<TrojanUrlServersUsers>().Where(t => t.userid == user.id).Select(t => t.serverid).ToListAsync();
-                var urlData = await _baseServicesUrlServers.Dal.Query(t => t.serverenable && (t.isAllUser || bindUrlUsers.Contains(t.id)));
+                var excludeUrlUsers = await _baseServicesUrlServersUsersExclude.Dal.Db.Queryable<TrojanUrlServersUsersExclude>().Where(t => t.userid == user.id).Select(t => t.serverid).ToListAsync();
+                var urlData = await _baseServicesUrlServers.Dal.Query(t => t.serverenable && (t.isAllUser || bindUrlUsers.Contains(t.id)) && !excludeUrlUsers.Contains(t.id));
                 if (urlData != null)
                 {
                     urlData = urlData.OrderBy(t => t.servername).ToList();

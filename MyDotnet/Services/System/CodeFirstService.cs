@@ -42,26 +42,51 @@ namespace MyDotnet.Services.System
             }
 
             //创建表：根据实体类CodeFirstTable1  (所有数据库都支持)
-            Type type = typeof(TCode);
-            var tempAttr = Attribute.GetCustomAttribute(type, typeof(SugarTable));
-            var attrTable = string.Empty;
-            if (tempAttr != null)
             {
-                attrTable = ((SugarTable)tempAttr).TableName;
-            }
-
-            if (!string.IsNullOrEmpty(attrTable))
-            {
-                //查特性
-                if (!db.DbMaintenance.IsAnyTable(attrTable))
+                Type type = typeof(TrojanCusServersUsersExclude);
+                var tempAttr = Attribute.GetCustomAttribute(type, typeof(SugarTable));
+                var attrTable = string.Empty;
+                if (tempAttr != null)
                 {
-                    db.CodeFirst.InitTables<TCode>();
+                    attrTable = ((SugarTable)tempAttr).TableName;
+                }
+
+                if (!string.IsNullOrEmpty(attrTable))
+                {
+                    //查特性
+                    if (!db.DbMaintenance.IsAnyTable(attrTable))
+                    {
+                        db.CodeFirst.InitTables<TrojanCusServersUsersExclude>();
+                    }
+                }
+                else if (!db.DbMaintenance.IsAnyTable(type.Name))
+                {
+                    //直接查反射名
+                    db.CodeFirst.InitTables<TrojanCusServersUsersExclude>();
                 }
             }
-            else if (!db.DbMaintenance.IsAnyTable(type.Name))
             {
-                //直接查反射名
-                db.CodeFirst.InitTables<TCode>();
+                Type type = typeof(TrojanUrlServersUsersExclude);
+                var tempAttr = Attribute.GetCustomAttribute(type, typeof(SugarTable));
+                var attrTable = string.Empty;
+                if (tempAttr != null)
+                {
+                    attrTable = ((SugarTable)tempAttr).TableName;
+                }
+
+                if (!string.IsNullOrEmpty(attrTable))
+                {
+                    //查特性
+                    if (!db.DbMaintenance.IsAnyTable(attrTable))
+                    {
+                        db.CodeFirst.InitTables<TrojanUrlServersUsersExclude>();
+                    }
+                }
+                else if (!db.DbMaintenance.IsAnyTable(type.Name))
+                {
+                    //直接查反射名
+                    db.CodeFirst.InitTables<TrojanUrlServersUsersExclude>();
+                }
             }
 
             await Task.CompletedTask;
