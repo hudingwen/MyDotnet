@@ -62,6 +62,7 @@ namespace MyDotnet.Tasks.QuartzJob
 
                 //获取监护用户
                 var user = await _nightscoutGuardService.Dal.QueryById(task.ResourceId);
+                user.refreshTime = user.refreshTime.AddSeconds(1);
                 if (user == null) throw new ServiceException($"监护用户获取失败:{jobid}");
                 if(!user.Enabled)
                 {
@@ -77,6 +78,7 @@ namespace MyDotnet.Tasks.QuartzJob
                         //硅基
                         #region 硅基
                         var data = await GuijiHelper.getUserBlood(account.token, user.uid);
+                       
                         if (data.success)
                         {
                             bool isTouchTime = false;
@@ -84,7 +86,7 @@ namespace MyDotnet.Tasks.QuartzJob
                             //推送数据
                             if (data.data.followedDeviceGlucoseDataPO.glucoseInfos != null && data.data.followedDeviceGlucoseDataPO.glucoseInfos.Count > 0 && data.data.followedDeviceGlucoseDataPO.time == data.data.followedDeviceGlucoseDataPO.glucoseInfos[0].time)
                             {
-                                //正常
+                                //正常 
                                 var pushData = data.data.followedDeviceGlucoseDataPO.glucoseInfos.Where(t => t.time > user.refreshTime).OrderBy(t => t.time).ToList();
                                 if (pushData.Count > 0)
                                 {
