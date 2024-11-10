@@ -81,7 +81,8 @@ namespace MyDotnet.Tasks.QuartzJob
                             {
                                 var token = AppleHelper.GetNewAppleToken(apple.code, apple.content, apple.content2);
                                 var list = await AppleHelper.GetDevices(token, 1, 200, "PROCESSING");
-
+                                var list_audit = await AppleHelper.GetDevices(token, 1, 200, "INELIGIBLE");
+                                list.data.AddRange(list_audit.data);
                                 //先查找谁审核通过了
                                 List<string> hasDevices = null;
                                 processingDevices.TryGetValue(apple.code, out hasDevices);

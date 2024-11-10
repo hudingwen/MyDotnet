@@ -78,6 +78,8 @@ namespace MyDotnet.Controllers.Ns
             var data = await _dictService.GetDicDataOne(DicAppleInfo.AppleApiList, kid);
             var token = AppleHelper.GetNewAppleToken(data.code, data.content, data.content2);
             var list = await AppleHelper.GetDevices(token, page, size, "PROCESSING");
+            var list_audit = await AppleHelper.GetDevices(token, page, size, "INELIGIBLE");
+            list.data.AddRange(list_audit.data);
             foreach (var item in list.data)
             {
                 DateTime dateTime = DateTime.Parse(item.attributes.addedDate);
