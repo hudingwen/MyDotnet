@@ -200,58 +200,83 @@ namespace MyDotnet.Controllers.Trojan
 
                 //绑定服务器
                 List<TrojanServersUsers> trojanServersUsers = new List<TrojanServersUsers>();
-                user.serverIds.ForEach(t =>
+                if (user.serverIds != null)
                 {
-                    trojanServersUsers.Add(new TrojanServersUsers { serverid = t, userid = user.id });
-                });
+                    user.serverIds.ForEach(t =>
+                    {
+                        trojanServersUsers.Add(new TrojanServersUsers { serverid = t, userid = user.id });
+                    });
+                }
+               
 
                 await _baseServicesServersUsers.Dal.Delete(t => t.userid == user.id);
                 await _baseServicesServersUsers.Dal.Add(trojanServersUsers);
                 //排除服务器
                 List<TrojanServersUsersExclude> trojanServersUsersExcludes = new List<TrojanServersUsersExclude>();
-                user.serverIdsExclude.ForEach(t =>
+                if(user.serverIdsExclude != null)
                 {
-                    trojanServersUsersExcludes.Add(new TrojanServersUsersExclude { serverid = t, userid = user.id });
-                });
+                    user.serverIdsExclude.ForEach(t =>
+                    {
+                        trojanServersUsersExcludes.Add(new TrojanServersUsersExclude { serverid = t, userid = user.id });
+                    });
+
+                }
+                
                 await _baseServicesServersUsersExclude.Dal.Delete(t => t.userid == user.id);
                 await _baseServicesServersUsersExclude.Dal.Add(trojanServersUsersExcludes);
 
 
                 //绑定cus服务器
                 List<TrojanCusServersUsers> trojanCusServersUsers = new List<TrojanCusServersUsers>();
-                user.serverCusIds.ForEach(t =>
+                if(user.serverCusIds != null)
                 {
-                    trojanCusServersUsers.Add(new TrojanCusServersUsers { serverid = t, userid = user.id });
-                });
+                    user.serverCusIds.ForEach(t =>
+                    {
+                        trojanCusServersUsers.Add(new TrojanCusServersUsers { serverid = t, userid = user.id });
+                    });
+
+                }
 
                 await _baseServicesCusServersUsers.Dal.Delete(t => t.userid == user.id);
                 await _baseServicesCusServersUsers.Dal.Add(trojanCusServersUsers);
                 //排除cus服务器
                 List<TrojanCusServersUsersExclude> trojanCusServersUsersExcludes = new List<TrojanCusServersUsersExclude>();
-                user.serverCusIdsExclude.ForEach(t =>
+                if(user.serverCusIdsExclude != null)
                 {
-                    trojanCusServersUsersExcludes.Add(new TrojanCusServersUsersExclude { serverid = t, userid = user.id });
-                });
+                    user.serverCusIdsExclude.ForEach(t =>
+                    {
+                        trojanCusServersUsersExcludes.Add(new TrojanCusServersUsersExclude { serverid = t, userid = user.id });
+                    });
+
+                }
                 await _baseServicesCusServersUsersExclude.Dal.Delete(t => t.userid == user.id);
                 await _baseServicesCusServersUsersExclude.Dal.Add(trojanCusServersUsersExcludes);
 
 
                 //绑定url服务器
                 List<TrojanUrlServersUsers> trojanUrlServersUsers = new List<TrojanUrlServersUsers>();
-                user.serverUrlIds.ForEach(t =>
+                if(user.serverUrlIds != null)
                 {
-                    trojanUrlServersUsers.Add(new TrojanUrlServersUsers { serverid = t, userid = user.id });
-                });
+                    user.serverUrlIds.ForEach(t =>
+                    {
+                        trojanUrlServersUsers.Add(new TrojanUrlServersUsers { serverid = t, userid = user.id });
+                    });
+
+                }
 
                 await _baseServicesUrlServersUsers.Dal.Delete(t => t.userid == user.id);
                 await _baseServicesUrlServersUsers.Dal.Add(trojanUrlServersUsers);
 
                 //排除url服务器
                 List<TrojanUrlServersUsersExclude> trojanUrlServersUsersExcludes = new List<TrojanUrlServersUsersExclude>();
-                user.serverUrlIdsExclude.ForEach(t =>
+                if(user.serverUrlIdsExclude != null)
                 {
-                    trojanUrlServersUsersExcludes.Add(new TrojanUrlServersUsersExclude { serverid = t, userid = user.id });
-                });
+                    user.serverUrlIdsExclude.ForEach(t =>
+                    {
+                        trojanUrlServersUsersExcludes.Add(new TrojanUrlServersUsersExclude { serverid = t, userid = user.id });
+                    });
+
+                }
                 await _baseServicesUrlServersUsersExclude.Dal.Delete(t => t.userid == user.id);
                 await _baseServicesUrlServersUsersExclude.Dal.Add(trojanUrlServersUsersExcludes);
 
