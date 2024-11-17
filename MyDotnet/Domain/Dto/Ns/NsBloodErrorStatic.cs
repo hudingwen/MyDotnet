@@ -31,7 +31,7 @@
                     if (errStatic[uid] > 10)
                     {
 
-                        return DateTime.Now.AddMinutes(60);
+                        return DateTime.Now.AddMinutes(30);
                     }
                     else
                     {
