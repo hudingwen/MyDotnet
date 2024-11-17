@@ -127,6 +127,10 @@ namespace MyDotnet.Tasks.QuartzJob
                                     nextTime = DateTime.Now.AddSeconds(30);
                                     nextTime = NsBloodErrorStatic.checkErrStatic(jobid, nextTime, isTouchTime);
                                 }
+                                else
+                                {
+                                    NsBloodErrorStatic.errStatic[jobid] = 0;
+                                }
                                 newCronExpression = nextTime.ToString("ss mm HH dd MM ? yyyy");
                             }
                             else
@@ -188,6 +192,10 @@ namespace MyDotnet.Tasks.QuartzJob
                                     //调度时间异常处理
                                     nextTime = DateTime.Now.AddSeconds(30);
                                     nextTime = NsBloodErrorStatic.checkErrStatic(jobid, nextTime, isTouchTime);
+                                }
+                                else
+                                {
+                                    NsBloodErrorStatic.errStatic[jobid] = 0;
                                 }
                                 newCronExpression = nextTime.ToString("ss mm HH dd MM ? yyyy");
                             }
@@ -251,6 +259,10 @@ namespace MyDotnet.Tasks.QuartzJob
                                     nextTime = DateTime.Now.AddSeconds(60);
                                     nextTime = NsBloodErrorStatic.checkErrStatic(jobid, nextTime, isTouchTime);
                                 }
+                                else
+                                {
+                                    NsBloodErrorStatic.errStatic[jobid] = 0;
+                                }
                                 newCronExpression = nextTime.ToString("ss mm HH dd MM ? yyyy");
                             }
                             else
@@ -312,6 +324,10 @@ namespace MyDotnet.Tasks.QuartzJob
                                     //调度时间异常处理
                                     nextTime = DateTime.Now.AddSeconds(30);
                                     nextTime = NsBloodErrorStatic.checkErrStatic(jobid, nextTime, isTouchTime);
+                                }
+                                else
+                                {
+                                    NsBloodErrorStatic.errStatic[jobid] = 0;
                                 }
                                 newCronExpression = nextTime.ToString("ss mm HH dd MM ? yyyy");
                             }
@@ -376,6 +392,10 @@ namespace MyDotnet.Tasks.QuartzJob
                                     //调度时间异常处理
                                     nextTime = DateTime.Now.AddSeconds(30);
                                     nextTime = NsBloodErrorStatic.checkErrStatic(jobid, nextTime, isTouchTime);
+                                }
+                                else
+                                {
+                                    NsBloodErrorStatic.errStatic[jobid] = 0;
                                 }
                                 newCronExpression = nextTime.ToString("ss mm HH dd MM ? yyyy");
                             }
@@ -451,6 +471,10 @@ namespace MyDotnet.Tasks.QuartzJob
                                     //调度时间异常处理
                                     nextTime = DateTime.Now.AddSeconds(30);
                                     nextTime = NsBloodErrorStatic.checkErrStatic(jobid, nextTime, isTouchTime);
+                                }
+                                else
+                                {
+                                    NsBloodErrorStatic.errStatic[jobid] = 0;
                                 }
                                 newCronExpression = nextTime.ToString("ss mm HH dd MM ? yyyy");
                             }
