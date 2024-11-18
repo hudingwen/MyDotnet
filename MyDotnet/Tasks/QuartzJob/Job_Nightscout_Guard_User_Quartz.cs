@@ -30,18 +30,21 @@ namespace MyDotnet.Tasks.QuartzJob
     {
         public NightscoutGuardService _nightscoutGuardService;
         public BaseRepository<NightscoutGuardAccount> _baseRepositoryAccount;
-        public SchedulerCenterServer _schedulerCenter; 
+        public SchedulerCenterServer _schedulerCenter;
+        public NightscoutServices _nightscoutServices;
         public Job_Nightscout_Guard_User_Quartz(
             BaseServices<TasksQz> tasksQzServices
             , BaseServices<TasksLog> tasksLogServices  
             , NightscoutGuardService nightscoutGuardService
             , BaseRepository<NightscoutGuardAccount> baseRepositoryAccount
             , SchedulerCenterServer schedulerCenter 
+            , NightscoutServices nightscoutServices
             ) : base(tasksQzServices, tasksLogServices)
         {
             _nightscoutGuardService = nightscoutGuardService;
             _baseRepositoryAccount = baseRepositoryAccount;
-            _schedulerCenter = schedulerCenter; 
+            _schedulerCenter = schedulerCenter;
+            _nightscoutServices = nightscoutServices;
         } 
 
 
@@ -67,6 +70,18 @@ namespace MyDotnet.Tasks.QuartzJob
                 if(!user.Enabled)
                 {
                     error = "用户未启用,任务结束";
+                    return;
+                }
+                var nightscout = await _nightscoutServices.Dal.QueryById(user.nid);
+                if(nightscout == null) throw new ServiceException($"实例获取失败:{jobid}");
+                if (DateTime.Now > nightscout.endTime)
+                {
+                    error = "用户已到期,任务结束";
+                    return;
+                }
+                if (nightscout.isStop  == true)
+                {
+                    error = "用户已闲置,任务结束";
                     return;
                 }
                 var account = await _baseRepositoryAccount.QueryById(user.gid);

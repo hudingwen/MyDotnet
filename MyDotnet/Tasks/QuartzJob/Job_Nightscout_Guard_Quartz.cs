@@ -152,9 +152,10 @@ namespace MyDotnet.Tasks.QuartzJob
 
                             var nightscout = await _nightscoutServices.Dal.QueryById(user.nid);
 
+
                             if (userTask == null)
                             {
-                                if (nightscout.endTime > DateTime.Now)
+                                if (nightscout.endTime > DateTime.Now && nightscout.isStop == false)
                                 {
 
                                     userTask = new TasksQz();
@@ -168,8 +169,8 @@ namespace MyDotnet.Tasks.QuartzJob
                                     userTask.CycleHasRunTimes = 0;
                                     userTask.CycleRunTimes = 1;
                                     userTask.Enabled = true;
-                                    userTask.BeginTime = user.startTime;
-                                    userTask.EndTime = user.endTime;
+                                    userTask.BeginTime = nightscout.startTime;
+                                    userTask.EndTime = nightscout.endTime;
                                     userTask.IntervalSecond = 1;
                                     userTask.JobGroup = "监护用户任务";
                                     var typeName = accountTypes.Find(t => t.code.Equals(account.guardType));
@@ -188,14 +189,14 @@ namespace MyDotnet.Tasks.QuartzJob
                                 var isRunnig = await _schedulerCenter.IsExistScheduleJobAsync(userTask);
                                 if (!isRunnig)
                                 {
-                                    if(nightscout.endTime > DateTime.Now)
+                                    if(nightscout.endTime > DateTime.Now && nightscout.isStop == false)
                                     {
                                         //主动运行
                                         userTask.Cron = DateTime.Now.AddSeconds(30).ToString("ss mm HH dd MM ? yyyy");
                                         var typeName = accountTypes.Find(t => t.code.Equals(account.guardType));
                                         userTask.Name = $"{user.name}({user.nidUrl})|{typeName?.name}";
-                                        userTask.BeginTime = user.startTime;
-                                        userTask.EndTime = user.endTime;
+                                        userTask.BeginTime = nightscout.startTime;
+                                        userTask.EndTime = nightscout.endTime;
                                         await _tasksQzServices.Dal.Update(userTask);
                                         await _schedulerCenter.AddScheduleJobAsync(userTask);
                                     }
