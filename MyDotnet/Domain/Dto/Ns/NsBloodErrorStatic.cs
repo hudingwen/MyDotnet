@@ -31,11 +31,11 @@
                     if (errStatic[jobid] > 10)
                     {
 
-                        return DateTime.Now.AddMinutes(30);
+                        return DateTime.Now.AddMinutes(10);
                     }
                     else
                     {
-                        return DateTime.Now.AddMinutes(10);
+                        return DateTime.Now.AddMinutes(5);
                     }
                 }
             }
