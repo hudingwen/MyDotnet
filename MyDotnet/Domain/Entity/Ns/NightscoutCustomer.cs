@@ -30,6 +30,13 @@ namespace MyDotnet.Domain.Entity.Ns
         /// </summary>
         [SugarColumn(Length = 255, IsNullable = true)]
         public string remark { get; set; }
+        /// <summary>
+        /// 首页介绍
+        /// </summary>
+        [SugarColumn(IsNullable = true,ColumnDataType ="text")]
+        public string introduce { get; set; }
+
+        
 
 
     }

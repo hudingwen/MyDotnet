@@ -75,8 +75,30 @@ namespace MyDotnet.Controllers.Ns
         }
 
 
-        
-         
+        [AllowAnonymous]
+        [HttpGet]
+        public async Task<MessageModel<string>> GetNsCustomerInfo(string host)
+        {
+            // 获取当前请求的主机名（包含端口）
+            host = HttpContext.Request.Host.Value;
+            var nightscout =  await _nightscoutServices.Dal.Db.Queryable<Nightscout>().Where(t=>t.url == host).Select(t => new {t.customerId }).FirstAsync();
+            if(nightscout == null)
+            {
+                return MessageModel<string>.Success("", $"未找到用户{host}");
+            }
+            else
+            {
+                var customer = await _nightscoutCustomerServices.Dal.QueryById(nightscout.customerId);
+                if(customer == null)
+                {
+                    return MessageModel<string>.Success("", $"未找到客户:{nightscout.customerId}");
+                }
+                else
+                {
+                    return MessageModel<string>.Success("", customer.introduce);
+                }
+            } 
+        }
 
         [AllowAnonymous]
         [HttpGet]
