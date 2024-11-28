@@ -138,7 +138,11 @@ namespace MyDotnet.Controllers.Ns
                 {
                     if(DateTime.Now > nightscout.endTime)
                     {
-                        infoDto.isExpire = true ;
+                        infoDto.isExpire = true;
+                    }
+                    else
+                    {
+                        infoDto.isCanShowInput = true;
                     }
                     infoDto.showHtml = customer.introduce;
                     return MessageModel<NsCustomerInfoDto>.Success("获取成功", infoDto);
