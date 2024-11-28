@@ -86,7 +86,7 @@ namespace MyDotnet.Controllers.Ns
         public async Task<MessageModel<string>> StartNS(string host,string key, string code, string pass)
         {
             // 获取当前请求的主机名（包含端口）
-            //host = HttpContext.Request.Host.Value;
+            host = HttpContext.Request.Host.Value;
 
             if (!_codeService.ValidCode(key, code))
                 return MessageModel<string>.Fail($"验证码错误");
@@ -118,7 +118,7 @@ namespace MyDotnet.Controllers.Ns
         public async Task<MessageModel<NsCustomerInfoDto>> GetNsCustomerInfo(string host)
         {
             // 获取当前请求的主机名（包含端口）
-            //host = HttpContext.Request.Host.Value;
+            host = HttpContext.Request.Host.Value;
             NsCustomerInfoDto infoDto = new NsCustomerInfoDto();
             var nightscout =  await _nightscoutServices.Dal.Db.Queryable<Nightscout>().Where(t=>t.url == host).Select(t => new {t.customerId ,t.endTime}).FirstAsync();
             if(nightscout == null)
