@@ -49,6 +49,7 @@ namespace MyDotnet.Controllers.Ns
 
         public UnitOfWorkManage _unitOfWorkManage;
         public ICaching _caching;
+        public CodeService _codeService;
 
         public NightscoutController(NightscoutServices nightscoutServices
             , WeChatConfigServices weChatConfigServices
@@ -60,6 +61,7 @@ namespace MyDotnet.Controllers.Ns
             , DicService dictService
             , UnitOfWorkManage unitOfWorkManage
             , ICaching caching
+            , CodeService codeService
             )
         {
             _dictService = dictService;
@@ -72,30 +74,74 @@ namespace MyDotnet.Controllers.Ns
             _nightscoutCustomerServices = nightscoutCustomerServices;
             _unitOfWorkManage = unitOfWorkManage;
             _caching = caching;
+            _codeService = codeService;
         }
+
+
+
 
 
         [AllowAnonymous]
         [HttpGet]
-        public async Task<MessageModel<string>> GetNsCustomerInfo(string host)
+        public async Task<MessageModel<string>> StartNS(string host,string key, string code, string pass)
         {
             // 获取当前请求的主机名（包含端口）
-            host = HttpContext.Request.Host.Value;
-            var nightscout =  await _nightscoutServices.Dal.Db.Queryable<Nightscout>().Where(t=>t.url == host).Select(t => new {t.customerId }).FirstAsync();
+            //host = HttpContext.Request.Host.Value;
+
+            if (!_codeService.ValidCode(key, code))
+                return MessageModel<string>.Fail($"验证码错误");
+
+            var nightscout = await _nightscoutServices.Dal.Db.Queryable<Nightscout>().Where(t => t.url == host).FirstAsync();
+            if (nightscout == null)
+            {
+                return MessageModel<string>.Fail($"未找到用户{host}");
+            }
+            if (!nightscout.passwd.Equals(pass))
+            {
+                return MessageModel<string>.Fail($"认证失败");
+            }
+            if (!nightscout.isStop)
+            {
+                return MessageModel<string>.Fail($"实例已经启动,无需重复启动!");
+            }
+            if (DateTime.Now > nightscout.endTime)
+            {
+                return MessageModel<string>.Fail($"NS已过期,请联系续费!");
+            }
+
+            var nsServer = await _nightscoutServerServices.Dal.QueryById(nightscout.serverId);
+            await _nightscoutServices.Refresh(nightscout, nsServer);
+            return MessageModel<string>.Success("启动成功");
+        }
+        [AllowAnonymous]
+        [HttpGet]
+        public async Task<MessageModel<NsCustomerInfoDto>> GetNsCustomerInfo(string host)
+        {
+            // 获取当前请求的主机名（包含端口）
+            //host = HttpContext.Request.Host.Value;
+            NsCustomerInfoDto infoDto = new NsCustomerInfoDto();
+            var nightscout =  await _nightscoutServices.Dal.Db.Queryable<Nightscout>().Where(t=>t.url == host).Select(t => new {t.customerId ,t.endTime}).FirstAsync();
             if(nightscout == null)
             {
-                return MessageModel<string>.Success("", $"未找到用户{host}");
+                infoDto.showHtml = $"未找到用户:{host}";
+                return MessageModel<NsCustomerInfoDto>.Success("获取失败", infoDto);
             }
             else
             {
                 var customer = await _nightscoutCustomerServices.Dal.QueryById(nightscout.customerId);
                 if(customer == null)
                 {
-                    return MessageModel<string>.Success("", $"未找到客户:{nightscout.customerId}");
+                    infoDto.showHtml = $"未找到客户:{nightscout.customerId}";
+                    return MessageModel<NsCustomerInfoDto>.Success("获取失败", infoDto);
                 }
                 else
                 {
-                    return MessageModel<string>.Success("", customer.introduce);
+                    if(DateTime.Now > nightscout.endTime)
+                    {
+                        infoDto.isExpire = true ;
+                    }
+                    infoDto.showHtml = customer.introduce;
+                    return MessageModel<NsCustomerInfoDto>.Success("获取成功", infoDto);
                 }
             } 
         }
