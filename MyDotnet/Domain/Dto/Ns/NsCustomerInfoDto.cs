@@ -5,5 +5,6 @@
 
         public string showHtml { get; set; }
         public bool isExpire { get; set; }
+        public bool isCanShowInput { get; set; }
     }
 }
