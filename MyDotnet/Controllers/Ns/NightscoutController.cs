@@ -77,16 +77,13 @@ namespace MyDotnet.Controllers.Ns
             _codeService = codeService;
         }
 
-
-
-
-
         [AllowAnonymous]
         [HttpGet]
         public async Task<MessageModel<string>> StartNS(string host,string key, string code, string pass)
         {
             // 获取当前请求的主机名（包含端口）
-            host = HttpContext.Request.Host.Value;
+            if (string.IsNullOrEmpty(host))
+                host = HttpContext.Request.Host.Value;
 
             if (!_codeService.ValidCode(key, code))
                 return MessageModel<string>.Fail($"验证码错误");
@@ -94,7 +91,7 @@ namespace MyDotnet.Controllers.Ns
             var nightscout = await _nightscoutServices.Dal.Db.Queryable<Nightscout>().Where(t => t.url == host).FirstAsync();
             if (nightscout == null)
             {
-                return MessageModel<string>.Fail($"未找到用户{host}");
+                return MessageModel<string>.Fail($"未找到用户:{host}");
             }
             if (!nightscout.passwd.Equals(pass))
             {
@@ -109,8 +106,8 @@ namespace MyDotnet.Controllers.Ns
                 return MessageModel<string>.Fail($"NS已过期,请联系续费!");
             }
 
-            var nsServer = await _nightscoutServerServices.Dal.QueryById(nightscout.serverId);
-            await _nightscoutServices.Refresh(nightscout, nsServer);
+            //var nsServer = await _nightscoutServerServices.Dal.QueryById(nightscout.serverId);
+            //await _nightscoutServices.Refresh(nightscout, nsServer);
             return MessageModel<string>.Success("启动成功");
         }
         [AllowAnonymous]
@@ -118,9 +115,10 @@ namespace MyDotnet.Controllers.Ns
         public async Task<MessageModel<NsCustomerInfoDto>> GetNsCustomerInfo(string host)
         {
             // 获取当前请求的主机名（包含端口）
-            host = HttpContext.Request.Host.Value;
+            if(string.IsNullOrEmpty(host))
+                host = HttpContext.Request.Host.Value;
             NsCustomerInfoDto infoDto = new NsCustomerInfoDto();
-            var nightscout =  await _nightscoutServices.Dal.Db.Queryable<Nightscout>().Where(t=>t.url == host).Select(t => new {t.customerId ,t.endTime}).FirstAsync();
+            var nightscout =  await _nightscoutServices.Dal.Db.Queryable<Nightscout>().Where(t=>t.url == host).Select(t => new {t.customerId ,t.endTime,t.url,t.isStop}).FirstAsync();
             if(nightscout == null)
             {
                 infoDto.showHtml = $"未找到用户:{host}";
@@ -145,6 +143,9 @@ namespace MyDotnet.Controllers.Ns
                         infoDto.isCanShowInput = true;
                     }
                     infoDto.showHtml = customer.introduce;
+                    infoDto.endTime = nightscout.endTime;
+                    infoDto.host = nightscout.url;
+                    infoDto.isStop = nightscout.isStop;
                     return MessageModel<NsCustomerInfoDto>.Success("获取成功", infoDto);
                 }
             } 

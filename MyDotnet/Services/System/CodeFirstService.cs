@@ -43,7 +43,7 @@ namespace MyDotnet.Services.System
 
             //创建表：根据实体类CodeFirstTable1  (所有数据库都支持)
             {
-                Type type = typeof(FileRecord);
+                Type type = typeof(OrderPay);
                 var tempAttr = Attribute.GetCustomAttribute(type, typeof(SugarTable));
                 var attrTable = string.Empty;
                 if (tempAttr != null)
@@ -56,13 +56,13 @@ namespace MyDotnet.Services.System
                     //查特性
                     if (!db.DbMaintenance.IsAnyTable(attrTable))
                     {
-                        db.CodeFirst.InitTables<FileRecord>();
+                        db.CodeFirst.InitTables<OrderPay>();
                     }
                 }
                 else if (!db.DbMaintenance.IsAnyTable(type.Name))
                 {
                     //直接查反射名
-                    db.CodeFirst.InitTables<FileRecord>();
+                    db.CodeFirst.InitTables<OrderPay>();
                 }
             } 
 

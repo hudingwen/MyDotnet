@@ -29,6 +29,35 @@ namespace MyDotnet.Helper
         /// <param name="isToLower">是否小写</param>
         /// <returns></returns>
         /// <exception cref="Exception"></exception>
+        public static string MD5Encrypt32(byte[] password, bool isToLower = false)
+        {
+            string pwd = string.Empty;
+            try
+            {
+                MD5 md5 = MD5.Create(); //实例化一个md5对像
+                                        // 加密后是一个字节类型的数组，这里要注意编码UTF8/Unicode等的选择　
+                byte[] s = md5.ComputeHash(password);
+                // 通过使用循环，将字节类型的数组转换为字符串，此字符串是常规字符格式化所得
+                foreach (var item in s)
+                {
+                    // 将得到的字符串使用十六进制类型格式。格式后的字符是小写的字母，如果使用大写（X）则格式后的字符是大写字符 
+                    pwd = string.Concat(pwd, item.ToString("X2"));
+                }
+                if (isToLower) pwd = pwd.ToLower();
+            }
+            catch
+            {
+                throw new Exception($"错误的 password 字符串:【{password}】");
+            }
+            return pwd;
+        }
+        /// <summary>
+        /// 32位MD5加密
+        /// </summary>
+        /// <param name="password"></param>
+        /// <param name="isToLower">是否小写</param>
+        /// <returns></returns>
+        /// <exception cref="Exception"></exception>
         public static string MD5Encrypt32(string password,bool isToLower=false)
         {
             string pwd = string.Empty;
