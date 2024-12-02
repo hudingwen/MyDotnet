@@ -6,10 +6,12 @@ namespace MyDotnet.Domain.Dto.Ns
     public class OrderNotifyMsg
     {
         public string sign { get; set; }
-        public string content { get; set; }
+        public OrderNotifyMsgData content { get; set; }
     }
     public class OrderNotifyMsgData
     {
+
+
         /// <summary>
         /// 平台返回的订单号
         /// </summary>
@@ -45,7 +47,7 @@ namespace MyDotnet.Domain.Dto.Ns
         /// <summary>
         /// 用户支付时间，例如：2021-05-11 11:31:08
         /// </summary>
-        public DateTime pay_time { get; set; }
+        public string pay_time { get; set; }
         /// <summary>
         /// 订单状态：1-待支付；2-成功；3-关闭
         /// </summary>

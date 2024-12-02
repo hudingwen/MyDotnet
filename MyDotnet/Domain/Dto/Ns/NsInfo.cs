@@ -1,4 +1,5 @@
 ﻿using MyDotnet.Helper;
+using System.Collections.Concurrent;
 
 namespace MyDotnet.Domain.Dto.Ns
 {
@@ -7,6 +8,12 @@ namespace MyDotnet.Domain.Dto.Ns
     /// </summary>
     public static class NsInfo
     {
+        private static readonly ConcurrentDictionary<string, SemaphoreSlim> Locks = new();
+
+        public static SemaphoreSlim GetLock(string keyId)
+        {
+            return Locks.GetOrAdd(keyId, _ => new SemaphoreSlim(1, 1));
+        }
 
         public static string KEY = "NSInfo";
 

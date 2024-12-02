@@ -51,6 +51,20 @@ namespace MyDotnet.Helper
             }
             return pwd;
         }
+
+        public static string ByteArrayToHexString(byte[] b)
+        {
+            if (b == null) return string.Empty;
+
+            var hs = new StringBuilder();
+            foreach (var n in b)
+            {
+                string stmp = (n & 0xFF).ToString("x2"); // 使用 "x2" 格式化输出两位小写十六进制数
+                hs.Append(stmp);
+            }
+
+            return hs.ToString();
+        }
         /// <summary>
         /// 32位MD5加密
         /// </summary>

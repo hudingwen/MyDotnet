@@ -1,4 +1,5 @@
-﻿using Azure.Core;
+﻿using Amazon.Runtime.Internal;
+using Azure.Core;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Hosting;
@@ -16,6 +17,7 @@ using System.Linq.Expressions;
 using System.Numerics;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 
 namespace MyDotnet.Controllers.Ns
 {
@@ -43,64 +45,97 @@ namespace MyDotnet.Controllers.Ns
         [HttpPost]
         public async Task<MessageModel<string>> OrderNotify()
         {
+            string id = StringHelper.GetGUID();
+            LogHelper.logApp.Info($"{id}-回调支付\r\n");
             OrderNotifyMsg data = null;
-            Request.EnableBuffering(); // 允许多次读取 Body
+            var body = "";
+            var content = "";
+            Request.EnableBuffering(); 
             using (var reader = new StreamReader(Request.Body, Encoding.UTF8, leaveOpen: true))
             {
-                var body = await reader.ReadToEndAsync();
-                data = JsonHelper.JsonToObj<OrderNotifyMsg>(body);
+                body = await reader.ReadToEndAsync();
+                Request.Body.Position = 0; // 重置流位置
             }
-            var contentData = JsonHelper.JsonToObj<OrderNotifyMsgData>(data.content);
 
-            var access_key = ConfigHelper.GetValue(new string[] { "Pay", "access_key" });
-            var secret_key = ConfigHelper.GetValue(new string[] { "Pay", "secret_key" });
+            LogHelper.logApp.Info($"{id}-回调内容:\r\n{body}");
+            data = JsonHelper.JsonToObj<OrderNotifyMsg>(body);
 
-            using (var hmacsha256 = new HMACSHA256(Encoding.UTF8.GetBytes(secret_key)))
+           //加锁
+            var lockObject = NsInfo.GetLock(data.content.out_order_no);
+            await lockObject.WaitAsync();
+
+            try
             {
-                byte[] hmacSha256Bytes = hmacsha256.ComputeHash(Encoding.UTF8.GetBytes(data.content));
-
-
-                var mySign = MD5Helper.MD5Encrypt32(hmacSha256Bytes);
-                if (mySign.Equals(data.sign))
+                content = JsonHelper.ObjToJson(data.content, false);
+                var access_key = ConfigHelper.GetValue(new string[] { "Pay", "access_key" });
+                var secret_key = ConfigHelper.GetValue(new string[] { "Pay", "secret_key" });
+                MessageModel<string> messageModel = null;
+                using (var hmacsha256 = new HMACSHA256(Encoding.UTF8.GetBytes(secret_key)))
                 {
-                    if(contentData.status == 2)
+                    string hex = MD5Helper.ByteArrayToHexString(hmacsha256.ComputeHash(Encoding.UTF8.GetBytes(content)));
+
+                    var mySign = MD5Helper.MD5Encrypt32(hex);
+
+
+                    LogHelper.logApp.Info($"{id}-验签md5:\r\n{mySign}");
+                    LogHelper.logApp.Info($"{id}-验签content:\r\n{content}");
+
+                    LogHelper.logApp.Info($"{id}-比对md5:\r\n{data.sign}");
+                    if (mySign.Equals(data.sign))
                     {
-                        //支付成功
-                        //成功
-                        var order = await _orderService.Dal.QueryById(contentData.out_order_no);
-                        if (order == null)
-                            return MessageModel<string>.Fail($"订单未找到:{contentData.out_order_no}");
-                        if (order.payStatus == 2)
-                            return MessageModel<string>.Fail($"订单已支付:{contentData.out_order_no}");
-                        if (order.payStatus == 3)
-                            return MessageModel<string>.Fail($"订单失败:{contentData.out_order_no}");
+                        if (data.content.status == 2)
+                        {
+                            //支付成功
+                            var order = await _orderService.Dal.QueryById(data.content.out_order_no);
+                            if (order == null)
+                                messageModel = MessageModel<string>.Fail($"订单未找到:{data.content.out_order_no}");
+                            else if (order.payStatus == 2)
+                                messageModel = MessageModel<string>.Fail($"订单已支付:{data.content.out_order_no}");
+                            else if (order.payStatus == 3)
+                                messageModel = MessageModel<string>.Fail($"订单失败:{data.content.out_order_no}");
+                            else
+                            {
+                                //续费
+                                _unitOfWorkManage.BeginTran();
+                                var nightscout = await _nightscoutServices.Dal.QueryById(order.nsid);
+                                nightscout.endTime = nightscout.endTime.AddYears(order.years);
+                                await _nightscoutServices.Dal.Db.Updateable<Nightscout>(nightscout).UpdateColumns(t => new { t.endTime }).ExecuteCommandAsync();
 
-                        //续费
-                        _unitOfWorkManage.BeginTran();
-                        //var nightscout = await _nightscoutServices.Dal.QueryById(order.nsid);
-                        //nightscout.endTime = nightscout.endTime.AddYears(order.years);
-                        //await _nightscoutServices.Dal.Db.Updateable<Nightscout>(nightscout).UpdateColumns(t => new { t.endTime }).ExecuteCommandAsync();
-
-                        order.payStatus = contentData.status;
-                        order.payTime = contentData.pay_time;
-                        order.payType = contentData.pay_type;
-                        order.tradeType = contentData.trade_type;
-                        order.transactionId = contentData.transaction_id;
-                        await _orderService.Dal.Db.Updateable(order).UpdateColumns(t => new {t.payStatus, t.payTime, t.payType, t.tradeType, t.transactionId }).ExecuteCommandAsync();
-                        _unitOfWorkManage.CommitTran();
-                        return MessageModel<string>.Success("处理成功");
+                                order.payStatus = data.content.status;
+                                order.payTime = ObjectHelper.ObjToDate(data.content.pay_time);
+                                order.payType = data.content.pay_type;
+                                order.tradeType = data.content.trade_type;
+                                order.transactionId = data.content.transaction_id;
+                                await _orderService.Dal.Db.Updateable(order).UpdateColumns(t => new { t.payStatus, t.payTime, t.payType, t.tradeType, t.transactionId }).ExecuteCommandAsync();
+                                _unitOfWorkManage.CommitTran();
+                                messageModel = MessageModel<string>.Success("处理成功");
+                            }
+                        }
+                        else
+                        {
+                            messageModel = MessageModel<string>.Success("其他状态暂时不做处理");
+                        }
                     }
                     else
                     {
-                        return MessageModel<string>.Success("其他状态暂时不做处理");
-                    }
-                }
-                else
-                {
-                    return MessageModel<string>.Fail("验签失败");
+                        messageModel = MessageModel<string>.Fail("验签失败");
 
+                    }
+
+                    LogHelper.logApp.Info($"{id}-返回结果:\r\n{JsonHelper.ObjToJson(messageModel)}");
+                    return messageModel;
                 }
             }
+            catch (Exception)
+            { 
+                throw;
+            }
+            finally
+            {
+                lockObject.Release();
+            }
+
+            
         }
             /// <summary>
             /// 创建订单

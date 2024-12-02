@@ -34,7 +34,7 @@ namespace MyDotnet.Domain.Entity.Trojan
         /// 绑定服务器
         /// </summary>
         [SugarColumn(IsIgnore = true)]
-        public List<long> serverIds { get; set; }
+        public List<long> serverIds { get; set; } 
         /// <summary>
         /// 排除服务器
         /// </summary>
