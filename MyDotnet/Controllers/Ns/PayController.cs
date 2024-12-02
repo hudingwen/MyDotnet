@@ -41,6 +41,33 @@ namespace MyDotnet.Controllers.Ns
             _nightscoutServices = nightscoutServices;
             _unitOfWorkManage = unitOfWorkManage;
         }
+        /// <summary>
+        /// 获取订单列表
+        /// </summary>
+        /// <param name="page"></param>
+        /// <param name="size"></param>
+        /// <param name="key"></param>
+        /// <param name="payStatus"></param>
+        /// <returns></returns>
+        [AllowAnonymous]
+        [HttpGet]
+        public async Task<MessageModel<PageModel<OrderPay>>> GetOrderList(int page, int size, string key,int? payStatus)
+        {
+            Expression<Func<OrderPay, bool>> whereExpression = a => true;
+            if (!string.IsNullOrEmpty(key))
+            {
+                whereExpression = whereExpression.And(t => t.orderDescription.Contains(key) || t.id.Contains(key) || t.tradeNo.Contains(key) || t.transactionId.Contains(key));
+            }
+            if(payStatus != null)
+            {
+                whereExpression = whereExpression.And(t => t.payStatus == payStatus);
+            }
+            var data = await _orderService.Dal.QueryPage(whereExpression, page, size, "createTime desc");
+            return MessageModel<PageModel<OrderPay>>.Success("获取成功", data);
+        }
+
+
+
         [AllowAnonymous]
         [HttpPost]
         public async Task<MessageModel<string>> OrderNotify()
