@@ -187,9 +187,17 @@ namespace MyDotnet.Controllers.Ns
             {
                 return MessageModel<int>.Success("订单支付成功", data.payStatus);
             }
-            else
+            else if (data.payStatus == 1)
             {
                 return MessageModel<int>.Fail("订单待支付中...", data.payStatus);
+            }
+            else if (data.payStatus == 3)
+            {
+                return MessageModel<int>.Fail("订单失败", data.payStatus);
+            }
+            else
+            {
+                return MessageModel<int>.Fail("订单未知", data.payStatus);
             }
         }
         /// <summary>
@@ -228,6 +236,7 @@ namespace MyDotnet.Controllers.Ns
                 orderPay.url = host;
                 orderPay.nsid = nightscout.Id;
                 orderPay.years = years;
+                orderPay.payStatus = 1;
                 orderPay.cost = Convert.ToInt32(nightscout.money * years * 100);
                 orderPay.orderDescription = $"用户续费({host})-{years}年";
                 await _orderService.Dal.Db.Insertable<OrderPay>(orderPay).ExecuteCommandAsync();
