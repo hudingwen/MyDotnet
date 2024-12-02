@@ -89,14 +89,14 @@ namespace MyDotnet.Tasks.QuartzJob
                         {
                             pushData = new WeChatCardMsgDataDto();
                             pushData.cardMsg = new WeChatCardMsgDetailDto();
-                            pushData.cardMsg.first = $"{nightscout.name},你的ns服务已到期";
+                            pushData.cardMsg.first = $"{nightscout.name},你的ns服务已到期(点我续费)";
                             daoqiCount += 1;
                         }
                         else if (DateTime.Now.Date.AddDays(preDay) >= nightscout.endTime)
                         {
                             pushData = new WeChatCardMsgDataDto();
                             pushData.cardMsg = new WeChatCardMsgDetailDto();
-                            pushData.cardMsg.first = $"{nightscout.name},你的ns服务即将到期";
+                            pushData.cardMsg.first = $"{nightscout.name},你的ns服务即将到期(点我续费)";
                             tixingCount += 1;
                         }
 
@@ -146,7 +146,7 @@ namespace MyDotnet.Tasks.QuartzJob
                             
                             pushData.cardMsg.keyword2 = $"{nightscout.endTime.ToString("yyyy-MM-dd")}";
                             pushData.cardMsg.remark = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-                            pushData.cardMsg.url = $"https://{nightscout.url}";
+                            pushData.cardMsg.url = $"{frontPage}?host={nightscout.url}";
                             pushData.cardMsg.template_id = pushTemplateID_Alert;
                             pushData.info = new WeChatUserInfo();
                             pushData.info.id = pushWechatID;
