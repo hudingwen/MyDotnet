@@ -48,8 +48,7 @@ namespace MyDotnet.Controllers.Ns
         /// <param name="size"></param>
         /// <param name="key"></param>
         /// <param name="payStatus"></param>
-        /// <returns></returns>
-        [AllowAnonymous]
+        /// <returns></returns> 
         [HttpGet]
         public async Task<MessageModel<PageModel<OrderPay>>> GetOrderList(int page, int size, string key,int? payStatus)
         {
@@ -125,7 +124,15 @@ namespace MyDotnet.Controllers.Ns
                                 //续费
                                 _unitOfWorkManage.BeginTran();
                                 var nightscout = await _nightscoutServices.Dal.QueryById(order.nsid);
-                                nightscout.endTime = nightscout.endTime.AddYears(order.years);
+                                if(DateTime.Now> nightscout.endTime)
+                                {
+                                    nightscout.endTime = DateTime.Now.Date.AddYears(order.years);
+                                }
+                                else
+                                {
+                                    nightscout.endTime = nightscout.endTime.AddYears(order.years);
+                                }
+                                
                                 await _nightscoutServices.Dal.Db.Updateable<Nightscout>(nightscout).UpdateColumns(t => new { t.endTime }).ExecuteCommandAsync();
 
                                 order.payStatus = data.content.status;
