@@ -50,7 +50,7 @@ namespace MyDotnet.Controllers.Ns
             OrderNotifyMsg data = null;
             var body = "";
             var content = "";
-            Request.EnableBuffering(); 
+            Request.EnableBuffering();
             using (var reader = new StreamReader(Request.Body, Encoding.UTF8, leaveOpen: true))
             {
                 body = await reader.ReadToEndAsync();
@@ -60,7 +60,7 @@ namespace MyDotnet.Controllers.Ns
             LogHelper.logApp.Info($"{id}-回调内容:\r\n{body}");
             data = JsonHelper.JsonToObj<OrderNotifyMsg>(body);
 
-           //加锁
+            //加锁
             var lockObject = NsInfo.GetLock(data.content.out_order_no);
             await lockObject.WaitAsync();
 
@@ -127,7 +127,7 @@ namespace MyDotnet.Controllers.Ns
                 }
             }
             catch (Exception)
-            { 
+            {
                 throw;
             }
             finally
@@ -135,18 +135,39 @@ namespace MyDotnet.Controllers.Ns
                 lockObject.Release();
             }
 
-            
+
         }
-            /// <summary>
-            /// 创建订单
-            /// </summary>
-            /// <param name="host"></param>
-            /// <param name="payType">1-微信；2-支付宝；3-云闪付</param> 
-            /// <param name="years">续费多少年</param> 
-            /// <returns></returns>
-            [AllowAnonymous]
-        [HttpGet] 
-        public async Task<MessageModel<PayCodeMsg>> CreateOrder(string host,int payType=1,int years=1)
+        /// <summary>
+        /// 订单查询
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        [AllowAnonymous]
+        [HttpGet]
+        public async Task<MessageModel<int>> CheckOrder(string id)
+        {
+            var data = await _orderService.Dal.Db.Queryable<OrderPay>().Where(t => t.id == id).Select(t => new { t.payStatus }).FirstAsync();
+            if (data == null) return MessageModel<int>.Fail("订单不存在");
+
+            if (data.payStatus == 2)
+            {
+                return MessageModel<int>.Success("订单支付成功", data.payStatus);
+            }
+            else
+            {
+                return MessageModel<int>.Fail("订单待支付中...", data.payStatus);
+            }
+        }
+        /// <summary>
+        /// 创建订单
+        /// </summary>
+        /// <param name="host"></param>
+        /// <param name="payType">1-微信；2-支付宝；3-云闪付</param> 
+        /// <param name="years">续费多少年</param> 
+        /// <returns></returns>
+        [AllowAnonymous]
+        [HttpGet]
+        public async Task<MessageModel<PayCodeMsg>> CreateOrder(string host, int payType = 1, int years = 1)
         {
             //参数
             if (years <= 0) years = 1;
@@ -154,7 +175,7 @@ namespace MyDotnet.Controllers.Ns
             if (string.IsNullOrEmpty(host))
                 host = HttpContext.Request.Host.Value;
 
-            var nightscout = await _nightscoutServices.Dal.Db.Queryable<Nightscout>().Where(t => t.url == host).Select(t => new {t.Id,t.money}).FirstAsync();
+            var nightscout = await _nightscoutServices.Dal.Db.Queryable<Nightscout>().Where(t => t.url == host).Select(t => new { t.Id, t.money }).FirstAsync();
             if (nightscout == null)
             {
                 return MessageModel<PayCodeMsg>.Fail($"未找到用户:{host}");
@@ -195,8 +216,8 @@ namespace MyDotnet.Controllers.Ns
                 {
                     orderPay.tradeNo = msg.data.mch_trade_no;
                     orderPay.payUrl = msg.data.code_url;
-                    await _orderService.Dal.Db.Updateable<OrderPay>(orderPay).UpdateColumns(t=>new { t.tradeNo,t.payUrl}).ExecuteCommandAsync();
-                    
+                    await _orderService.Dal.Db.Updateable<OrderPay>(orderPay).UpdateColumns(t => new { t.tradeNo, t.payUrl }).ExecuteCommandAsync();
+
                     _unitOfWorkManage.CommitTran();
                     return MessageModel<PayCodeMsg>.Success("创建成功", msg);
                 }
@@ -205,16 +226,16 @@ namespace MyDotnet.Controllers.Ns
                     _unitOfWorkManage.RollbackTran();
                     return MessageModel<PayCodeMsg>.Fail("创建失败", msg);
                 }
-                
+
             }
             catch (Exception)
             {
                 _unitOfWorkManage.RollbackTran();
                 throw;
             }
-            
+
         }
-        
+
 
     }
 }
