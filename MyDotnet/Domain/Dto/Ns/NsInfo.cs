@@ -93,7 +93,7 @@ namespace MyDotnet.Domain.Dto.Ns
         /// </summary>
         public static readonly string preDays = "preDays";
         /// <summary>
-        /// ns到期几天后自动删除实例
+        /// ns到期几天后还提醒过期
         /// </summary>
         public static readonly string afterDays = "afterDays";
         /// <summary>

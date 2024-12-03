@@ -115,20 +115,22 @@ namespace MyDotnet.Tasks.QuartzJob
                                 }
                                 daoqi.Insert(0, nightscout.name);
 
-                                pushData.cardMsg.keyword1 = $"NS已经到期,实例已停止服务(点我续费)";
-                                //if (lessDays > -2 && lessDays < 0)
-                                //{
-                                //    pushData.cardMsg.keyword1 = $"NS已经到期,实例已停止服务(点我续费)";
-                                //}
-                                //else
-                                //{
-                                //    //到期后就不提醒了
-                                //    continue;
-                                //}
+
+                               
+                                var afterDayConfig = await _dicService.GetDicDataOne(NsInfo.KEY, NsInfo.afterDays);
+                                var afterDay = afterDayConfig.content.ObjToInt() + lessDays;
+                                if (afterDay >= Math.Abs(lessDays))
+                                {
+                                    //到期后几天提醒
+                                    pushData.cardMsg.keyword1 = $"NS已经到期,实例已停止服务(点我续费)";
+                                }
+                                else
+                                {
+                                    //之后就不提醒了
+                                    continue;
+                                }
 
 
-                                //var afterDayConfig = await _dicService.GetDicDataOne(NsInfo.KEY, NsInfo.afterDays);
-                                //var afterDay = afterDayConfig.content.ObjToInt() + lessDays;
                                 //if (afterDay < 0)
                                 //{
                                 //    //删除
