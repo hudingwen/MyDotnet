@@ -106,8 +106,8 @@ namespace MyDotnet.Controllers.Ns
                 return MessageModel<string>.Fail($"NS已过期,请联系续费!");
             }
 
-            //var nsServer = await _nightscoutServerServices.Dal.QueryById(nightscout.serverId);
-            //await _nightscoutServices.Refresh(nightscout, nsServer);
+            var nsServer = await _nightscoutServerServices.Dal.QueryById(nightscout.serverId);
+            await _nightscoutServices.Refresh(nightscout, nsServer);
             return MessageModel<string>.Success("启动成功");
         }
         [AllowAnonymous]
