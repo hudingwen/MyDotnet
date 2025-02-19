@@ -262,12 +262,12 @@ namespace MyDotnet.Controllers.Ns
                     await _orderService.Dal.Db.Updateable<OrderPay>(orderPay).UpdateColumns(t => new { t.tradeNo, t.payUrl }).ExecuteCommandAsync();
 
                     _unitOfWorkManage.CommitTran();
-                    return MessageModel<PayCodeMsg>.Success("创建成功", msg);
+                    return MessageModel<PayCodeMsg>.Success("创建订单成功", msg);
                 }
                 else
                 {
                     _unitOfWorkManage.RollbackTran();
-                    return MessageModel<PayCodeMsg>.Fail("创建失败", msg);
+                    return MessageModel<PayCodeMsg>.Fail($"创建订单失败:{msg.message}", msg);
                 }
 
             }

@@ -305,14 +305,24 @@ namespace MyDotnet.Services.Ns
         public async Task<bool> delGuardUser(long id)
         {
             var user = await _baseRepositoryUser.QueryById(id);
-            var i = await _baseRepositoryUser.DeleteById(user.Id);
-            var task = (await _tasksQzServices.Dal.Query(t => t.ResourceId == user.Id)).FirstOrDefault();
-            if(task != null)
+            _unitOfWorkManage.BeginTran();
+            try
             {
-               await  _tasksQzServices.DeleteTask(task.Id);
+                var i = await _baseRepositoryUser.DeleteById(user.Id);
+                var task = (await _tasksQzServices.Dal.Query(t => t.ResourceId == user.Id)).FirstOrDefault();
+                if (task != null)
+                {
+                    await _tasksQzServices.DeleteTask(task.Id);
+                }
+                _unitOfWorkManage.CommitTran();
+                return i;
             }
-           
-            return i;
+            catch (Exception)
+            {
+                _unitOfWorkManage.RollbackTran();
+                throw;
+            }
+            
         }
         /// <summary>
         /// 通过api推送血糖
