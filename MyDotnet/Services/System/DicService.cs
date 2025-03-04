@@ -83,11 +83,7 @@ namespace MyDotnet.Services.System
                 var data = await _caching.GetAsync<List<DicData>>(code);
                 if (data == null)
                 {
-                    data = await _dicData.Query(t => t.pCode == code && t.Enabled == true, "codeOrder asc");
-                    if (data == null || data.Count == 0)
-                    {
-                        throw new ServiceException($"字典[{code}]不存在");
-                    }
+                    data = await _dicData.Query(t => t.pCode == code && t.Enabled == true, "codeOrder asc"); 
                     //设置缓存
                     _caching.Set($"{code}_list", data);
                 }
