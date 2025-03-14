@@ -1,6 +1,7 @@
 ﻿using Microsoft.IdentityModel.Tokens;
 using MyDotnet.Domain.Dto.System;
 using MyDotnet.Domain.Entity.Base;
+using MyDotnet.Domain.Entity.Hospital;
 using MyDotnet.Domain.Entity.Nginx;
 using MyDotnet.Domain.Entity.Ns;
 using MyDotnet.Domain.Entity.System;
@@ -43,7 +44,7 @@ namespace MyDotnet.Services.System
 
             //创建表：根据实体类CodeFirstTable1  (所有数据库都支持)
             {
-                Type type = typeof(OrderPay);
+                Type type = typeof(StudyCategory);
                 var tempAttr = Attribute.GetCustomAttribute(type, typeof(SugarTable));
                 var attrTable = string.Empty;
                 if (tempAttr != null)
@@ -56,15 +57,38 @@ namespace MyDotnet.Services.System
                     //查特性
                     if (!db.DbMaintenance.IsAnyTable(attrTable))
                     {
-                        db.CodeFirst.InitTables<OrderPay>();
+                        db.CodeFirst.InitTables<StudyCategory>();
                     }
                 }
                 else if (!db.DbMaintenance.IsAnyTable(type.Name))
                 {
                     //直接查反射名
-                    db.CodeFirst.InitTables<OrderPay>();
+                    db.CodeFirst.InitTables<StudyCategory>();
                 }
-            } 
+            }
+            {
+                Type type = typeof(StudyParameter);
+                var tempAttr = Attribute.GetCustomAttribute(type, typeof(SugarTable));
+                var attrTable = string.Empty;
+                if (tempAttr != null)
+                {
+                    attrTable = ((SugarTable)tempAttr).TableName;
+                }
+
+                if (!string.IsNullOrEmpty(attrTable))
+                {
+                    //查特性
+                    if (!db.DbMaintenance.IsAnyTable(attrTable))
+                    {
+                        db.CodeFirst.InitTables<StudyParameter>();
+                    }
+                }
+                else if (!db.DbMaintenance.IsAnyTable(type.Name))
+                {
+                    //直接查反射名
+                    db.CodeFirst.InitTables<StudyParameter>();
+                }
+            }
 
             await Task.CompletedTask;
         }
