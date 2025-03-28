@@ -158,7 +158,7 @@ namespace MyDotnet.Controllers.Ns
             NsPreRemindDto data = new NsPreRemindDto();
             data.uid = id;
 
-            var nightscout = await _nightscoutServices.Dal.Db.Queryable<Nightscout>().Where(t => t.Id == id).Select(t => new { t.name,t.startTime,t.endTime }).FirstAsync();
+            var nightscout = await _nightscoutServices.Dal.Db.Queryable<Nightscout>().Where(t => t.Id == id).Select(t => new { t.name,t.startTime,t.endTime ,t.url}).FirstAsync();
             if (nightscout == null)
             {
                 data.isCanShowExpire = false;
@@ -166,8 +166,9 @@ namespace MyDotnet.Controllers.Ns
                 return MessageModel<NsPreRemindDto>.Fail("未找到用户", data);
             }
             var preDay = await _dictService.GetDicDataOne(NsInfo.KEY, NsInfo.preDays);
-            
-           
+            var front = await _dictService.GetDicDataOne(NsInfo.KEY, NsInfo.frontPage);
+
+
             data.name = nightscout.name;
             data.startTime = nightscout.startTime;
             data.endTime = nightscout.endTime;
@@ -189,7 +190,8 @@ namespace MyDotnet.Controllers.Ns
                 data.isCanShowExpire = false;
                 data.showText = "服务正常";
             }
-
+            var txt = $"<a href=\"{front.content}/?host={nightscout.url}\" style=\"color: #00ff00;\" target=\"_blank\">点击续费</a>";
+            data.showText = $"{txt}{data.showText}";
             return MessageModel<NsPreRemindDto>.Success("获取成功",data);
         }
         
