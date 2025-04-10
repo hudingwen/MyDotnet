@@ -331,14 +331,22 @@ namespace MyDotnet.Services.Ns
         /// <param name="data"></param>
         public async Task pushBlood(NightscoutGuardUser guardUser,List<NsUploadBloodInfo> data)
         {
-            var nightscout = await _nightscoutServices.Dal.QueryById(guardUser.nid);
-            var url = $"https://{nightscout.url}/api/v1/entries"; 
-            var request = new HttpRequestMessage(HttpMethod.Post, url);
-            request.Headers.Add("API-SECRET", guardUser.nsToken);
-            request.Content = new StringContent(JsonHelper.ObjToJson(data,false), Encoding.UTF8, "application/json");
-            var res = await HttpHelper.SendAsync(request);
-            guardUser.refreshTime = DateTimeOffset.FromUnixTimeMilliseconds(data[data.Count - 1].date).UtcDateTime.ToLocalTime();
-            await _baseRepositoryUser.Update(guardUser,t=>new {t.refreshTime});
+            try
+            {
+                var nightscout = await _nightscoutServices.Dal.QueryById(guardUser.nid);
+                var url = $"https://{nightscout.url}/api/v1/entries";
+                var request = new HttpRequestMessage(HttpMethod.Post, url);
+                request.Headers.Add("API-SECRET", guardUser.nsToken);
+                request.Content = new StringContent(JsonHelper.ObjToJson(data, false), Encoding.UTF8, "application/json");
+                var res = await HttpHelper.SendAsync(request);
+                guardUser.refreshTime = DateTimeOffset.FromUnixTimeMilliseconds(data[data.Count - 1].date).UtcDateTime.ToLocalTime();
+                await _baseRepositoryUser.Update(guardUser, t => new { t.refreshTime });
+            }
+            catch(Exception ex)
+            {
+                LogHelper.logApp.Error("推送血糖异常,用户可能删除了令牌,请重新添加监护!", ex);
+                throw new Exception("推送血糖异常,用户可能删除了令牌,请重新添加监护!");
+            }
         }
 
 
