@@ -134,6 +134,20 @@ namespace MyDotnet.Domain.Dto.Ns
         public static readonly string cdnCheckFinish = "cdnCheckFinish";
 
 
+        /// <summary>
+        /// web检测错误次数提醒
+        /// </summary>
+        public static readonly string webErrorCount = "webErrorCount";
+        /// <summary>
+        /// web间隔时间
+        /// </summary>
+        public static readonly string webErrorSleep = "webErrorSleep";
+        /// <summary>
+        /// web检测主动退出
+        /// </summary>
+        public static readonly string webCheckFinish = "webCheckFinish";
+
+
 
 
 

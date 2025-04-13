@@ -28,7 +28,17 @@ namespace MyDotnet.Helper
         /// <returns></returns>
         public static async Task<string> GetAsync(string serviceAddress)
         {
+            HttpResponseMessage d = await httpClient.GetAsync(serviceAddress); 
             return await httpClient.GetStringAsync(serviceAddress);
+        }
+        /// <summary>
+        /// 发送get请求
+        /// </summary>
+        /// <param name="serviceAddress"></param>
+        /// <returns></returns>
+        public static async Task<HttpResponseMessage> GetAsyncResponse(string serviceAddress)
+        {
+            return await httpClient.GetAsync(serviceAddress); 
         }
         /// <summary>
         /// 发送post请求
