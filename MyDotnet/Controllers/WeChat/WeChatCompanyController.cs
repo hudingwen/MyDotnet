@@ -8,7 +8,7 @@ using MyDotnet.Services;
 namespace MyDotnet.Controllers.WeChat
 {
     /// <summary>
-	/// 微信公司管理
+	/// 微信客户管理
 	/// </summary>
     [Route("api/[controller]/[action]")]
     [ApiController]

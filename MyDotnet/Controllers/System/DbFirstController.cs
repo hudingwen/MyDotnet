@@ -29,8 +29,7 @@ namespace MyDotnet.Controllers.System
         public async Task<MessageModel<string>> CreateModels([FromBody]DbFirstDTO dbFirstDto)
         {
             if (!_env.IsDevelopment())
-                return Failed("当前不处于开发模式,请勿操作");
-            //"kmkm", $@"C:/my-file/Blog.Core.Model", "Blog.Core.Model.Models",new string[] { "t_code" }
+                return Failed("当前不处于开发模式,请勿操作"); 
             await _dbFirstService.CreateModels(dbFirstDto);
             return Success("创建成功");
         }

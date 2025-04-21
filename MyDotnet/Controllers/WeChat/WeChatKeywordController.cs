@@ -10,7 +10,7 @@ using MyDotnet.Services.WeChat;
 namespace MyDotnet.Controllers.WeChat
 {
     /// <summary>
-	/// 微信关键词管理
+	/// 微信公众号关键词管理
 	/// </summary>
     [Route("api/[controller]/[action]")]
     [ApiController]

@@ -1181,6 +1181,61 @@ namespace MyDotnet.Controllers.Ns
             }
             return MessageModel<string>.Success("绑定成功");
         }
+
+
+        /// <summary>
+        /// 获取小程序修复二维码
+        /// </summary>
+        /// <param name="nsid"></param>
+        /// <returns></returns>
+        [HttpGet]
+        public async Task<MessageModel<string>> GetFixQR(long nsid)
+        {
+            string url = $"https://api.weixin.qq.com/cgi-bin/stable_token";
+
+            var miniPro = await _dictService.GetDicData(NSminiProgram.KEY);
+
+            var weChatToken = new { appid = miniPro.Find(t => t.code.Equals(NSminiProgram.appid)).content, secret = miniPro.Find(t => t.code.Equals(NSminiProgram.secret)).content, grant_type = miniPro.Find(t => t.code.Equals(NSminiProgram.miniGrantType)).content };
+
+            var nsInfo = await _nightscoutServices.Dal.QueryById(nsid);
+
+
+
+            var miniAppid = miniPro.Find(t => t.code.Equals(NSminiProgram.appid)).content;
+
+            var pushCompanyCode = (await _dictService.GetDicDataOne(NsInfo.KEY, NsInfo.pushCompanyCode)).content;
+
+
+            var bindMini = await _wechatsubServices.Dal.Query(t => t.SubFromPublicAccount == miniAppid && t.IsUnBind == false && t.CompanyID == pushCompanyCode && t.SubJobID == nsInfo.Id.ObjToString());
+
+
+
+            if (bindMini == null || bindMini.Count == 0) return MessageModel<string>.Fail("未找到绑定用户");
+
+            string result;
+            using (HttpContent httpContent = new StringContent(JsonHelper.ObjToJson(weChatToken)))
+            {
+                httpContent.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+                using (var httpClient = new HttpClient())
+                {
+                    httpClient.Timeout = new TimeSpan(0, 0, 60);
+                    result = await httpClient.PostAsync(url, httpContent).Result.Content.ReadAsStringAsync();
+                    AccessTokenDto accessTokenDto = JsonHelper.JsonToObj<AccessTokenDto>(result);
+
+                    //正式版为 "release"，体验版为 "trial"，开发版为 "develop" 
+                    var jsonBind = JsonHelper.ObjToJson(new { path = $"pages/index/index?uid={bindMini[0].SubUserOpenID}", env_version = miniPro.Find(t => t.code.Equals(NSminiProgram.env)).content, width = 128 });
+                    using (HttpContent httpContentBind = new StringContent(jsonBind))
+                    {
+                        var urlBind = $"https://api.weixin.qq.com/wxa/getwxacode?access_token={accessTokenDto.access_token}";
+                        var bindstream = await httpClient.PostAsync(urlBind, httpContentBind).Result.Content.ReadAsByteArrayAsync();
+                        //return File(bindstream, "image/jpeg");
+                        return MessageModel<string>.Success("成功", Convert.ToBase64String(bindstream));
+                    }
+                }
+            }
+
+
+        }
         /// <summary>
         /// 取消绑定小程序
         /// </summary>
@@ -1217,8 +1272,13 @@ namespace MyDotnet.Controllers.Ns
         public async Task<MessageModel<WeChatModel>> CodeLogin(string code)
         {
 
-            var miniPro = await _dictService.GetDicData(NSminiProgram.KEY);
-            var res = await HttpHelper.GetAsync($"https://api.weixin.qq.com/sns/jscode2session?appid={miniPro.Find(t=>t.code.Equals(NSminiProgram.appid)).content}&secret={miniPro.Find(t => t.code.Equals(NSminiProgram.secret)).content}&js_code={code}&grant_type=authorization_code");
+            var appid = await _dictService.GetDicData(NSminiProgram.KEY, NSminiProgram.appid);
+
+            var secret = await _dictService.GetDicData(NSminiProgram.KEY, NSminiProgram.secret);
+
+            var miniGrantType = await _dictService.GetDicData(NSminiProgram.KEY, NSminiProgram.miniGrantType); 
+
+            var res = await HttpHelper.GetAsync($"https://api.weixin.qq.com/sns/jscode2session?appid={appid.content}&secret={secret.content}&js_code={code}&grant_type={miniGrantType.content}");
 
             var data = JsonHelper.JsonToObj<WeChatModel>(res);
             if (data.errcode.Equals(0))

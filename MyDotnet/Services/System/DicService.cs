@@ -95,6 +95,40 @@ namespace MyDotnet.Services.System
             }
              
         }
+
+        /// <summary>
+        /// 获取一个字典类型列表值(缓存用)
+        /// </summary>
+        /// <param name="pCode"></param>
+        /// <param name="code"></param>
+        /// <param name="isUseCache">是否查询缓存</param>
+        /// <returns></returns>
+        public async Task<DicData> GetDicData(string pCode, string code, bool isUseCache = true)
+        {
+            if (isUseCache)
+            {
+                var data = await _caching.GetAsync<List<DicData>>(pCode);
+                if (data == null)
+                {
+                    data = await _dicData.Query(t => t.pCode == pCode && t.Enabled == true, "codeOrder asc");
+                    if (data == null || data.Count == 0)
+                    {
+                        throw new ServiceException($"字典[{code}]不存在");
+                    }
+
+                    //设置缓存
+                    _caching.Set($"{code}_list", data);
+                }
+                var one = data.Find(t => t.code == code);
+                return one;
+            }
+            else
+            {
+                var data = await _dicData.Query(t => t.pCode == pCode && t.Enabled == true, "codeOrder asc");
+                return data.Find(t => t.code == code);
+            }
+
+        }
         /// <summary>
         /// 获取一个字典类型列表值(缓存用)
         /// </summary>

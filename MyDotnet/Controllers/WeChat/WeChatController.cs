@@ -9,7 +9,7 @@ using System.Text;
 namespace MyDotnet.Controllers.WeChat
 {
     /// <summary>
-    /// 微信公众号管理 
+    /// 微信公众号接口管理 
     /// </summary>   
     [Route("api/[controller]/[action]")]
     [ApiController]
