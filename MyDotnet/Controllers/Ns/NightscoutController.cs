@@ -190,8 +190,10 @@ namespace MyDotnet.Controllers.Ns
                 data.isCanShowExpire = false;
                 data.showText = "服务正常";
             }
-            var txt = $"<a href=\"{front.content}/?host={nightscout.url}\" style=\"color: #00ff00;\" target=\"_blank\">点击续费</a>";
-            data.showText = $"{txt}{data.showText}";
+
+            data.payUrl = $"{front.content}/?host={nightscout.url}";
+            data.payText = $"<a href=\"{data.payUrl}\" style=\"color: #00ff00;\" target=\"_blank\">点击续费</a>";
+            data.showText = $"{data.payText}{data.showText}";
             return MessageModel<NsPreRemindDto>.Success("获取成功",data);
         }
         
@@ -1276,7 +1278,27 @@ namespace MyDotnet.Controllers.Ns
 
             var secret = await _dictService.GetDicData(NSminiProgram.KEY, NSminiProgram.secret);
 
-            var miniGrantType = await _dictService.GetDicData(NSminiProgram.KEY, NSminiProgram.miniGrantType); 
+            var miniGrantType = await _dictService.GetDicData(NSminiProgram.KEY, NSminiProgram.miniGrantType);
+
+
+            //var weChatToken = new { appid = appid.content, secret = secret.content, grant_type = miniGrantType.content };
+
+
+            //string result;
+            //using (HttpContent httpContent = new StringContent(JsonHelper.ObjToJson(weChatToken)))
+            //{
+            //    httpContent.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+            //    using (var httpClient = new HttpClient())
+            //    {
+            //        httpClient.Timeout = new TimeSpan(0, 0, 60);
+            //        result = await httpClient.PostAsync("https://api.weixin.qq.com/cgi-bin/stable_token", httpContent).Result.Content.ReadAsStringAsync();
+            //        AccessTokenDto accessTokenDto = JsonHelper.JsonToObj<AccessTokenDto>(result);
+
+                   
+            //    }
+            //}
+
+
 
             var res = await HttpHelper.GetAsync($"https://api.weixin.qq.com/sns/jscode2session?appid={appid.content}&secret={secret.content}&js_code={code}&grant_type={miniGrantType.content}");
 
@@ -1315,9 +1337,15 @@ namespace MyDotnet.Controllers.Ns
             if (string.IsNullOrEmpty(nsid))
                 return MessageModel<SugarDTO>.Fail("无绑定信息,无法查看血糖");
             var longNsid = nsid.ObjToLong();
-            var ns = await _weChatConfigServices.Dal.Db.Queryable<Nightscout>().Where(t => t.Id == longNsid).Select(t => new { t.serviceName,t.serverId,t.probeStartTime }).FirstAsync();
+            var ns = await _weChatConfigServices.Dal.Db.Queryable<Nightscout>().Where(t => t.Id == longNsid).Select(t => new { t.serviceName,t.serverId,t.probeStartTime,t.endTime,t.url }).FirstAsync();
             if (ns ==null)
                 return MessageModel<SugarDTO>.Fail("无血糖信息可供查看,请检查是否绑定NS");
+
+            var expireInfo = await GetNsExpireInfo(longNsid);
+            if (expireInfo.success)
+            {
+                sugarDTO.expireInfo = expireInfo.response;
+            }
 
             var nsServer = await _nightscoutServerServices.Dal.Db.Queryable<NightscoutServer>().Where(t=>t.Id == ns.serverId).Select(t=> new { t.mongoServerId }).FirstAsync();
             var curNsserverMongoSsh = await _nightscoutServerServices.Dal.QueryById(nsServer.mongoServerId);
@@ -1574,7 +1602,7 @@ namespace MyDotnet.Controllers.Ns
         public List<EntriesEntity> day2 { get; set; } = new List<EntriesEntity>();
 
         public EntriesEntity curBlood { get; set; } 
-
+        public NsPreRemindDto expireInfo { get; set; }
     }
 
     public class WeChatModel

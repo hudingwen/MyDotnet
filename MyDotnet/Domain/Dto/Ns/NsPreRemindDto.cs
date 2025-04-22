@@ -23,6 +23,14 @@
         /// </summary>
         public string endTimeStr { get; set; }
         /// <summary>
+        /// 续费地址
+        /// </summary>
+        public string payUrl { get; set; }
+        /// <summary>
+        /// 续费地址
+        /// </summary>
+        public string payText { get; set; }
+        /// <summary>
         /// 显示文本
         /// </summary>
         public string showText { get; set; }
