@@ -28,7 +28,6 @@ namespace MyDotnet.Helper
         /// <returns></returns>
         public static async Task<string> GetAsync(string serviceAddress)
         {
-            HttpResponseMessage d = await httpClient.GetAsync(serviceAddress); 
             return await httpClient.GetStringAsync(serviceAddress);
         }
         /// <summary>

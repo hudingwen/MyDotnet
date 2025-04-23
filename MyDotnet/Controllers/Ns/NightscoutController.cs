@@ -1278,29 +1278,11 @@ namespace MyDotnet.Controllers.Ns
 
             var secret = await _dictService.GetDicData(NSminiProgram.KEY, NSminiProgram.secret);
 
-            var miniGrantType = await _dictService.GetDicData(NSminiProgram.KEY, NSminiProgram.miniGrantType);
+            var miniGrantType = await _dictService.GetDicData(NSminiProgram.KEY, NSminiProgram.miniGrantType); 
 
 
-            //var weChatToken = new { appid = appid.content, secret = secret.content, grant_type = miniGrantType.content };
-
-
-            //string result;
-            //using (HttpContent httpContent = new StringContent(JsonHelper.ObjToJson(weChatToken)))
-            //{
-            //    httpContent.Headers.ContentType = new MediaTypeHeaderValue("application/json");
-            //    using (var httpClient = new HttpClient())
-            //    {
-            //        httpClient.Timeout = new TimeSpan(0, 0, 60);
-            //        result = await httpClient.PostAsync("https://api.weixin.qq.com/cgi-bin/stable_token", httpContent).Result.Content.ReadAsStringAsync();
-            //        AccessTokenDto accessTokenDto = JsonHelper.JsonToObj<AccessTokenDto>(result);
-
-                   
-            //    }
-            //}
-
-
-
-            var res = await HttpHelper.GetAsync($"https://api.weixin.qq.com/sns/jscode2session?appid={appid.content}&secret={secret.content}&js_code={code}&grant_type={miniGrantType.content}");
+             
+            var res = await HttpHelper.GetAsync($"https://api.weixin.qq.com/sns/jscode2session?appid={appid.content}&secret={secret.content}&js_code={code}&grant_type=authorization_code");
 
             var data = JsonHelper.JsonToObj<WeChatModel>(res);
             if (data.errcode.Equals(0))
