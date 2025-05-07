@@ -16,6 +16,7 @@ using MyDotnet.Domain.Entity.Ns;
 using MyDotnet.Helper;
 using MyDotnet.Repository;
 using MyDotnet.Services.System;
+using System;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Security.Cryptography;
@@ -278,14 +279,25 @@ namespace MyDotnet.Services.Ns
         /// <returns></returns>
         public async Task<long> addGuardUser(NightscoutGuardUser data)
         {
-            data.refreshTime = DateTime.Now;
-            //添加
-            var i = await _baseRepositoryUser.Add(data);
-            //添加api
-            var nightscout = await _nightscoutServices.Dal.QueryById(data.nid);
-            var server = await _nightscoutServerServices.Dal.QueryById(nightscout.serverId);
-            var token = await addToken(data,nightscout, server);
-            return i;
+
+            _unitOfWorkManage.BeginTran();
+            try
+            {
+                data.refreshTime = DateTime.Now;
+                //添加
+                var i = await _baseRepositoryUser.Add(data);
+                //添加api
+                var nightscout = await _nightscoutServices.Dal.QueryById(data.nid);
+                var server = await _nightscoutServerServices.Dal.QueryById(nightscout.serverId);
+                var token = await _nightscoutServices.addToken(nightscout, server);
+                _unitOfWorkManage.CommitTran(); 
+                return i;
+            }
+            catch
+            {
+                _unitOfWorkManage.RollbackTran();
+                throw;
+            }
         }
         /// <summary>
         /// 编辑监护者
@@ -336,7 +348,7 @@ namespace MyDotnet.Services.Ns
                 var nightscout = await _nightscoutServices.Dal.QueryById(guardUser.nid);
                 var url = $"https://{nightscout.url}/api/v1/entries";
                 var request = new HttpRequestMessage(HttpMethod.Post, url);
-                request.Headers.Add("API-SECRET", guardUser.nsToken);
+                request.Headers.Add("API-SECRET", nightscout.nsToken);
                 request.Content = new StringContent(JsonHelper.ObjToJson(data, false), Encoding.UTF8, "application/json");
                 var res = await HttpHelper.SendAsync(request);
                 guardUser.refreshTime = DateTimeOffset.FromUnixTimeMilliseconds(data[data.Count - 1].date).UtcDateTime.ToLocalTime();
@@ -345,118 +357,11 @@ namespace MyDotnet.Services.Ns
             catch(Exception ex)
             {
                 LogHelper.logApp.Error("推送血糖异常,用户可能删除了令牌,请重新添加监护!", ex);
-                throw new Exception("推送血糖异常,用户可能删除了令牌,请重新添加监护!");
+                throw new Exception($"推送血糖异常,用户可能删除了令牌,请重新添加监护!=>错误信息:{ex.Message}");
             }
         }
 
 
-        public async Task<NsApiToken> addToken(NightscoutGuardUser guardUser, Nightscout nightscout,NightscoutServer server, NsApiToken nsApiToken=null)
-        {
-            var mongoServer = await _nightscoutServerServices.Dal.QueryById(server.mongoServerId);
-            
-            //创建用户
-            var grantConnectionMongoString = $"mongodb://{mongoServer.mongoLoginName}:{mongoServer.mongoLoginPassword}@{mongoServer.mongoIp}:{mongoServer.mongoPort}";
-            var client = new MongoClient(grantConnectionMongoString);
-
-            var database = client.GetDatabase(nightscout.serviceName);
-            //修改参数
-            var collection = database.GetCollection<NsApiToken>("auth_subjects"); // 集合
-            
-            NsApiToken data = new NsApiToken();
-            if(nsApiToken == null)
-            {
-                data.id = ObjectId.GenerateNewId();
-                data.name = "api";
-                data.roles = new List<string> { "admin" };
-                data.notes = "自动生成请勿删除";
-                //data.created_at = "2024-06-20T23:30:32.328Z";
-                data.created_at = DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss.fffZ");
-                await collection.InsertOneAsync(data);
-            }
-            else
-            {
-                data = nsApiToken;
-                var tokens = await collection.Find(t => true).ToListAsync();
-                bool isAdd = false;
-                foreach (var token in tokens)
-                {
-                    if (token.id.ToString().Equals(nsApiToken.id.ToString()))
-                    {
-                        //添加过了
-                        isAdd = true;
-                    }
-                }
-                if (!isAdd)
-                {
-                    await collection.InsertOneAsync(data);
-                }
-                
-            }
-            //更新
-            guardUser.nsTokenId = data.id.ToString();
-            guardUser.nsTokenName = data.name;
-            guardUser.nsToken = await GetSubjectHash(nightscout.passwd, guardUser.nsTokenId, guardUser.nsTokenName);
-            await _baseRepositoryUser.Update(guardUser);
-            //重启实例
-            await _nightscoutServices.Refresh(nightscout, server);
-            return data;
-        }
-        /// <summary>
-        /// 获取ns api的token
-        /// </summary>
-        /// <param name="apiKey">apiKey</param>
-        /// <param name="id">subject的id</param>
-        /// <param name="name">subject的name</param>
-        /// <returns></returns>
-        public async Task<string> GetSubjectHash(string apiKey, string id,string name)
-        {
-            var apiKeySHA1 = await GenHash(apiKey);
-            using (SHA1 sha1 = SHA1.Create())
-            {
-                // 将秘密键更新到哈希对象中
-                byte[] secretBytes = Encoding.UTF8.GetBytes(apiKeySHA1);
-                sha1.TransformBlock(secretBytes, 0, secretBytes.Length, secretBytes, 0);
-
-                // 将ID更新到哈希对象中
-                byte[] idBytes = Encoding.UTF8.GetBytes(id);
-                sha1.TransformFinalBlock(idBytes, 0, idBytes.Length);
-
-                // 生成哈希值并转换为十六进制字符串
-                StringBuilder sb = new StringBuilder();
-                foreach (byte b in sha1.Hash)
-                {
-                    sb.Append(b.ToString("x2"));
-                }
-                await Task.CompletedTask;
-                return name + "-" + sb.ToString().ToLower().Substring(0, 16);
-            } 
-        }
-        /// <summary>
-        /// 获取内容的hash
-        /// </summary>
-        /// <param name="data"></param>
-        /// <param name="algorithm"></param>
-        /// <returns></returns>
-        /// <exception cref="ArgumentException"></exception>
-        public async Task<string> GenHash(string data, string algorithm = "sha1")
-        {
-            using (HashAlgorithm hashAlgorithm = HashAlgorithm.Create(algorithm))
-            {
-                if (hashAlgorithm == null)
-                    throw new ArgumentException("Invalid algorithm specified");
-
-                byte[] byteData = Encoding.UTF8.GetBytes(data);
-                byte[] hash = hashAlgorithm.ComputeHash(byteData);
-
-                StringBuilder sb = new StringBuilder();
-                foreach (byte b in hash)
-                {
-                    sb.Append(b.ToString("x2"));
-                }
-                await Task.CompletedTask;
-                return sb.ToString();
-            }
-        }
         /// <summary>
         /// 获取监护账户中的用户
         /// </summary>

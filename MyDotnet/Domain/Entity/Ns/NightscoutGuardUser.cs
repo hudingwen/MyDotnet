@@ -62,21 +62,6 @@ namespace MyDotnet.Domain.Entity.Ns
         /// <summary>
         /// 刷新时间(上次获取时间)
         /// </summary>
-        public DateTime refreshTime { get; set; }
-        /// <summary>
-        /// Nightscout token主键
-        /// </summary>
-        [SugarColumn(Length = 100, IsNullable = true)]
-        public string nsTokenId { get; set; }
-        /// <summary>
-        /// Nightscout token名称(英文 10最大10位)
-        /// </summary>
-        [SugarColumn(Length = 100, IsNullable = true)]
-        public string nsTokenName { get; set; }
-        /// <summary>
-        /// Nightscout token(实际用)
-        /// </summary>
-        [SugarColumn(Length = 100, IsNullable = true)]
-        public string nsToken { get; set; }
+        public DateTime refreshTime { get; set; } 
     }
 }

@@ -183,6 +183,21 @@ namespace MyDotnet.Domain.Entity.Ns
         /// <summary>
         /// 德康服务地区 US-美国 EU-美国以外
         /// </summary>
-        public string bridgeServer { get; set; }
+        public string bridgeServer { get; set; } 
+        /// <summary>
+        /// Nightscout token主键
+        /// </summary>
+        [SugarColumn(Length = 100, IsNullable = true)]
+        public string nsTokenId { get; set; }
+        /// <summary>
+        /// Nightscout token名称(英文 10最大10位)
+        /// </summary>
+        [SugarColumn(Length = 100, IsNullable = true)]
+        public string nsTokenName { get; set; }
+        /// <summary>
+        /// Nightscout token(实际用)
+        /// </summary>
+        [SugarColumn(Length = 100, IsNullable = true)]
+        public string nsToken { get; set; }
     }
 }

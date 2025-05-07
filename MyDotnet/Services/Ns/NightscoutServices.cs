@@ -17,6 +17,7 @@ using MyDotnet.Services.System;
 using MyDotnet.Services.WeChat;
 using Renci.SshNet;
 using System;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace MyDotnet.Services.Ns
@@ -50,6 +51,137 @@ namespace MyDotnet.Services.Ns
             _dicService = dicService;
             _weChatConfigServices = weChatConfigServices;
             _env = env;
+        }
+
+        public async Task<NsApiToken> addToken(Nightscout nightscout, NightscoutServer server,bool tokenForceRefresh=false)
+        {
+            var mongoServer = await _nightscoutServerServices.Dal.QueryById(server.mongoServerId);
+
+            //创建用户
+            var grantConnectionMongoString = $"mongodb://{mongoServer.mongoLoginName}:{mongoServer.mongoLoginPassword}@{mongoServer.mongoIp}:{mongoServer.mongoPort}";
+            var client = new MongoClient(grantConnectionMongoString);
+
+            var database = client.GetDatabase(nightscout.serviceName);
+            //修改参数
+            var collection = database.GetCollection<NsApiToken>("auth_subjects"); // 集合
+
+
+            var tokens = await collection.Find(t => true).ToListAsync();
+
+
+            NsApiToken data = new NsApiToken();
+
+
+            if (string.IsNullOrEmpty(nightscout.nsTokenId) || tokenForceRefresh)
+            {
+                data.id = ObjectId.GenerateNewId();
+            }
+            else
+            {
+                data.id = ObjectId.Parse(nightscout.nsTokenId);
+            }
+
+
+            bool isAdd = false;
+            foreach (var token in tokens)
+            {
+                if (token.id.ToString().Equals(nightscout.nsTokenId))
+                {
+                    //添加过了
+                    isAdd = true;
+                }
+            }
+            if (!isAdd)
+            {
+                data.name = "admin";
+                data.roles = new List<string> { "admin" };
+                data.notes = "自动生成请勿删除";
+                //data.created_at = "2024-06-20T23:30:32.328Z";
+                data.created_at = DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss.fffZ");
+                await collection.InsertOneAsync(data);
+            }
+            if (tokenForceRefresh && !string.IsNullOrEmpty(nightscout.nsTokenId))
+            {
+                // 构建过滤器
+                var filter = Builders<NsApiToken>.Filter.Eq(x => x.id, ObjectId.Parse(nightscout.nsTokenId));
+
+                // 执行删除操作
+                var result = await collection.DeleteOneAsync(filter);
+            }
+            //更新
+            nightscout.nsTokenId = data.id.ToString();
+            nightscout.nsTokenName = data.name;
+            nightscout.nsToken = await GetSubjectHash(nightscout.passwd, nightscout.nsTokenId, nightscout.nsTokenName);
+            await Dal.Update(nightscout);
+            //重启实例
+            try
+            {
+                if (!isAdd) await Refresh(nightscout, server);
+            }
+            catch (Exception ex)
+            {
+                LogHelper.logApp.Error("重启ns失败",ex);
+            }
+            return data;
+        }
+
+
+
+        /// <summary>
+        /// 获取ns api的token
+        /// </summary>
+        /// <param name="apiKey">apiKey</param>
+        /// <param name="id">subject的id</param>
+        /// <param name="name">subject的name</param>
+        /// <returns></returns>
+        public async Task<string> GetSubjectHash(string apiKey, string id, string name)
+        {
+            var apiKeySHA1 = await GenHash(apiKey);
+            using (SHA1 sha1 = SHA1.Create())
+            {
+                // 将秘密键更新到哈希对象中
+                byte[] secretBytes = Encoding.UTF8.GetBytes(apiKeySHA1);
+                sha1.TransformBlock(secretBytes, 0, secretBytes.Length, secretBytes, 0);
+
+                // 将ID更新到哈希对象中
+                byte[] idBytes = Encoding.UTF8.GetBytes(id);
+                sha1.TransformFinalBlock(idBytes, 0, idBytes.Length);
+
+                // 生成哈希值并转换为十六进制字符串
+                StringBuilder sb = new StringBuilder();
+                foreach (byte b in sha1.Hash)
+                {
+                    sb.Append(b.ToString("x2"));
+                }
+                await Task.CompletedTask;
+                return name + "-" + sb.ToString().ToLower().Substring(0, 16);
+            }
+        }
+        /// <summary>
+        /// 获取内容的hash
+        /// </summary>
+        /// <param name="data"></param>
+        /// <param name="algorithm"></param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentException"></exception>
+        public async Task<string> GenHash(string data, string algorithm = "sha1")
+        {
+            using (HashAlgorithm hashAlgorithm = HashAlgorithm.Create(algorithm))
+            {
+                if (hashAlgorithm == null)
+                    throw new ArgumentException("Invalid algorithm specified");
+
+                byte[] byteData = Encoding.UTF8.GetBytes(data);
+                byte[] hash = hashAlgorithm.ComputeHash(byteData);
+
+                StringBuilder sb = new StringBuilder();
+                foreach (byte b in hash)
+                {
+                    sb.Append(b.ToString("x2"));
+                }
+                await Task.CompletedTask;
+                return sb.ToString();
+            }
         }
 
         /// <summary>

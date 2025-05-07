@@ -77,6 +77,26 @@ namespace MyDotnet.Controllers.Ns
             _codeService = codeService;
         }
 
+        /// <summary>
+        /// 初始化ns api token
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="tokenForceRefresh">是否强制初始化api</param>
+        /// <returns></returns>
+        [HttpGet]
+        public async Task<MessageModel<string>> InitNsApiToken(long id, bool tokenForceRefresh)
+        {
+
+            var nightscout = await _nightscoutServices.Dal.QueryById(id);
+            if(nightscout == null)
+                MessageModel<string>.Fail("用户不存在");
+            var server = await _nightscoutServerServices.Dal.QueryById(nightscout.serverId);
+            await _nightscoutServices.addToken(nightscout, server, tokenForceRefresh);
+            return MessageModel<string>.Success("操作成功");
+        }
+
+
+
         [AllowAnonymous]
         [HttpGet]
         public async Task<MessageModel<string>> StartNS(string host,string key, string code, string pass)
@@ -445,7 +465,7 @@ namespace MyDotnet.Controllers.Ns
                     request.Id = id;
                     await _nightscoutServerServices.Dal.Update(nsserver);
                     await _dictService.PutDicType(curServiceNameSerial);
-                    _unitOfWorkManage.CommitTran();
+                   
 
                     data.success = id > 0;
                     if (data.success)
@@ -463,8 +483,9 @@ namespace MyDotnet.Controllers.Ns
                     {
                         data.msg = "添加失败";
                     }
+                    _unitOfWorkManage.CommitTran();
                 }
-                catch (Exception)
+                catch
                 {
                     _unitOfWorkManage.RollbackTran();
                     throw;
