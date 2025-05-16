@@ -99,7 +99,7 @@ namespace MyDotnet.Controllers.System
             if (!string.IsNullOrEmpty(key))
             {
                 whereFind = whereFind.And(t => t.code.Contains(key) 
-                || t.name.Contains(key) 
+                || t.name.Contains(key)  
                 || t.content.Contains(key)
                 || t.content2.Contains(key)
                 || t.content3.Contains(key)
@@ -224,6 +224,7 @@ namespace MyDotnet.Controllers.System
             if (!string.IsNullOrEmpty(key))
             {
                 whereFind = whereFind.And(t => t.name.Contains(key)
+                || t.code.Contains(key)
                 || t.content.Contains(key)
                 || t.content2.Contains(key)
                 || t.content3.Contains(key)
