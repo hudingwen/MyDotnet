@@ -1056,7 +1056,7 @@ EOF
             var curNsserverMongoSsh = await _nightscoutServerServices.Dal.QueryById(nsserver.mongoServerId);
             var connectionMongoString = $"mongodb://{curNsserverMongoSsh.mongoLoginName}:{curNsserverMongoSsh.mongoLoginPassword}@{curNsserverMongoSsh.mongoIp}:{curNsserverMongoSsh.mongoPort}/{nightscout.serviceName}";
 
-            args.Add($"-e MONGO_CONNECTION={connectionMongoString}");
+            args.Add($"-e MONGO_CONNECTION='{connectionMongoString}'");
             args.Add($"-e API_SECRET={nightscout.passwd}");
             //args.Add($"-v {path}/logo2.png:/opt/app/static/images/logo2.png");
             //args.Add($"-v {path}/boluswizardpreview.js:/opt/app/lib/plugins/boluswizardpreview.js");
@@ -1127,7 +1127,8 @@ EOF
             args.Add($"-e name='{(cusInfo == null ? nsInfo.Find(t => NsInfo.CUSTOM_TITLE.Equals(t.code)).content : cusInfo.name)}'");
             args.Add($"-e logo='{(cusInfo == null ? "" : cusInfo.logo)}'");
             //到期检测
-            args.Add($"-e preCheckUrl='{checkUrl.content}'");
+            if(!string.IsNullOrEmpty(checkUrl.content))
+                args.Add($"-e preCheckUrl='{checkUrl.content}'");
             //基础率显示默认
             args.Add($"-e BASAL_RENDER='default'");
              
@@ -1135,10 +1136,15 @@ EOF
 
             //苹果远程指令
             var appleRemote = await _dicService.GetDicData(AppleRemote.KEY);
-            args.Add($"-e LOOP_APNS_KEY_ID='{appleRemote.Find(t => AppleRemote.apKeyID.Equals(t.code)).content}'");
-            args.Add($"-e LOOP_APNS_KEY=$'{appleRemote.Find(t => AppleRemote.apKey.Equals(t.code)).content}'");
-            args.Add($"-e LOOP_DEVELOPER_TEAM_ID='{appleRemote.Find(t => AppleRemote.apTeamID.Equals(t.code)).content}'");
-            args.Add($"-e LOOP_PUSH_SERVER_ENVIRONMENT='{appleRemote.Find(t => AppleRemote.apEnv.Equals(t.code)).content}'");
+            if (!string.IsNullOrEmpty(appleRemote.Find(t => AppleRemote.apTeamID.Equals(t.code)).content)) 
+            {
+                args.Add($"-e LOOP_APNS_KEY_ID='{appleRemote.Find(t => AppleRemote.apKeyID.Equals(t.code)).content}'");
+                args.Add($"-e LOOP_APNS_KEY=$'{appleRemote.Find(t => AppleRemote.apKey.Equals(t.code)).content}'");
+                args.Add($"-e LOOP_DEVELOPER_TEAM_ID='{appleRemote.Find(t => AppleRemote.apTeamID.Equals(t.code)).content}'");
+                args.Add($"-e LOOP_PUSH_SERVER_ENVIRONMENT='{appleRemote.Find(t => AppleRemote.apEnv.Equals(t.code)).content}'");
+            }
+
+            
 
             //康德远程
             args.Add($"-e BRIDGE_USER_NAME={nightscout.bridgeUserName}");

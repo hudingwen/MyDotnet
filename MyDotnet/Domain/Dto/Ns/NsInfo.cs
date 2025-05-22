@@ -148,6 +148,16 @@ namespace MyDotnet.Domain.Dto.Ns
         public static readonly string webCheckFinish = "webCheckFinish";
 
 
+        /// <summary>
+        /// ns实例用户密码长度
+        /// </summary>
+        public static readonly string nsPasswordLength = "nsPasswordLength";
+        /// <summary>
+        /// ns用户默认是否高低报警 
+        /// </summary>
+        public static readonly string nsWaring = "nsWaring";
+        
+
 
 
 

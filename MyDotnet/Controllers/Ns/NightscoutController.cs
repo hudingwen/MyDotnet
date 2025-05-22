@@ -414,10 +414,10 @@ namespace MyDotnet.Controllers.Ns
                 {
                     //新增实例
                     var curSerial = curServiceNameSerial.content.ObjToInt();
-                    if (curSerial <= 0)
-                    {
-                        return MessageModel<string>.Fail("实例序列初始序列未设置");
-                    }
+                    //if (curSerial <= 0)
+                    //{
+                    //    return MessageModel<string>.Fail("实例序列初始序列未设置");
+                    //}
                     curSerial += 1;
                     curServiceNameSerial.content = curSerial.ObjToString();
                     //设置服务名称
@@ -440,12 +440,15 @@ namespace MyDotnet.Controllers.Ns
                     }
                     if (string.IsNullOrEmpty(request.passwd))
                     {
-                        request.passwd = GenerateNumber(5);
+                        var nsPasswordLength = await _dictService.GetDicData(NsInfo.KEY, NsInfo.nsPasswordLength);
+                        var passLength = nsPasswordLength.content.ObjToInt();
+                        if (passLength < 5) passLength = 5;
+                        request.passwd = GenerateNumber(passLength);
                     }
                     if (string.IsNullOrEmpty(request.url))
                     {
-                        var nsInfo = await _dictService.GetDicData(NsInfo.KEY);
-                        request.url = string.Format(nsInfo.Find(t=>t.code.Equals(NsInfo.templateUrl)).content , GenerateNumber(3) + padName);
+                        var templateUrl = await _dictService.GetDicData(NsInfo.KEY, NsInfo.templateUrl);
+                        request.url = string.Format(templateUrl.content , GenerateNumber(3) + padName);
                     }
                     if (string.IsNullOrEmpty(request.cdn))
                     {

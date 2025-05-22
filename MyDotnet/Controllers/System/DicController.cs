@@ -8,6 +8,7 @@ using MyDotnet.Helper;
 using MyDotnet.Repository;
 using MyDotnet.Services;
 using MyDotnet.Services.System;
+using System.Collections.Generic;
 
 namespace MyDotnet.Controllers.System
 {
@@ -53,12 +54,24 @@ namespace MyDotnet.Controllers.System
         /// 获取字典类型列表(缓存用)
         /// </summary>
         /// <param name="code"></param>
+        /// <param name="key">子集</param>
         /// <returns></returns>
         [HttpGet]
-        public async Task<MessageModel<List<DicData>>> GetDicData(string code)
+        public async Task<MessageModel<List<DicData>>> GetDicData(string code,string key)
         {
-            var data = await _dicService.GetDicData(code);
-            return Success(data);
+            if (string.IsNullOrEmpty(key))
+            {
+                var data = await _dicService.GetDicData(code);
+                return Success(data);
+            }
+            else
+            {
+                List<DicData> ls = new List<DicData>();
+                var data = await _dicService.GetDicData(code,key);
+                ls.Add(data);
+                return Success(ls);
+            }
+            
         }
 
         /// <summary>
