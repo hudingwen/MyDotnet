@@ -53,6 +53,52 @@ namespace MyDotnet.Services.Ns
             _env = env;
         }
 
+        public async Task<double> GetServerMemoryPercent(string url)
+        {
+            try
+            {
+                var metrics = await GetServerMetrics(url);
+
+                if (metrics.TryGetValue("node_memory_MemTotal_bytes", out var totalStr) && metrics.TryGetValue("node_memory_MemAvailable_bytes", out var availableStr))
+                {
+                    var total = totalStr.ObjToMoney();
+                    var available = availableStr.ObjToMoney();
+                    double used = total - available;
+                    double usage = used / total * 100;
+                    return Math.Round(usage, 2);
+                }
+            }
+            catch (Exception ex)
+            {
+                LogHelper.logApp.Error("远程资源获取失败", ex);
+            }
+
+            return -1;
+        }
+        static async Task<Dictionary<string, string>> GetServerMetrics(string url)
+        {
+            var result = new Dictionary<string, string>();
+
+            var response = await HttpHelper.GetAsync(url);
+
+            foreach (var line in response.Split('\n'))
+            {
+                // 忽略注释和空行
+                if (string.IsNullOrWhiteSpace(line) || line.StartsWith("#"))
+                    continue;
+
+                var splitIndex = line.LastIndexOf(' ');
+                if (splitIndex > 0)
+                {
+                    var key = line.Substring(0, splitIndex).Trim();
+                    var valueStr = line.Substring(splitIndex + 1).Trim();
+                    result[key] = valueStr;
+                }
+            }
+
+            return result;
+        }
+
         public async Task<NsApiToken> addToken(Nightscout nightscout, NightscoutServer server,bool tokenForceRefresh=false)
         {
             var mongoServer = await _nightscoutServerServices.Dal.QueryById(server.mongoServerId);

@@ -875,8 +875,16 @@ namespace MyDotnet.Controllers.Ns
                 whereExpression = whereExpression.And(t => t.serverName.Contains(key));
             }
             var data = await _nightscoutServerServices.Dal.QueryPage(whereExpression, page, size,t=>t.serverName, OrderByType.Asc);
+            foreach (var item in data.data)
+            {
+               var memory =  await _nightscoutServices.GetServerMemoryPercent($"http://{item.serverIp}:{item.nodeExportPort}/metrics");
+               item.memory = memory;
+            }
             return MessageModel<PageModel<NightscoutServer>>.Success("获取成功", data);
         }
+
+        
+
         [HttpDelete]
         public async Task<MessageModel<string>> delNsServer(string id)
         {

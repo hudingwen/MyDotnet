@@ -102,5 +102,17 @@ namespace MyDotnet.Domain.Entity.Ns
         /// 网关节点服务器id(ssh)(暂未启用)
         /// </summary>
         public long nginxServerId { get; set; }
+        /// <summary>
+        /// 网关节点服务器id(ssh)(暂未启用)
+        /// </summary>
+        public int nodeExportPort { get; set; } 
+        /// <summary>
+        /// 内存占用百分比
+        /// </summary>
+        [SugarColumn(IsIgnore = true)]
+        public double memory { get; set; }
+        
+
+
     }
 }
