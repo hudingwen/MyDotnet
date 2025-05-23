@@ -1078,6 +1078,11 @@ namespace MyDotnet.Controllers.Ns
 
             var miniPro = await _dictService.GetDicData(NSminiProgram.KEY);
 
+            if(string.IsNullOrEmpty(miniPro.Find(t => t.code.Equals(NSminiProgram.appid)).content))
+            {
+                return MessageModel<string>.Fail("小程序appid还未配置完成!");
+            }
+
             var weChatToken = new { appid = miniPro.Find(t=>t.code.Equals(NSminiProgram.appid)).content , secret = miniPro.Find(t => t.code.Equals(NSminiProgram.secret)).content, grant_type = miniPro.Find(t => t.code.Equals(NSminiProgram.miniGrantType)).content };
 
             var nsInfo = await _nightscoutServices.Dal.QueryById(nsid);
