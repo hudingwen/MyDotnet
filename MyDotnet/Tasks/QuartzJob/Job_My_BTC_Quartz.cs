@@ -51,24 +51,26 @@ namespace MyDotnet.Tasks.QuartzJob
             {
 
 
-
-                //web列表
-                var btcInfo = await _dicService.GetDicData(MyBTC.KEY, MyBTC.address);
+                //web列表 
                 var publicAccount = await _dicService.GetDicData(MyBTC.KEY, MyBTC.publicAccount);
                 var publicCompany = await _dicService.GetDicData(MyBTC.KEY, MyBTC.publicCompany);
                 var publicUser = await _dicService.GetDicData(MyBTC.KEY, MyBTC.publicUser);
-                var publicTemplate = await _dicService.GetDicData(MyBTC.KEY, MyBTC.publicTemplate);
-                var btc = await _dicService.GetDicData(MyBTC.KEY, MyBTC.btc);
+                var publicTemplate = await _dicService.GetDicData(MyBTC.KEY, MyBTC.publicTemplate); 
 
-                var wallet =  await HttpHelper.GetAsync($"https://api.blockcypher.com/v1/btc/main/addrs/{btcInfo.content}/balance");
+                var model = await _tasksQzServices.Dal.QueryById(jobid);
+
+                var wallet =  await HttpHelper.GetAsync($"https://api.blockcypher.com/v1/btc/main/addrs/{model.JobParams.ObjToString().Trim()}/balance");
+
+                
+
                 var walletInfo =  JsonHelper.JsonToObj<BtcWalletInfo>(wallet);
                 if (string.IsNullOrEmpty(walletInfo.address)) throw new Exception($"请求失败:{wallet}");
                 var myMoney = walletInfo.final_balance.ObjToLong() / 100_000_000m;
-                var oldMoney = btc.content.ObjToDecimal();
+                var oldMoney = model.StoreData.ObjToDecimal();
                 if (!oldMoney.Equals(myMoney))
                 {
-                    btc.content = myMoney.ToString();
-                    await  _dicService.PutDicData(btc); 
+                    model.StoreData = myMoney.ToString();
+                    await _tasksQzServices.Dal.Update(model);
                     try
                     {
                         var pushData = new WeChatCardMsgDataDto();
