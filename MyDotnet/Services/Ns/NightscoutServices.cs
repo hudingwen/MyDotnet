@@ -145,6 +145,9 @@ namespace MyDotnet.Services.Ns
                 //data.created_at = "2024-06-20T23:30:32.328Z";
                 data.created_at = DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss.fffZ");
                 await collection.InsertOneAsync(data);
+
+
+                nightscout.nsTokenName = data.name;
             }
             if (tokenForceRefresh && !string.IsNullOrEmpty(nightscout.nsTokenId))
             {
@@ -156,7 +159,6 @@ namespace MyDotnet.Services.Ns
             }
             //更新
             nightscout.nsTokenId = data.id.ToString();
-            nightscout.nsTokenName = data.name;
             nightscout.nsToken = await GetSubjectHash(nightscout.passwd, nightscout.nsTokenId, nightscout.nsTokenName);
             await Dal.Update(nightscout);
             //重启实例
