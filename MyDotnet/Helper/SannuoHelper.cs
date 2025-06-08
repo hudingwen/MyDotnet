@@ -18,8 +18,9 @@ namespace MyDotnet.Helper
         /// <returns></returns>
         public static async Task<SannuoSmsReturnDto> sendSms(string phone)
         {
-            var request = new HttpRequestMessage(HttpMethod.Post, $"https://ican.sinocare.com/api/sino-notice/v1/message/send-validate-sms");
+            //var request = new HttpRequestMessage(HttpMethod.Post, $"https://ican.sinocare.com/api/sino-notice/v1/message/send-validate-sms");
 
+            var request = new HttpRequestMessage(HttpMethod.Post, $"https://ican.sinocare.com/api/sino-notice/v1/message/validate-sms-by-encrypt"); 
             SannuoSmsDto sannuoSmsDto = new SannuoSmsDto();
             sannuoSmsDto.phone = phone;
             sannuoSmsDto.nonce = phone;

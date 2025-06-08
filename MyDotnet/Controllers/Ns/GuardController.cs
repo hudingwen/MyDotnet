@@ -77,7 +77,7 @@ namespace MyDotnet.Controllers.Ns
             }
             else
             {
-                return MessageModel<string>.Fail("发送失败", res.msg);
+                return MessageModel<string>.Fail($"发送失败=>{res.msg}");
             }
         }
         /// <summary>
