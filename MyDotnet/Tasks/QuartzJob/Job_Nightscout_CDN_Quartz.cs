@@ -1,6 +1,4 @@
-﻿
-using Amazon.Runtime.Internal.Util;
-using MyDotnet.Domain.Attr;
+﻿using MyDotnet.Domain.Attr;
 using MyDotnet.Domain.Dto.Ns;
 using MyDotnet.Domain.Dto.System;
 using MyDotnet.Domain.Dto.WeChat;

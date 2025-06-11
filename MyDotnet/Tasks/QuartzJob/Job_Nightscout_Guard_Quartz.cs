@@ -1,9 +1,5 @@
-﻿
-using Amazon.Runtime.Internal.Util;
-using AppStoreConnect.Model;
-using MyDotnet.Config;
+﻿using MyDotnet.Config;
 using MyDotnet.Domain.Attr;
-using MyDotnet.Domain.Dto.Apple;
 using MyDotnet.Domain.Dto.Ns;
 using MyDotnet.Domain.Dto.System;
 using MyDotnet.Domain.Dto.WeChat;
@@ -16,9 +12,6 @@ using MyDotnet.Services.Ns;
 using MyDotnet.Services.System;
 using MyDotnet.Services.WeChat;
 using Quartz;
-using System.Net.NetworkInformation;
-using System.Security.Cryptography;
-using static Quartz.Logging.OperationName;
 
 namespace MyDotnet.Tasks.QuartzJob
 {

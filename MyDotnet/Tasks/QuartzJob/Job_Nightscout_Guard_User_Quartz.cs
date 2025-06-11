@@ -1,24 +1,14 @@
-﻿
-using Amazon.Runtime.Internal.Util;
-using AppStoreConnect.Model;
-using MyDotnet.Domain.Attr;
-using MyDotnet.Domain.Dto.Apple;
+﻿using MyDotnet.Domain.Attr;
 using MyDotnet.Domain.Dto.ExceptionDomain;
 using MyDotnet.Domain.Dto.Ns;
 using MyDotnet.Domain.Dto.System;
-using MyDotnet.Domain.Dto.WeChat;
 using MyDotnet.Domain.Entity.Ns;
 using MyDotnet.Domain.Entity.System;
 using MyDotnet.Helper;
 using MyDotnet.Repository;
 using MyDotnet.Services;
 using MyDotnet.Services.Ns;
-using MyDotnet.Services.System;
-using MyDotnet.Services.WeChat;
 using Quartz;
-using System;
-using System.Net.NetworkInformation;
-using System.Security.Cryptography;
 
 namespace MyDotnet.Tasks.QuartzJob
 {

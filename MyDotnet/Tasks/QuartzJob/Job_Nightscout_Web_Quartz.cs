@@ -1,8 +1,5 @@
-﻿
-using Amazon.Runtime.Internal.Util;
-using MyDotnet.Domain.Attr;
+﻿using MyDotnet.Domain.Attr;
 using MyDotnet.Domain.Dto.Ns;
-using MyDotnet.Domain.Dto.System;
 using MyDotnet.Domain.Dto.WeChat;
 using MyDotnet.Domain.Entity.Ns;
 using MyDotnet.Domain.Entity.System;
@@ -12,7 +9,6 @@ using MyDotnet.Services.Ns;
 using MyDotnet.Services.System;
 using MyDotnet.Services.WeChat;
 using Quartz;
-using System.Net.NetworkInformation;
 
 namespace MyDotnet.Tasks.QuartzJob
 {

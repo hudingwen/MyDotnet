@@ -1,10 +1,5 @@
-﻿using Amazon.Runtime.Internal;
-using Azure.Core;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Hosting;
-using MongoDB.Bson;
-using MongoDB.Driver.Core.Servers;
 using MyDotnet.Controllers.Base;
 using MyDotnet.Domain.Dto.Ns;
 using MyDotnet.Domain.Dto.System;
@@ -14,10 +9,8 @@ using MyDotnet.Repository;
 using MyDotnet.Services;
 using MyDotnet.Services.Ns;
 using System.Linq.Expressions;
-using System.Numerics;
 using System.Security.Cryptography;
 using System.Text;
-using System.Text.Json;
 
 namespace MyDotnet.Controllers.Ns
 {

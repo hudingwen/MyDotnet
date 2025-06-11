@@ -10,13 +10,9 @@ namespace MyDotnet.Domain.Dto.System
     /// </summary>
     public class ApiResponseHandler : AuthenticationHandler<AuthenticationSchemeOptions>
     {
-        public ApiResponseHandler(IOptionsMonitor<AuthenticationSchemeOptions> options
-            , ILoggerFactory logger
-            , UrlEncoder encoder
-            , ISystemClock clock)
-            : base(options, logger, encoder, clock)
+        public ApiResponseHandler(IOptionsMonitor<AuthenticationSchemeOptions> options , ILoggerFactory logger, UrlEncoder encoder) 
+            : base(options, logger, encoder)
         {
-
         }
 
         protected override Task<AuthenticateResult> HandleAuthenticateAsync()

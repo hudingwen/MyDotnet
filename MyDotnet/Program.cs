@@ -117,13 +117,8 @@ namespace MyDotnet
             app.UseAuthentication();
             //授权
             app.UseAuthorization();
-            //路由端点
-            app.UseEndpoints(endpoints =>
-            {
-                endpoints.MapControllerRoute(
-                    name: "default",
-                    pattern: "{controller=Home}/{action=Index}/{id?}");
-            });
+            // 顶层路由注册：代替 UseEndpoints
+            app.MapControllerRoute( name: "default",  pattern: "{controller=Home}/{action=Index}/{id?}");
 
             app.Run();
         }

@@ -1,14 +1,12 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
 	<PropertyGroup>
-		<TargetFramework>net6.0</TargetFramework>
+		<TargetFramework>net8.0</TargetFramework>
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
 		<DockerfileContext>.</DockerfileContext>
-		<GenerateDocumentationFile>True</GenerateDocumentationFile>
-		<ServerGarbageCollection>true</ServerGarbageCollection>
-		<ConcurrentGarbageCollection>false</ConcurrentGarbageCollection>
+		<GenerateDocumentationFile>True</GenerateDocumentationFile> 
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -21,20 +19,20 @@
 
 	<ItemGroup>
 		<PackageReference Include="AppStoreConnect.Net" Version="0.1.1" />
-		<PackageReference Include="AutoMapper" Version="13.0.1" />
-		<PackageReference Include="log4net" Version="3.0.3" />
-		<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="6.0.27" />
-		<PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="6.0.27" />
-		<PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.0" />
+		<PackageReference Include="AutoMapper" Version="14.0.0" />
+		<PackageReference Include="Binance.Net" Version="11.1.0" />
+		<PackageReference Include="CryptoExchange.Net" Version="9.1.0" />
+		<PackageReference Include="log4net" Version="3.1.0" />
+		<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.17" />
+		<PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="8.0.17" />
 		<PackageReference Include="Microsoft.Extensions.Logging.Log4Net.AspNetCore" Version="8.0.0" />
-		<PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" Version="6.35.0" />
-		<PackageReference Include="MongoDB.Driver" Version="2.24.0" />
-		<PackageReference Include="Quartz" Version="3.8.1" />
-		<PackageReference Include="SixLabors.ImageSharp.Drawing" Version="2.1.2" />
-		<PackageReference Include="SqlSugarCore" Version="5.1.4.146" />
-		<PackageReference Include="SSH.NET" Version="2024.0.0" />
-		<PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
-		<PackageReference Include="Swashbuckle.AspNetCore.Filters" Version="8.0.1" />
+		<PackageReference Include="MongoDB.Driver" Version="3.4.0" />
+		<PackageReference Include="Quartz" Version="3.14.0" />
+		<PackageReference Include="SixLabors.ImageSharp.Drawing" Version="2.1.6" />
+		<PackageReference Include="SqlSugarCore" Version="5.1.4.196" />
+		<PackageReference Include="SSH.NET" Version="2025.0.0" />
+		<PackageReference Include="Swashbuckle.AspNetCore" Version="8.1.4" />
+		<PackageReference Include="Swashbuckle.AspNetCore.Filters" Version="8.0.3" />
 		<PackageReference Include="System.Text.RegularExpressions" Version="4.3.1" />
 	</ItemGroup>
 
