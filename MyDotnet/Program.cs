@@ -87,10 +87,10 @@ namespace MyDotnet
             builder.SetQuartz();
             //初始任务
             builder.SetHostJob();
-            //开启同步读
-            builder.Services.Configure<KestrelServerOptions>(x => x.AllowSynchronousIO = true)
-                            .Configure<IISServerOptions>(x => x.AllowSynchronousIO = true);
-            //取消请求正文最小数据速率
+            //开启同步读 同步 IO 会阻塞线程池线程，降低性能，特别是在高并发下可能造成吞吐量下降或线程枯竭。
+            //builder.Services.Configure<KestrelServerOptions>(x => x.AllowSynchronousIO = true)
+            //                .Configure<IISServerOptions>(x => x.AllowSynchronousIO = true);
+            //取消请求正文最小数据速率 提高慢速请求兼容性，但降低一定安全性。
             builder.WebHost.UseKestrel(o =>
             {
                 o.Limits.MinRequestBodyDataRate = null;
