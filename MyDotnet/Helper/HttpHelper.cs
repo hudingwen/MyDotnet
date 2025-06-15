@@ -12,15 +12,13 @@ namespace MyDotnet.Helper
     /// </summary>
     public static class HttpHelper
     {
-        private static HttpClient httpClient { get
-            {
-                using (var scope = AppHelper.appService.CreateScope())
-                {
-                    var data = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>();
-                    return data.CreateClient();
-                }
-            }
+        static HttpHelper()
+        {
+            using var scope = AppHelper.appService.CreateScope();
+            httpClient = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>().CreateClient();
+
         }
+        private static HttpClient httpClient { get; set; }
         /// <summary>
         /// 发送get请求
         /// </summary>
