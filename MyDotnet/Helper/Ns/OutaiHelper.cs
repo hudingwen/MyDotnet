@@ -7,7 +7,7 @@ using NetTaste;
 using System.IdentityModel.Tokens.Jwt;
 using System.Text;
 
-namespace MyDotnet.Helper
+namespace MyDotnet.Helper.Ns
 {
     /// <summary>
     /// 欧泰帮助类

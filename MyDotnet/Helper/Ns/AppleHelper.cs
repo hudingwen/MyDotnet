@@ -4,7 +4,7 @@ using JWT.Algorithms;
 using JWT.Builder;
 using MyDotnet.Domain.Dto.Apple;
 
-namespace MyDotnet.Helper
+namespace MyDotnet.Helper.Ns
 {
 
 
@@ -59,7 +59,7 @@ namespace MyDotnet.Helper
         /// <returns></returns>
         public static async Task<DevicesListDto> GetDevices(string token, int page = 1, int size = 10,string status="", string udid = "")
         {
-            var offset = $"{{\"offset\":\"{((page - 1) * size)}\"}}";
+            var offset = $"{{\"offset\":\"{(page - 1) * size}\"}}";
             string base64Str = StringHelper.StringToBase64(offset);
             //filter[name]=自动配置&
             var httpRequestMessage = new HttpRequestMessage(HttpMethod.Get, baseUrl + $"/v1/devices?sort=-name{(string.IsNullOrEmpty(status)?"": "&filter[status]="+ status)}{(string.IsNullOrEmpty(udid) ? "" : "&filter[udid]=" + udid)}&limit={size}{(page == 1 ? "" : "&cursor=" + base64Str)}");
@@ -83,7 +83,7 @@ namespace MyDotnet.Helper
         public static async Task<ProfilesListDto> GetProfiles(string token,int page=1,int size=10)
         {
             //{"offset":"2"}
-            var offset = $"{{\"offset\":\"{((page - 1) * size)}\"}}";
+            var offset = $"{{\"offset\":\"{(page - 1) * size}\"}}";
             string base64Str = StringHelper.StringToBase64(offset);
             var httpRequestMessage = new HttpRequestMessage(HttpMethod.Get, baseUrl + $"/v1/profiles?filter[name]=自动配置&sort=-name&limit={size}{(page==1?"": "&cursor="+ base64Str)}");
             httpRequestMessage.Headers.Add("Authorization", "Bearer " + token);
@@ -99,7 +99,7 @@ namespace MyDotnet.Helper
                 if (profile.relationships.devices.data == null) profile.relationships.devices.data = new List<ProfilesReturnAddDataRelationshipsDevicesData>();
 
                 //获取设备列表
-                var devicesStr = await AppleHelper.GetUrlData(token, profile.relationships.devices.links.related + "?limit=200");
+                var devicesStr = await GetUrlData(token, profile.relationships.devices.links.related + "?limit=200");
                 var devices =  JsonHelper.JsonToObj<ProfilesReturnAddDataRelationshipsDevices>(devicesStr);
                 profile.relationships.devices = devices;
                 ////获取配置设备列表
@@ -169,7 +169,7 @@ namespace MyDotnet.Helper
             var data = await HttpHelper.SendAsync(httpRequestMessage);
             var profile = JsonHelper.JsonToObj<ProfilesReturnAdd>(data);
             //获取设备列表
-            var devicesStr = await AppleHelper.GetUrlData(token, profile.data.relationships.devices.links.related + "?limit=200");
+            var devicesStr = await GetUrlData(token, profile.data.relationships.devices.links.related + "?limit=200");
             var devices = JsonHelper.JsonToObj<ProfilesReturnAddDataRelationshipsDevices>(devicesStr);
             profile.data.relationships.devices = devices;
 

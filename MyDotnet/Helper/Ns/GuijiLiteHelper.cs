@@ -1,30 +1,28 @@
 ﻿using MyDotnet.Domain.Dto.Guiji;
+using MyDotnet.Domain.Dto.GuijiLite;
 using System.Text;
 
-namespace MyDotnet.Helper
+namespace MyDotnet.Helper.Ns
 {
     /// <summary>
-    /// 硅基帮助类
+    /// 硅基轻享帮助类
     /// </summary>
-    public static class GuijiHelper
+    public static class GuijiLiteHelper
     {
         /// <summary>
         /// 登录
         /// </summary>
         /// <returns></returns>
-        public static async Task<GuiLoginReturnDto> loginGuiji(string phone,string password)
+        public static async Task<GuijiLiteLoginReturnDto> loginGuiji(string phone,string password)
         {
-            var request = new HttpRequestMessage(HttpMethod.Post, $"https://api.sisensing.com/auth/app/user/login");
+            var request = new HttpRequestMessage(HttpMethod.Post, $"https://api.sisensing.com/lite-sense-app/user/password/login");
 
-            GuiLoginDto loginDto = new GuiLoginDto();
+            GuijiLiteLoginDto loginDto = new GuijiLiteLoginDto();
             loginDto.phone = phone;
             loginDto.password = password;
-            loginDto.device_number = "9C2C740F95EF45709ABAAE62145CF2C6";
-            loginDto.loginType = "2";
-            loginDto.device_type = "iOS";
             request.Content = new StringContent(JsonHelper.ObjToJson(loginDto), Encoding.UTF8, "application/json");
             var res = await HttpHelper.SendAsync(request);
-            var data = JsonHelper.JsonToObj<GuiLoginReturnDto>(res);
+            var data = JsonHelper.JsonToObj<GuijiLiteLoginReturnDto>(res);
             return data;
         }
         /// <summary>
@@ -32,12 +30,12 @@ namespace MyDotnet.Helper
         /// </summary>
         /// <param name="token"></param>
         /// <returns></returns>
-        public static async Task<GuiMyInfoDto> getMyInfo(string token)
+        public static async Task<GuijiLiteMyInfo> getMyInfo(string token)
         {
-            var request = new HttpRequestMessage(HttpMethod.Get, $"https://api.sisensing.com/auth/token/info");
-            request.Headers.Add("Authorization", token);
+            var request = new HttpRequestMessage(HttpMethod.Get, $"https://api.sisensing.com/lite-sense-app/user/info");
+            request.Headers.Add("Authorization", $"Bearer {token}");
             var res = await HttpHelper.SendAsync(request);
-            var data = JsonHelper.JsonToObj<GuiMyInfoDto>(res);
+            var data = JsonHelper.JsonToObj<GuijiLiteMyInfo>(res);
             return data;
         }
         /// <summary>
@@ -47,12 +45,12 @@ namespace MyDotnet.Helper
         /// <param name="page"></param>
         /// <param name="size"></param>
         /// <returns></returns>
-        public static async Task<GuiFollowDto> getGuijiList(string token, int page = 1, int size = 10)
+        public static async Task<GuijiLiteFollowDto> getGuijiList(string token, int page = 1, int size = 10)
         {
-            var request = new HttpRequestMessage(HttpMethod.Get, $"https://api.sisensing.com/follow/app/list/v2?pageNum={page}&pageSize={size}&status=3");
-            request.Headers.Add("Authorization", token);
+            var request = new HttpRequestMessage(HttpMethod.Get, $"https://api.sisensing.com/lite-sense-app/follow/list?pageNum={page}&pageSize={size}&status=3");
+            request.Headers.Add("Authorization", $"Bearer {token}");
             var res = await HttpHelper.SendAsync(request);
-            var data = JsonHelper.JsonToObj<GuiFollowDto>(res);
+            var data = JsonHelper.JsonToObj<GuijiLiteFollowDto>(res);
             return data;
         }
         /// <summary>
@@ -61,12 +59,12 @@ namespace MyDotnet.Helper
         /// <param name="token"></param>
         /// <param name="uid"></param>
         /// <returns></returns>
-        public static async Task<GuiBloodDto> getUserBlood(string token, string uid)
+        public static async Task<GuijiLiteUserBloodDto> getUserBlood(string token, string uid)
         {
-            var request = new HttpRequestMessage(HttpMethod.Get, $"https://api.sisensing.com/follow/app/{uid}/v2");
-            request.Headers.Add("Authorization", token);
+            var request = new HttpRequestMessage(HttpMethod.Get, $"https://api.sisensing.com/lite-sense-app/follow/info?followId={uid}");
+            request.Headers.Add("Authorization", $"Bearer {token}");
             var res = await HttpHelper.SendAsync(request);
-            var data = JsonHelper.JsonToObj<GuiBloodDto>(res);
+            var data = JsonHelper.JsonToObj<GuijiLiteUserBloodDto>(res);
 
 
             data.data.followedDeviceGlucoseDataPO.time = DateTimeOffset.FromUnixTimeMilliseconds(data.data.followedDeviceGlucoseDataPO.latestGlucoseTime).UtcDateTime.ToLocalTime();

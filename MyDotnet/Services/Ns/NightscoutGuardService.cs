@@ -1,4 +1,5 @@
 ﻿using AppStoreConnect.Model;
+using Dm.util;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
@@ -12,8 +13,10 @@ using MyDotnet.Domain.Dto.Sannuo;
 using MyDotnet.Domain.Dto.System;
 using MyDotnet.Domain.Dto.Weitai1;
 using MyDotnet.Domain.Dto.Weitai2;
+using MyDotnet.Domain.Dto.Yapei;
 using MyDotnet.Domain.Entity.Ns;
 using MyDotnet.Helper;
+using MyDotnet.Helper.Ns;
 using MyDotnet.Repository;
 using MyDotnet.Services.System;
 using System;
@@ -113,6 +116,12 @@ namespace MyDotnet.Services.Ns
                     var res = await loginGuardAccount(data);
                     if (!res.success) throw new ServiceException(res.msg);
                 }
+                else if ("600".Equals(data.guardType))
+                {
+                    //雅培
+                    var res = await loginGuardAccount(data);
+                    if (!res.success) throw new ServiceException(res.msg);
+                }
                 _unitOfWorkManage.CommitTran();
                 return i;
             }
@@ -154,10 +163,15 @@ namespace MyDotnet.Services.Ns
                 //硅基轻享
                 return await loginGuardAccount(data);
             }
+            else if ("600".Equals(data.guardType))
+            {
+                //雅培
+                return await loginGuardAccount(data);
+            }
             return MessageModel<bool>.Fail("还未实现");
         }
         /// <summary>
-        /// 登录硅基
+        /// 登录
         /// </summary>
         /// <param name="data"></param>
         /// <returns></returns>
@@ -221,6 +235,18 @@ namespace MyDotnet.Services.Ns
                     await _baseRepositoryAccount.Update(data);
                     return MessageModel<bool>.Success("登录成功");
                 }
+                else if ("600".Equals(data.guardType))
+                {
+                    //雅培
+                    var loginRes = await YapeiHelper.Login(data.loginName, data.loginPass);
+                    if (loginRes.status != 0)
+                        return MessageModel<bool>.Success($"雅培登录失败:{loginRes.error.message}");
+                    data.token = loginRes.data.authTicket.token;
+                    data.tokenExpire = loginRes.data.authTicket.tokenExpireTime;
+                    data.loginId = loginRes.data.user.id;
+                    await _baseRepositoryAccount.Update(data);
+                    return MessageModel<bool>.Success("登录成功");
+                }
                 return MessageModel<bool>.Fail("还未实现");
             }
             catch (Exception ex)
@@ -269,7 +295,7 @@ namespace MyDotnet.Services.Ns
                 || t.uidName.Contains(key)
                 || t.nidUrl.Contains(key));
             }
-            var data = await _baseRepositoryUser.QueryPage(whereExpression, page, size);
+            var data = await _baseRepositoryUser.QueryPage(whereExpression, page, size,"Id desc");
             return data;
         }
         /// <summary>
@@ -463,6 +489,20 @@ namespace MyDotnet.Services.Ns
                 data.data = users.data.records.Select(t => new ShowKeyValueDto { id = t.id, name = $"{t.followedUserInfo.userName}-{t.followedUserInfo.nickName}" }).ToList();
                 return data;
             }
+            else if ("600".Equals(guardAccount.guardType))
+            {
+                //雅培
+                var users = await YapeiHelper.getFamily(guardAccount.token, guardAccount.loginId);
+                if (users.status != 0) throw new ServiceException($"获取用户失败:{users.error.message}");
+
+                PageModel<ShowKeyValueDto> data = new PageModel<ShowKeyValueDto>();
+
+                data.page = page;
+                data.dataCount = users.data.Count;
+                data.size = size;
+                data.data = users.data.Select(t => new ShowKeyValueDto { id = t.patientId, name = $"{t.firstName} {t.lastName}" }).ToList();
+                return data;
+            }
             else
             {
                 throw new ServiceException("还未实现");
@@ -545,6 +585,12 @@ namespace MyDotnet.Services.Ns
                     //硅基轻享
                     var loginInfo = await GuijiLiteHelper.getMyInfo(account.token);
                     return loginInfo.success;
+                }
+                else if ("600".Equals(account.guardType))
+                {
+                    //雅培
+                    var loginInfo = await YapeiHelper.getMyInfo(account.token,account.loginId);
+                    return loginInfo.status == 0;
                 }
                 return false;
             }
@@ -664,6 +710,39 @@ namespace MyDotnet.Services.Ns
             }
         }
 
+        public void GetNsFlagForYapei(YapeiBloodInfo yapeiBlood)
+        {
+            double diff = 0;
+            if(yapeiBlood.data.graphData != null && yapeiBlood.data.graphData.Count != 0)
+            {
+                diff = yapeiBlood.data.connection.glucoseItem.Value - yapeiBlood.data.graphData[yapeiBlood.data.graphData.Count - 1].Value;
+            }
+             
+
+            if (diff != 0)
+            {
+                diff = diff / 18;
+            }
+
+
+            if (diff > 0.17)
+                yapeiBlood.data.connection.glucoseItem.direction = "DoubleUp";
+            else if (diff > 0.1 && diff <= 0.17)
+                yapeiBlood.data.connection.glucoseItem.direction = "SingleUp";
+            else if (diff > 0.05 && diff <= 0.1)
+                yapeiBlood.data.connection.glucoseItem.direction = "FortyFiveUp";
+            if (diff < -0.17)
+                yapeiBlood.data.connection.glucoseItem.direction = "DoubleDown";
+            else if (diff < -0.1 && diff >= -0.17)
+                yapeiBlood.data.connection.glucoseItem.direction = "SingleDown";
+            else if (diff < -0.05 && diff >= -0.1)
+                yapeiBlood.data.connection.glucoseItem.direction = "FortyFiveDown";
+            else if (diff >= -0.05 && diff <= 0.05)
+                yapeiBlood.data.connection.glucoseItem.direction = "Flat";
+            else
+                yapeiBlood.data.connection.glucoseItem.direction = "Flat";
+        }
+
         public void GetNsFlagForOutai(List<OutaiBloodDtoContentRecordItem> pushData)
         {
             var data = pushData.OrderBy(t => t.timeFormat).ToList();
@@ -769,6 +848,16 @@ namespace MyDotnet.Services.Ns
                     //延期
                     ls.Add(new GuardBloodInfo() { time = data.data.followedDeviceGlucoseDataPO.time, blood = data.data.followedDeviceGlucoseDataPO.latestGlucoseValue, trend = GetNsFlag(GetNsFlagForGuiji(data.data.followedDeviceGlucoseDataPO.bloodGlucoseTrend)) });
                 }
+            }
+            else if ("600".Equals(guard.guardType))
+            {
+                //雅培
+                var data = await YapeiHelper.getBlood(guard.token, guard.loginId, user.uid);
+                 
+                GetNsFlagForYapei(data);
+
+                ls.Add(new GuardBloodInfo() { time = data.data.connection.glucoseItem.time , blood = Math.Round(data.data.connection.glucoseItem.Value / 18, 1),trend = GetNsFlag(data.data.connection.glucoseItem.direction) });
+                
             }
             return ls;
         }

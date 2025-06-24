@@ -5,6 +5,7 @@ using MyDotnet.Domain.Dto.WeChat;
 using MyDotnet.Domain.Entity.Ns;
 using MyDotnet.Domain.Entity.System;
 using MyDotnet.Helper;
+using MyDotnet.Helper.Ns;
 using MyDotnet.Services;
 using MyDotnet.Services.Ns;
 using MyDotnet.Services.System;

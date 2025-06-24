@@ -6,10 +6,10 @@ using NetTaste;
 using System.IdentityModel.Tokens.Jwt;
 using System.Text;
 
-namespace MyDotnet.Helper
+namespace MyDotnet.Helper.Ns
 {
     /// <summary>
-    /// 微泰1帮助类
+    /// 微泰2帮助类
     /// </summary>
     public static class Weitai2Helper
     {

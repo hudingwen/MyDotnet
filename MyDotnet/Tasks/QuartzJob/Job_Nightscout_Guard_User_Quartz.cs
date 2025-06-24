@@ -5,6 +5,7 @@ using MyDotnet.Domain.Dto.System;
 using MyDotnet.Domain.Entity.Ns;
 using MyDotnet.Domain.Entity.System;
 using MyDotnet.Helper;
+using MyDotnet.Helper.Ns;
 using MyDotnet.Repository;
 using MyDotnet.Services;
 using MyDotnet.Services.Ns;
@@ -501,6 +502,75 @@ namespace MyDotnet.Tasks.QuartzJob
                         {
                             error = data.msg;
                             LogHelper.logApp.Error($"监护用户:{user.name} 监护异常:{data.msg}");
+                        }
+                        #endregion
+                    }
+                    else if ("600".Equals(account.guardType))
+                    {
+                        //雅培
+                        #region 雅培
+                        var data = await YapeiHelper.getBlood(account.token, account.loginId, user.uid);
+                        if (data.status == 0)
+                        {
+                            bool isTouchTime = false;
+                            var nextTime = DateTime.Now;
+
+                            //趋势计算
+                            _nightscoutGuardService.GetNsFlagForYapei(data);
+
+                            if(data.data.connection.glucoseItem.time > user.refreshTime)
+                            {
+
+                                //推送
+                                List<NsUploadBloodInfo> send = new List<NsUploadBloodInfo>();
+                                send.Add(new NsUploadBloodInfo { date = (new DateTimeOffset(data.data.connection.glucoseItem.time).ToUnixTimeMilliseconds()),sgv = data.data.connection.glucoseItem.Value, direction = data.data.connection.glucoseItem.direction });
+                                await _nightscoutGuardService.pushBlood(user, send);
+                                nextTime = data.data.connection.glucoseItem.time.AddMinutes(5);
+                                isTouchTime = true;
+                            }
+
+
+                            //推送数据
+                             
+
+                            // 更新cron表达式
+                            var scheduler = context.Scheduler;
+                            var jobKey = context.JobDetail.Key;
+
+                            // 假设新的cron表达式是每分钟执行一次
+                            string newCronExpression = string.Empty;
+                            if (isTouchTime)
+                            {
+                                if (DateTime.Now >= nextTime)
+                                {
+                                    //调度时间异常处理
+                                    nextTime = DateTime.Now.AddSeconds(30);
+                                    nextTime = NsBloodErrorStatic.checkErrStatic(jobid, nextTime, isTouchTime);
+                                }
+                                else
+                                {
+                                    NsBloodErrorStatic.errStatic[jobid] = 0;
+                                }
+                                newCronExpression = nextTime.ToString("ss mm HH dd MM ? yyyy");
+                            }
+                            else
+                            {
+                                nextTime = DateTime.Now.AddSeconds(30);
+                                nextTime = NsBloodErrorStatic.checkErrStatic(jobid, nextTime, isTouchTime);
+                                //默认60秒执行一次
+                                newCronExpression = nextTime.ToString("ss mm HH dd MM ? yyyy");
+                            }
+
+                            // 调用方法更新cron表达式
+                            UpdateJobCronExpression(scheduler, jobKey, newCronExpression).Wait();
+
+                            task.Cron = nextTime.ToString("ss mm HH dd MM ? yyyy");
+                            await _tasksQzServices.Dal.Update(task);
+                        }
+                        else
+                        {
+                            error = data.error.message;
+                            LogHelper.logApp.Error($"监护用户:{user.name} 监护异常:{data.error.message}");
                         }
                         #endregion
                     }
