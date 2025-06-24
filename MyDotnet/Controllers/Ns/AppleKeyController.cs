@@ -7,6 +7,8 @@ using MyDotnet.Domain.Entity.Ns;
 using MyDotnet.Helper;
 using MyDotnet.Services;
 using MyDotnet.Services.Ns;
+using SixLabors.ImageSharp.Drawing;
+using System.Globalization;
 using System.Linq.Expressions;
 using System.Numerics;
 using System.Security.Cryptography;
@@ -285,6 +287,71 @@ namespace MyDotnet.Controllers.Ns
             return MessageModel<TCode>.Success("添加成功", codetemp);
 
              
+        }
+
+
+        /// <summary>
+        /// 注册机3
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        [HttpGet]
+        [AllowAnonymous]
+
+        public async Task<MessageModel<TCode>> CreateKey3(string id)
+        {
+
+
+            TCode code = new TCode();
+            code.pass_type = "auth003";
+            string auth_code;
+
+
+            string md5Hex = Md5String(id + "xc122989779");
+            var bigInt = BigInteger.Parse("0" + md5Hex, NumberStyles.HexNumber); // 加个"0"避免负数
+            auth_code = bigInt.ToString().Substring(0, 8);
+             
+
+
+
+            code.id = StringHelper.GetGUID().ToLower();
+            code.record_id = id;
+            code.record_key = "";
+            code.auth_code = auth_code;
+            code.create_date = DateTime.Now;
+            code.expiry_date = DateTime.MaxValue;
+
+            await baseServices.Dal.Db.Insertable(code).ExecuteCommandAsync();
+
+            var codetemp = new TCode();
+            codetemp.auth_code = code.auth_code;
+            codetemp.expiry_date = code.expiry_date;
+
+            return MessageModel<TCode>.Success("添加成功", codetemp);
+
+
+        }
+        private static string Md5String(string input)
+        {
+            if (string.IsNullOrEmpty(input)) return "";
+
+            using (var md5 = MD5.Create())
+            {
+                byte[] bytes = Encoding.UTF8.GetBytes(input);
+                byte[] hash = md5.ComputeHash(bytes);
+                string hex = ToHexString(hash);
+                return hex.Length == 32 ? hex.Substring(8, 16) : hex;
+            }
+        }
+        private static string ToHexString(byte[] bytes)
+        {
+            var sb = new StringBuilder(bytes.Length * 2);
+            foreach (var b in bytes)
+            {
+                sb.Append((b >> 4).ToString("x")); // 高4位
+                sb.Append((b & 0x0F).ToString("x")); // 低4位
+            }
+            return sb.ToString();
         }
 
         private static string Byte2Hex(byte[] byteArray)
