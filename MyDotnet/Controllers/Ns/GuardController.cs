@@ -62,6 +62,16 @@ namespace MyDotnet.Controllers.Ns
             var data = await _dictService.GetDicData(GuardInfoKey.GuardAccountTypeList);
             return MessageModel<List<DicData>>.Success("获取成功", data);
         }
+        /// <summary>
+        /// 获取雅培地区
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet]
+        public async Task<MessageModel<List<DicData>>> getLibreArea()
+        {
+            var data = await _dictService.GetDicData(GuardInfoKey.LibreArea);
+            return MessageModel<List<DicData>>.Success("获取成功", data);
+        }
 
         /// <summary>
         /// 发送三诺验证码

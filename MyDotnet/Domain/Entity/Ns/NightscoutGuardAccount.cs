@@ -47,6 +47,12 @@ namespace MyDotnet.Domain.Entity.Ns
         /// </summary>
         public string guardType { get; set; }
         /// <summary>
+        /// 登录地区 ap-台湾 de-德国
+        /// </summary>
+        public string loginArea { get; set; }
+
+        
+        /// <summary>
         /// 是否有效
         /// </summary>
         [SugarColumn(IsIgnore = true)]

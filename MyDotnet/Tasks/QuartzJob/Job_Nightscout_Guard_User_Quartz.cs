@@ -509,7 +509,7 @@ namespace MyDotnet.Tasks.QuartzJob
                     {
                         //雅培
                         #region 雅培
-                        var data = await YapeiHelper.getBlood(account.token, account.loginId, user.uid);
+                        var data = await YapeiHelper.getBlood(account.token, account.loginId, user.uid, account.loginArea);
                         if (data.status == 0)
                         {
                             bool isTouchTime = false;

@@ -20,9 +20,9 @@ namespace MyDotnet.Helper.Ns
         /// 登录
         /// </summary>
         /// <returns></returns>
-        public static async Task<YapeiLoginReturnInfo> Login(string email, string password)
+        public static async Task<YapeiLoginReturnInfo> Login(string email, string password,string area)
         {
-            var request = new HttpRequestMessage(HttpMethod.Post, $"https://api-ap.libreview.io/llu/auth/login");
+            var request = new HttpRequestMessage(HttpMethod.Post, $"https://api-{area}.libreview.io/llu/auth/login");
 
             YapeiLoginInfo loginDto = new YapeiLoginInfo();
             loginDto.email = email;
@@ -52,9 +52,9 @@ namespace MyDotnet.Helper.Ns
         /// <param name="token"></param>
         /// <param name="uid"></param>
         /// <returns></returns>
-        public static async Task<YapeiUserReturnInfo> getMyInfo(string token,string uid)
+        public static async Task<YapeiUserReturnInfo> getMyInfo(string token,string uid, string area)
         {
-            var request = new HttpRequestMessage(HttpMethod.Get, $"https://api-ap.libreview.io/llu/connections");
+            var request = new HttpRequestMessage(HttpMethod.Get, $"https://api-{area}.libreview.io/llu/connections");
 
             request.Headers.Remove("User-Agent");
             request.Headers.Add("User-Agent", "Mozilla/5.0 (iPhone; CPU OS 19_0 like Mac OS X) AppleWebKit/536.26 (KHTML, like Gecko) Version/19.0 Mobile/10A5355d Safari/8536.25");
@@ -76,9 +76,9 @@ namespace MyDotnet.Helper.Ns
         /// <param name="token"></param>
         /// <param name="uid"></param>
         /// <returns></returns>
-        public static async Task<YapeiUserReturnInfo> getFamily(string token, string uid)
+        public static async Task<YapeiUserReturnInfo> getFamily(string token, string uid, string area)
         {
-            var request = new HttpRequestMessage(HttpMethod.Get, $"https://api-ap.libreview.io/llu/connections");
+            var request = new HttpRequestMessage(HttpMethod.Get, $"https://api-{area}.libreview.io/llu/connections");
 
             request.Headers.Remove("User-Agent");
             request.Headers.Add("User-Agent", "Mozilla/5.0 (iPhone; CPU OS 19_0 like Mac OS X) AppleWebKit/536.26 (KHTML, like Gecko) Version/19.0 Mobile/10A5355d Safari/8536.25");
@@ -101,9 +101,9 @@ namespace MyDotnet.Helper.Ns
         /// <param name="uid">监护账号id</param>
         /// <param name="userId">监护用户id</param>
         /// <returns></returns>
-        public static async Task<YapeiBloodInfo> getBlood(string token, string uid,string userId)
+        public static async Task<YapeiBloodInfo> getBlood(string token, string uid,string userId, string area)
         {
-            var request = new HttpRequestMessage(HttpMethod.Get, $"https://api-ap.libreview.io/llu/connections/{userId}/graph");
+            var request = new HttpRequestMessage(HttpMethod.Get, $"https://api-{area}.libreview.io/llu/connections/{userId}/graph");
             request.Headers.Remove("User-Agent");
             request.Headers.Add("User-Agent", "Mozilla/5.0 (iPhone; CPU OS 19_0 like Mac OS X) AppleWebKit/536.26 (KHTML, like Gecko) Version/19.0 Mobile/10A5355d Safari/8536.25");
 

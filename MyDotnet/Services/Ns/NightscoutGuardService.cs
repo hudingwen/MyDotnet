@@ -238,7 +238,7 @@ namespace MyDotnet.Services.Ns
                 else if ("600".Equals(data.guardType))
                 {
                     //雅培
-                    var loginRes = await YapeiHelper.Login(data.loginName, data.loginPass);
+                    var loginRes = await YapeiHelper.Login(data.loginName, data.loginPass, data.loginArea);
                     if (loginRes.status != 0)
                         return MessageModel<bool>.Success($"雅培登录失败:{loginRes.error.message}");
                     data.token = loginRes.data.authTicket.token;
@@ -492,7 +492,7 @@ namespace MyDotnet.Services.Ns
             else if ("600".Equals(guardAccount.guardType))
             {
                 //雅培
-                var users = await YapeiHelper.getFamily(guardAccount.token, guardAccount.loginId);
+                var users = await YapeiHelper.getFamily(guardAccount.token, guardAccount.loginId, guardAccount.loginArea);
                 if (users.status != 0) throw new ServiceException($"获取用户失败:{users.error.message}");
 
                 PageModel<ShowKeyValueDto> data = new PageModel<ShowKeyValueDto>();
@@ -589,7 +589,7 @@ namespace MyDotnet.Services.Ns
                 else if ("600".Equals(account.guardType))
                 {
                     //雅培
-                    var loginInfo = await YapeiHelper.getMyInfo(account.token,account.loginId);
+                    var loginInfo = await YapeiHelper.getMyInfo(account.token,account.loginId, account.loginArea);
                     return loginInfo.status == 0;
                 }
                 return false;
@@ -852,7 +852,7 @@ namespace MyDotnet.Services.Ns
             else if ("600".Equals(guard.guardType))
             {
                 //雅培
-                var data = await YapeiHelper.getBlood(guard.token, guard.loginId, user.uid);
+                var data = await YapeiHelper.getBlood(guard.token, guard.loginId, user.uid, guard.loginArea);
                  
                 GetNsFlagForYapei(data);
 
