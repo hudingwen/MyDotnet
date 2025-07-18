@@ -1,4 +1,5 @@
-﻿using MyDotnet.Domain.Attr;
+﻿using System.Collections.Generic;
+using MyDotnet.Domain.Attr;
 using MyDotnet.Domain.Dto.Apple;
 using MyDotnet.Domain.Dto.Ns;
 using MyDotnet.Domain.Dto.WeChat;
@@ -70,8 +71,20 @@ namespace MyDotnet.Tasks.QuartzJob
                     foreach (var apple in appleApiList)
                     {
                         var token = AppleHelper.GetNewAppleToken(apple.code, apple.content, apple.content2);
-                        var list = await AppleHelper.GetDevices(token, 1, 200, "PROCESSING");
-                        var list_audit = await AppleHelper.GetDevices(token, 1, 200, "INELIGIBLE");
+
+                        DevicesListDto list = new DevicesListDto();
+                        list.data = new List<DevicesReturnAddData>();
+                        list.meta = new AppleMeta();
+                        list.meta.paging = new AppleMetaPaging();
+                        list.meta.paging.total = 10;
+                        var listTemp = await AppleHelper.GetDevices(token, 1, 200, "");
+                        foreach (var item in listTemp.data)
+                        {
+                            if (!"ENABLED".Equals(item.attributes.status))
+                            {
+                                list.data.Add(item);
+                            }
+                        }
 
 
                         if (!string.IsNullOrEmpty(task.StoreData))
@@ -86,8 +99,7 @@ namespace MyDotnet.Tasks.QuartzJob
                             }
                         }
 
-
-                        list.data.AddRange(list_audit.data);
+                         
                         //先查找谁审核通过了
                         List<string> hasDevices = null;
                         processingDevices.TryGetValue(apple.code, out hasDevices);

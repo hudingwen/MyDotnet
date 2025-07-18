@@ -62,7 +62,8 @@ namespace MyDotnet.Helper.Ns
             var offset = $"{{\"offset\":\"{(page - 1) * size}\"}}";
             string base64Str = StringHelper.StringToBase64(offset);
             //filter[name]=自动配置&
-            var httpRequestMessage = new HttpRequestMessage(HttpMethod.Get, baseUrl + $"/v1/devices?sort=-name{(string.IsNullOrEmpty(status)?"": "&filter[status]="+ status)}{(string.IsNullOrEmpty(udid) ? "" : "&filter[udid]=" + udid)}&limit={size}{(page == 1 ? "" : "&cursor=" + base64Str)}");
+            var url = baseUrl + $"/v1/devices?sort=-name{(string.IsNullOrEmpty(status) ? "" : "&filter[status]=" + status)}{(string.IsNullOrEmpty(udid) ? "" : "&filter[udid]=" + udid)}&limit={size}{(page == 1 ? "" : "&cursor=" + base64Str)}";
+            var httpRequestMessage = new HttpRequestMessage(HttpMethod.Get, url);
             httpRequestMessage.Headers.Add("Authorization", "Bearer " + token);
             httpRequestMessage.Headers.Add("Accept", "application/json");
             //httpRequestMessage.Headers.Add("Content-Type", "application/json");

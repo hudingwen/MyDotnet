@@ -74,13 +74,28 @@ namespace MyDotnet.Controllers.Ns
         /// <param name="size"></param>
         /// <returns></returns>
         [HttpGet]
-        public async Task<MessageModel<DevicesListDto>> GetDevicesProcessing(string kid, int page = 1, int size = 10)
+        public async Task<MessageModel<DevicesListDto>> GetDevicesProcessing(string kid, int page = 1, int size = 200)
         {
+            size = 200;
             var data = await _dictService.GetDicDataOne(DicAppleInfo.AppleApiList, kid);
             var token = AppleHelper.GetNewAppleToken(data.code, data.content, data.content2);
-            var list = await AppleHelper.GetDevices(token, page, size, "PROCESSING");
-            var list_audit = await AppleHelper.GetDevices(token, page, size, "INELIGIBLE");
-            list.data.AddRange(list_audit.data);
+
+            DevicesListDto list = new DevicesListDto();
+            list.data = new List<DevicesReturnAddData>();
+            list.meta = new AppleMeta();
+            list.meta.paging = new AppleMetaPaging();
+            list.meta.paging.total = 10;
+
+            var listTemp = await AppleHelper.GetDevices(token, page, size, "");
+            foreach (var item in listTemp.data)
+            {
+                if (!"ENABLED".Equals(item.attributes.status))
+                {
+                    list.data.Add(item);
+                }
+            }
+             
+
             foreach (var item in list.data)
             {
                 DateTime dateTime = DateTime.Parse(item.attributes.addedDate);
