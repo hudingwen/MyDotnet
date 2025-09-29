@@ -47,7 +47,7 @@ namespace MyDotnet.Domain.Entity.Ns
         /// </summary>
         public string guardType { get; set; }
         /// <summary>
-        /// 登录地区 ap-台湾 de-德国
+        /// 登录地区 ap-台湾 de-德国 cn-中国
         /// </summary>
         public string loginArea { get; set; }
 

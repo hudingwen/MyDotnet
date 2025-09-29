@@ -523,7 +523,7 @@ namespace MyDotnet.Tasks.QuartzJob
 
                                 //推送
                                 List<NsUploadBloodInfo> send = new List<NsUploadBloodInfo>();
-                                send.Add(new NsUploadBloodInfo { date = (new DateTimeOffset(data.data.connection.glucoseItem.time).ToUnixTimeMilliseconds()),sgv = data.data.connection.glucoseItem.Value, direction = data.data.connection.glucoseItem.direction });
+                                send.Add(new NsUploadBloodInfo { date = (new DateTimeOffset(data.data.connection.glucoseItem.time).ToUnixTimeMilliseconds()),sgv = ("cn".Equals(account.loginArea) ? data.data.connection.glucoseItem.Value * 18 : data.data.connection.glucoseItem.Value), direction = data.data.connection.glucoseItem.direction });
                                 await _nightscoutGuardService.pushBlood(user, send);
                                 nextTime = data.data.connection.glucoseItem.time.AddMinutes(5);
                                 isTouchTime = true;

@@ -856,7 +856,7 @@ namespace MyDotnet.Services.Ns
                  
                 GetNsFlagForYapei(data);
 
-                ls.Add(new GuardBloodInfo() { time = data.data.connection.glucoseItem.time , blood = Math.Round(data.data.connection.glucoseItem.Value / 18, 1),trend = GetNsFlag(data.data.connection.glucoseItem.direction) });
+                ls.Add(new GuardBloodInfo() { time = data.data.connection.glucoseItem.time , blood = Math.Round(data.data.connection.glucoseItem.Value / ("cn".equals(guard.loginArea) ? 1 : 18), 1),trend = GetNsFlag(data.data.connection.glucoseItem.direction) });
                 
             }
             return ls;
