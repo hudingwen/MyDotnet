@@ -20,7 +20,7 @@ namespace MyDotnet.Helper.Ns
         /// 登录
         /// </summary>
         /// <returns></returns>
-        public static async Task<YapeiLoginReturnInfo> Login(string email, string password,string area)
+        public static async Task<YapeiLoginReturnInfo> Login(string email, string password,string area, string appVersion)
         {
             var url = "";
             if ("cn".Equals(area))
@@ -42,7 +42,7 @@ namespace MyDotnet.Helper.Ns
             request.Headers.Remove("User-Agent");
             request.Headers.Add("User-Agent", "Mozilla/5.0 (iPhone; CPU OS 19_0 like Mac OS X) AppleWebKit/536.26 (KHTML, like Gecko) Version/19.0 Mobile/10A5355d Safari/8536.25");
 
-            request.Headers.Add("version", "4.16.0");
+            request.Headers.Add("version", (string.IsNullOrEmpty(appVersion) ? "4.16.0" : appVersion));
             request.Headers.Add("product", "llu.ios");
 
             var res = await HttpHelper.SendAsync(request);
@@ -61,7 +61,7 @@ namespace MyDotnet.Helper.Ns
         /// <param name="token"></param>
         /// <param name="uid"></param>
         /// <returns></returns>
-        public static async Task<YapeiUserReturnInfo> getMyInfo(string token,string uid, string area)
+        public static async Task<YapeiUserReturnInfo> getMyInfo(string token,string uid, string area, string appVersion)
         {
             var url = "";
             if ("cn".Equals(area))
@@ -77,7 +77,7 @@ namespace MyDotnet.Helper.Ns
             request.Headers.Remove("User-Agent");
             request.Headers.Add("User-Agent", "Mozilla/5.0 (iPhone; CPU OS 19_0 like Mac OS X) AppleWebKit/536.26 (KHTML, like Gecko) Version/19.0 Mobile/10A5355d Safari/8536.25");
 
-            request.Headers.Add("version", "4.16.0");
+            request.Headers.Add("version", (string.IsNullOrEmpty(appVersion) ? "4.16.0" : appVersion));
             request.Headers.Add("product", "llu.ios");
 
             request.Headers.Add("Authorization", $"Bearer {token}");
@@ -94,7 +94,7 @@ namespace MyDotnet.Helper.Ns
         /// <param name="token"></param>
         /// <param name="uid"></param>
         /// <returns></returns>
-        public static async Task<YapeiUserReturnInfo> getFamily(string token, string uid, string area)
+        public static async Task<YapeiUserReturnInfo> getFamily(string token, string uid, string area,string appVersion)
         {
             var url = "";
             if ("cn".Equals(area))
@@ -110,7 +110,7 @@ namespace MyDotnet.Helper.Ns
             request.Headers.Remove("User-Agent");
             request.Headers.Add("User-Agent", "Mozilla/5.0 (iPhone; CPU OS 19_0 like Mac OS X) AppleWebKit/536.26 (KHTML, like Gecko) Version/19.0 Mobile/10A5355d Safari/8536.25");
 
-            request.Headers.Add("version", "4.16.0");
+            request.Headers.Add("version", (string.IsNullOrEmpty(appVersion) ? "4.16.0" : appVersion));
             request.Headers.Add("product", "llu.ios");
 
             request.Headers.Add("Authorization", $"Bearer {token}");
@@ -128,7 +128,7 @@ namespace MyDotnet.Helper.Ns
         /// <param name="uid">监护账号id</param>
         /// <param name="userId">监护用户id</param>
         /// <returns></returns>
-        public static async Task<YapeiBloodInfo> getBlood(string token, string uid,string userId, string area)
+        public static async Task<YapeiBloodInfo> getBlood(string token, string uid,string userId, string area,string appVersion)
         {
             var url = "";
             if ("cn".Equals(area))
@@ -143,7 +143,7 @@ namespace MyDotnet.Helper.Ns
             request.Headers.Remove("User-Agent");
             request.Headers.Add("User-Agent", "Mozilla/5.0 (iPhone; CPU OS 19_0 like Mac OS X) AppleWebKit/536.26 (KHTML, like Gecko) Version/19.0 Mobile/10A5355d Safari/8536.25");
 
-            request.Headers.Add("version", "4.16.0");
+            request.Headers.Add("version", (string.IsNullOrEmpty(appVersion) ? "4.16.0" : appVersion));
             request.Headers.Add("product", "llu.ios");
 
             request.Headers.Add("Authorization", $"Bearer {token}");

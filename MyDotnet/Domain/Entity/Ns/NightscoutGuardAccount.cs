@@ -51,7 +51,11 @@ namespace MyDotnet.Domain.Entity.Ns
         /// </summary>
         public string loginArea { get; set; }
 
-        
+        /// <summary>
+        /// app版本号
+        /// </summary>
+        public string appVersion { get; set; }
+
         /// <summary>
         /// 是否有效
         /// </summary>
