@@ -164,7 +164,7 @@ namespace MyDotnet.Services.Ns
             //重启实例
             try
             {
-                if (!isAdd) await Refresh(nightscout, server);
+                await Refresh(nightscout, server);
             }
             catch (Exception ex)
             {
