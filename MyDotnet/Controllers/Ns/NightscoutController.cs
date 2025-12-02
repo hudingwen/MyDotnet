@@ -141,8 +141,14 @@ namespace MyDotnet.Controllers.Ns
             var nightscout =  await _nightscoutServices.Dal.Db.Queryable<Nightscout>().Where(t=>t.url == host).Select(t => new {t.customerId ,t.endTime,t.url,t.isStop}).FirstAsync();
             if(nightscout == null)
             {
-                infoDto.showHtml = $"未找到用户:{host}";
+                var emptyUserData = await _dictService.GetDicDataOne(NsInfo.KEY, NsInfo.nsUserEmptyContent);
+
+                //infoDto.showHtml = $"未找到用户:{host}";
+                infoDto.showHtml = emptyUserData.content;
                 return MessageModel<NsCustomerInfoDto>.Success("获取失败", infoDto);
+
+                
+
             }
             else
             {

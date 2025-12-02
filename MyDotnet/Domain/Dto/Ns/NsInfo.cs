@@ -156,7 +156,11 @@ namespace MyDotnet.Domain.Dto.Ns
         /// ns用户默认是否高低报警 
         /// </summary>
         public static readonly string nsWaring = "nsWaring";
-        
+        /// <summary>
+        /// ns空用户展示内容
+        /// </summary>
+        public static readonly string nsUserEmptyContent = "nsUserEmptyContent";
+
 
 
 
