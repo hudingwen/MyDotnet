@@ -14,7 +14,11 @@ namespace MyDotnet.Domain.Entity.Ns
         /// 客户名称
         /// </summary>
         [SugarColumn(Length = 100, IsNullable = true)]
-        public string name { get; set; }
+        public string name { get; set; } 
+        /// <summary>
+        /// 默认金额
+        /// </summary>
+        public double money { get; set; }
         /// <summary>
         /// 内容
         /// </summary>

@@ -63,11 +63,11 @@ namespace MyDotnet.Domain.Dto.Ns
         /// <summary>
         /// 访问地址模板url
         /// </summary>
-        public static readonly string templateUrl = "TemplateUrl";//ConfigHelper.GetValue(new string[] { "nightscout", "TemplateUrl" });
+        //public static readonly string templateUrl = "TemplateUrl";//ConfigHelper.GetValue(new string[] { "nightscout", "TemplateUrl" });
         /// <summary>
         /// 泛域名
         /// </summary>
-        public static readonly string genericUrl = "GenericUrl";//ConfigHelper.GetValue(new string[] { "nightscout", "GenericUrl" });
+        //public static readonly string genericUrl = "GenericUrl";//ConfigHelper.GetValue(new string[] { "nightscout", "GenericUrl" });
         /// <summary>
         /// ns的MAKER_KEY
         /// </summary>
@@ -79,11 +79,11 @@ namespace MyDotnet.Domain.Dto.Ns
         /// <summary>
         /// ns的cer
         /// </summary>
-        public static readonly string cer = "cer";//ConfigHelper.GetValue(new string[] { "nightscout", "cer" });
+        //public static readonly string cer = "cer";//ConfigHelper.GetValue(new string[] { "nightscout", "cer" });
         /// <summary>
         /// ns的key
         /// </summary>
-        public static readonly string key = "key";// ConfigHelper.GetValue(new string[] { "nightscout", "key" });
+        //public static readonly string key = "key";// ConfigHelper.GetValue(new string[] { "nightscout", "key" });
         /// <summary>
         /// ns的推送api
         /// </summary>
@@ -119,7 +119,7 @@ namespace MyDotnet.Domain.Dto.Ns
         /// <summary>
         /// ns的代理访问配置存放目录
         /// </summary>
-        public static readonly string nsNginxCatalog = "nsNginxCatalog";
+        //public static readonly string nsNginxCatalog = "nsNginxCatalog";
         /// <summary>
         /// cdn检测错误次数提醒
         /// </summary>

@@ -453,13 +453,28 @@ namespace MyDotnet.Controllers.Ns
                     }
                     if (string.IsNullOrEmpty(request.url))
                     {
-                        var templateUrl = await _dictService.GetDicData(NsInfo.KEY, NsInfo.templateUrl);
-                        request.url = string.Format(templateUrl.content , GenerateNumber(3) + padName);
+                        //
+                        //获取核心代理服务器
+                        var proxyServer = await _nightscoutServerServices.Dal.QueryById(nsserver.nginxServerId);
+
+                        //var templateUrl = await _dictService.GetDicData(NsInfo.KEY, NsInfo.templateUrl);
+                        request.url = string.Format(proxyServer.nginxUrlTemplate, GenerateNumber(3) + padName);
                     }
                     if (string.IsNullOrEmpty(request.cdn))
                     {
                         var defaultCDN = await _dictService.GetDic(DicTypeList.defaultCDN);
-                        request.cdn = defaultCDN.content;
+                        if (nsserver.isIntranet)
+                        {
+                            //国内
+                            request.cdn = defaultCDN.content2;
+                        }
+                        else
+                        {
+                            //国外
+                            request.cdn = defaultCDN.content;
+                        }
+                       
+                        
                     }
                 }
 
@@ -486,7 +501,7 @@ namespace MyDotnet.Controllers.Ns
                         await _nightscoutServices.InitData(request, nsserver);
                         await _nightscoutServices.RunDocker(request, nsserver);
                         //添加解析
-                        await _nightscoutServices.ResolveDomain(request);
+                        await _nightscoutServices.ResolveDomain(request, nsserver);
                     }
                     else
                     {
@@ -515,6 +530,7 @@ namespace MyDotnet.Controllers.Ns
             if (!check.success) return check;
             var data = new MessageModel<string>();
             var old = await _nightscoutServices.Dal.QueryById(request.Id);
+            var nsserver = await _nightscoutServerServices.Dal.QueryById(request.serverId);
 
             data.success = await _nightscoutServices.Dal.Update(request);
             if (data.success)
@@ -528,7 +544,7 @@ namespace MyDotnet.Controllers.Ns
             if (!request.url.Equals(old.url))
             {
                 await _nightscoutServices.UnResolveDomain(old);
-                await _nightscoutServices.ResolveDomain(request);
+                await _nightscoutServices.ResolveDomain(request, nsserver);
             }
             else
             {
@@ -536,7 +552,7 @@ namespace MyDotnet.Controllers.Ns
                 if (!request.cdn.Equals(old.cdn))
                 {
                     await _nightscoutServices.UnResolveDomain(old);
-                    await _nightscoutServices.ResolveDomain(request);
+                    await _nightscoutServices.ResolveDomain(request, nsserver);
                 }
             }
 
@@ -548,7 +564,7 @@ namespace MyDotnet.Controllers.Ns
                 var oldNsserver = await _nightscoutServerServices.Dal.QueryById(old.serverId);
                 await _nightscoutServices.StopDocker(old, oldNsserver);
 
-                var nsserver = await _nightscoutServerServices.Dal.QueryById(request.serverId);
+                
                 //通过暴露端口访问
                 if (nsserver.curExposedPort <= 0)
                 {
@@ -591,7 +607,6 @@ namespace MyDotnet.Controllers.Ns
             }
             if (request.isRefresh && !isDiff)
             {
-                var nsserver = await _nightscoutServerServices.Dal.QueryById(request.serverId);
                 await _nightscoutServices.StopDocker(request, nsserver);
                 await _nightscoutServices.RunDocker(request, nsserver);
             }

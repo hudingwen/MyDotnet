@@ -19,6 +19,7 @@ using Renci.SshNet;
 using System;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace MyDotnet.Services.Ns
 {
@@ -240,109 +241,108 @@ namespace MyDotnet.Services.Ns
         public async Task ChangeCDN(string cdnCode)
         {
 
-            DicType defaultCDN = await _dicService.GetDic(DicTypeList.defaultCDN);
+            //DicType defaultCDN = await _dicService.GetDic(DicTypeList.defaultCDN);
 
-            var nsInfo = await _dicService.GetDicData(NsInfo.KEY);
-            var genericUrl = nsInfo.Find(t => NsInfo.genericUrl.Equals(t.code)).content;
-
-
-            var cdnKey = await _dicService.GetDicData(CDNKey.KEY);
-            var cfZoom = cdnKey.Find(t => CDNKey.zoomID.Equals(t.code)).content;
-            var cfKey = cdnKey.Find(t => CDNKey.key.Equals(t.code)).content;
+            //var nsInfo = await _dicService.GetDicData(NsInfo.KEY);
+            //var genericUrl = nsInfo.Find(t => NsInfo.genericUrl.Equals(t.code)).content;
 
 
-            var cdnList = await _dicService.GetDicData(CDNList.KEY);
+            //var cdnKey = await _dicService.GetDicData(CDNKey.KEY);
+            //var cfZoom = cdnKey.Find(t => CDNKey.zoomID.Equals(t.code)).content;
+            //var cfKey = cdnKey.Find(t => CDNKey.key.Equals(t.code)).content;
 
-            if (!defaultCDN.content.Equals(cdnCode))
-            {
-                //删除
-                NightscoutLog log = new NightscoutLog();
 
-                var request = new HttpRequestMessage(HttpMethod.Get, $"https://api.cloudflare.com/client/v4/zones/{cfZoom}/dns_records?name={genericUrl}");
-                request.Headers.Add("Authorization", $"Bearer {cfKey}");
-                var findtxt = await HttpHelper.SendAsync(request);
-                var findInfo = JsonHelper.JsonToObj<CFMessageListInfo>(findtxt);
+            //var cdnList = await _dicService.GetDicData(CDNList.KEY);
 
-                bool isDelete = false;
-                if (findInfo.success && findInfo.result != null && findInfo.result.Count == 1)
-                {
-                    //删除
-                    request = new HttpRequestMessage(HttpMethod.Delete, $"https://api.cloudflare.com/client/v4/zones/{cfZoom}/dns_records/{findInfo.result[0].id}");
-                    request.Headers.Add("Authorization", $"Bearer {cfKey}");
-                    var deleteTxt = await HttpHelper.SendAsync(request);
-                    var deleteInfo = JsonHelper.JsonToObj<CFMessageInfo>(deleteTxt);
-                    LogHelper.logApp.Info($"删除先前域名解析-日志:{JsonHelper.ObjToJson(deleteInfo)}");
-                    LogHelper.logApp.Info($"删除先前域名解析-数据:{JsonHelper.ObjToJson(findInfo)}");
-                    isDelete = true;
-                }
+            //if (!defaultCDN.content.Equals(cdnCode))
+            //{
+            //    //删除
+            //    NightscoutLog log = new NightscoutLog();
 
-                //添加
-                var selectCDN = cdnList.Find(t => t.code.Equals(cdnCode)); 
+            //    var request = new HttpRequestMessage(HttpMethod.Get, $"https://api.cloudflare.com/client/v4/zones/{cfZoom}/dns_records?name={genericUrl}");
+            //    request.Headers.Add("Authorization", $"Bearer {cfKey}");
+            //    var findtxt = await HttpHelper.SendAsync(request);
+            //    var findInfo = JsonHelper.JsonToObj<CFMessageListInfo>(findtxt);
 
-                if (selectCDN != null)
-                {
-                    //添加
-                    request = new HttpRequestMessage(HttpMethod.Post, $"https://api.cloudflare.com/client/v4/zones/{cfZoom}/dns_records");
-                    request.Headers.Add("Authorization", $"Bearer {cfKey}");
-                    CFAddMessageInfo cfAdd = new CFAddMessageInfo();
-                    cfAdd.content = selectCDN.content2;
-                    cfAdd.name = genericUrl;
-                    cfAdd.proxied = false;
-                    cfAdd.type = selectCDN.content;
-                    cfAdd.comment = "自动创建解析";
-                    cfAdd.ttl = 60;
-                    var content = new StringContent(JsonHelper.ObjToJson(cfAdd), null, "text/plain");
-                    request.Content = content;
-                    var txt = await HttpHelper.SendAsync(request);
-                    var obj = JsonHelper.JsonToObj<CFMessageInfo>(txt);
+            //    bool isDelete = false;
+            //    if (findInfo.success && findInfo.result != null && findInfo.result.Count == 1)
+            //    {
+            //        //删除
+            //        request = new HttpRequestMessage(HttpMethod.Delete, $"https://api.cloudflare.com/client/v4/zones/{cfZoom}/dns_records/{findInfo.result[0].id}");
+            //        request.Headers.Add("Authorization", $"Bearer {cfKey}");
+            //        var deleteTxt = await HttpHelper.SendAsync(request);
+            //        var deleteInfo = JsonHelper.JsonToObj<CFMessageInfo>(deleteTxt);
+            //        LogHelper.logApp.Info($"删除先前域名解析-日志:{JsonHelper.ObjToJson(deleteInfo)}");
+            //        LogHelper.logApp.Info($"删除先前域名解析-数据:{JsonHelper.ObjToJson(findInfo)}");
+            //        isDelete = true;
+            //    }
 
-                    if (!obj.success)
-                    {
-                        //不成功就还原之前删除的
-                        if (isDelete)
-                        {
-                            request = new HttpRequestMessage(HttpMethod.Post, $"https://api.cloudflare.com/client/v4/zones/{cfZoom}/dns_records");
-                            request.Headers.Add("Authorization", $"Bearer {cfKey}");
-                            cfAdd = new CFAddMessageInfo();
-                            cfAdd.content = findInfo.result[0].content;
-                            cfAdd.name = genericUrl;
-                            cfAdd.proxied = false;
-                            cfAdd.type = findInfo.result[0].type;
-                            cfAdd.comment = "自动创建解析";
-                            cfAdd.ttl = 60;
-                            content = new StringContent(JsonHelper.ObjToJson(cfAdd), null, "text/plain");
-                            request.Content = content;
-                            txt = await HttpHelper.SendAsync(request);
-                            obj = JsonHelper.JsonToObj<CFMessageInfo>(txt);
-                        }
-                        throw new ServiceException($"添加失败!{JsonHelper.ObjToJson(obj)}");
-                    }
-                    else
-                    {
-                        //更新所有ns的cdn
-                        await Dal.Db.Updateable<Nightscout>().SetColumns(t => t.cdn, cdnCode).Where(t => t.cdn == defaultCDN.content).ExecuteCommandAsync();
-                        defaultCDN.content = cdnCode;
-                        await _dicService.PutDicType(defaultCDN); 
-                    }
-                }
-                else
-                {
-                    throw new ServiceException("未找到对应的CDN!");
-                }
-            }
-            else
-            {
-                throw new ServiceException("无需修改!");
-            }
+            //    //添加
+            //    var selectCDN = cdnList.Find(t => t.code.Equals(cdnCode)); 
+
+            //    if (selectCDN != null)
+            //    {
+            //        //添加
+            //        request = new HttpRequestMessage(HttpMethod.Post, $"https://api.cloudflare.com/client/v4/zones/{cfZoom}/dns_records");
+            //        request.Headers.Add("Authorization", $"Bearer {cfKey}");
+            //        CFAddMessageInfo cfAdd = new CFAddMessageInfo();
+            //        cfAdd.content = selectCDN.content2;
+            //        cfAdd.name = genericUrl;
+            //        cfAdd.proxied = false;
+            //        cfAdd.type = selectCDN.content;
+            //        cfAdd.comment = "自动创建解析";
+            //        cfAdd.ttl = 60;
+            //        var content = new StringContent(JsonHelper.ObjToJson(cfAdd), null, "text/plain");
+            //        request.Content = content;
+            //        var txt = await HttpHelper.SendAsync(request);
+            //        var obj = JsonHelper.JsonToObj<CFMessageInfo>(txt);
+
+            //        if (!obj.success)
+            //        {
+            //            //不成功就还原之前删除的
+            //            if (isDelete)
+            //            {
+            //                request = new HttpRequestMessage(HttpMethod.Post, $"https://api.cloudflare.com/client/v4/zones/{cfZoom}/dns_records");
+            //                request.Headers.Add("Authorization", $"Bearer {cfKey}");
+            //                cfAdd = new CFAddMessageInfo();
+            //                cfAdd.content = findInfo.result[0].content;
+            //                cfAdd.name = genericUrl;
+            //                cfAdd.proxied = false;
+            //                cfAdd.type = findInfo.result[0].type;
+            //                cfAdd.comment = "自动创建解析";
+            //                cfAdd.ttl = 60;
+            //                content = new StringContent(JsonHelper.ObjToJson(cfAdd), null, "text/plain");
+            //                request.Content = content;
+            //                txt = await HttpHelper.SendAsync(request);
+            //                obj = JsonHelper.JsonToObj<CFMessageInfo>(txt);
+            //            }
+            //            throw new ServiceException($"添加失败!{JsonHelper.ObjToJson(obj)}");
+            //        }
+            //        else
+            //        {
+            //            //更新所有ns的cdn
+            //            await Dal.Db.Updateable<Nightscout>().SetColumns(t => t.cdn, cdnCode).Where(t => t.cdn == defaultCDN.content).ExecuteCommandAsync();
+            //            defaultCDN.content = cdnCode;
+            //            await _dicService.PutDicType(defaultCDN); 
+            //        }
+            //    }
+            //    else
+            //    {
+            //        throw new ServiceException("未找到对应的CDN!");
+            //    }
+            //}
+            //else
+            //{
+            //    throw new ServiceException("无需修改!");
+            //}
 
         }
     
         /// <summary>
         /// 添加解析
         /// </summary>
-        /// <param name="nightscout"></param>
         /// <returns></returns>
-        public async Task<bool> ResolveDomain(Nightscout nightscout)
+        public async Task<bool> ResolveDomain(Nightscout nightscout, NightscoutServer nsserver)
         {
             NightscoutLog log = new NightscoutLog();
             log.success = true;
@@ -355,13 +355,31 @@ namespace MyDotnet.Services.Ns
             var cdnKey = await _dicService.GetDicData(CDNKey.KEY);
             var cfZoom = cdnKey.Find(t => CDNKey.zoomID.Equals(t.code)).content;
             var cfKey = cdnKey.Find(t => CDNKey.key.Equals(t.code)).content;
-
-            if (!defaultCDN.content.Equals(nightscout.cdn))
+            string defaultCDNcode = string.Empty;
+            if (nsserver.isIntranet)
+            {
+                //内网域名
+                defaultCDNcode = defaultCDN.content2;
+            }
+            else
+            {
+                //外网域名
+                defaultCDNcode = defaultCDN.content;
+            }
+            if (!defaultCDNcode.Equals(nightscout.cdn))
             {
                 //非默认cdn添加解析 
 
                 var selectCDN = cdnList.Find(t => t.code.Equals(nightscout.cdn));
-                if(selectCDN != null)
+                if (nsserver.isIntranet && !"inner".Equals(selectCDN.content4))
+                {
+                    throw new Exception("内网环境不能使用非内网环境");
+                }
+                if (!nsserver.isIntranet && !"out".Equals(selectCDN.content4))
+                {
+                    throw new Exception("外网环境不能使用非外网环境");
+                }
+                if (selectCDN != null)
                 {
                     //添加
                     var request = new HttpRequestMessage(HttpMethod.Post, $"https://api.cloudflare.com/client/v4/zones/{cfZoom}/dns_records");
@@ -579,7 +597,7 @@ namespace MyDotnet.Services.Ns
                                 sshMasterClient.Connect();
                                 using (var cmdMaster = sshMasterClient.CreateCommand(""))
                                 {
-                                    await StopNginxNs(nightscout, sb, cmdMaster);
+                                    await StopNginxNs(nightscout,nsserver, sb, cmdMaster);
                                 }
                                 sshMasterClient.Disconnect();
                             }
@@ -625,11 +643,14 @@ namespace MyDotnet.Services.Ns
 
         }
 
-        public async Task StopNginxNs(Nightscout nightscout, StringBuilder sb, SshCommand cmdMaster)
+        public async Task StopNginxNs(Nightscout nightscout, NightscoutServer nsserver, StringBuilder sb, SshCommand cmdMaster)
         {
+            //获取核心代理服务器
+            var proxyServer = await _nightscoutServerServices.Dal.QueryById(nsserver.nginxServerId);
+
             var resMaster = "";
-            var nsNginxCatalog = await _dicService.GetDicDataOne(NsInfo.KEY, NsInfo.nsNginxCatalog);
-            var excNginx = $"rm {nsNginxCatalog.content}/{nightscout.Id}.conf -f";
+            //var nsNginxCatalog = await _dicService.GetDicDataOne(NsInfo.KEY, NsInfo.nsNginxCatalog);
+            var excNginx = $"rm {proxyServer.nginxProxyDic}/{nightscout.Id}.conf -f";
             resMaster += cmdMaster.Execute(excNginx);
 
             resMaster += cmdMaster.Execute("docker exec -t nginxserver nginx -s reload");
@@ -826,11 +847,9 @@ namespace MyDotnet.Services.Ns
                 StringBuilder sb = new StringBuilder();
                 try
                 {
-                    string webConfig = GetNsWebConfig(nightscout, nsserver);
 
-                    //这儿会有两种安装方式
-                    //一是按服务器的IP+端口部署(ns和nginx在同一服务器)
-                    //二是按本机实例IP+1337端口部署
+                    //获取nginx启动配置
+                    string webConfig = await GetNsWebConfig(nightscout, nsserver);
 
 
 
@@ -866,7 +885,7 @@ namespace MyDotnet.Services.Ns
                                     sshMasterClient.Connect();
                                     using (var cmdMaster = sshMasterClient.CreateCommand(""))
                                     {
-                                        await StartNginxNs(nightscout, sb, webConfig, cmdMaster);
+                                        await StartNginxNs(nightscout,nsserver, sb, webConfig, cmdMaster);
                                     }
                                     sshMasterClient.Disconnect();
                                 }
@@ -909,16 +928,19 @@ namespace MyDotnet.Services.Ns
             }
         }
 
-        public async Task StartNginxNs(Nightscout nightscout, StringBuilder sb, string webConfig, SshCommand cmdMaster)
+        public async Task StartNginxNs(Nightscout nightscout, NightscoutServer nsserver, StringBuilder sb, string webConfig, SshCommand cmdMaster)
         {
             var resMaster = "";
 
             //FileHelper.WriteFile($"/etc/nginx/conf.d/nightscout/{nightscout.Id}.conf", webConfig);
 
+            //获取核心代理服务器
+            var proxyServer = await _nightscoutServerServices.Dal.QueryById(nsserver.nginxServerId);
+            
 
-            var nsNginxCatalog = await _dicService.GetDicDataOne(NsInfo.KEY, NsInfo.nsNginxCatalog);
+            //var nsNginxCatalog = await _dicService.GetDicDataOne(NsInfo.KEY, NsInfo.nsNginxCatalog);
             var excNginx = $@"
-cat > {nsNginxCatalog.content}/{nightscout.Id}.conf << 'EOF'
+cat > {proxyServer.nginxProxyDic}/{nightscout.Id}.conf << 'EOF'
 {webConfig}
 EOF
 
@@ -990,14 +1012,14 @@ EOF
                                         res = cmd.Execute($"docker rm {nightscout.serviceName}");
                                         sb.AppendLine($"删除实例:{res}");
                                         //停止访问
-                                        await StopNginxNs(nightscout, sb, cmdMaster);
+                                        await StopNginxNs(nightscout,nsserver, sb, cmdMaster);
                                         //获取docker指令
                                         string cmdStr = await GetNsDockerConfig(nightscout, nsserver);
                                         res = cmd.Execute(cmdStr);
                                         sb.AppendLine($"启动实例:{res}");
                                         //获取nginx指令
-                                        string webConfig = GetNsWebConfig(nightscout, nsserver);
-                                        await StartNginxNs(nightscout, sb, webConfig, cmdMaster);
+                                        string webConfig = await GetNsWebConfig(nightscout, nsserver);
+                                        await StartNginxNs(nightscout, nsserver, sb, webConfig, cmdMaster);
 
                                         log.success = true;
                                     }
@@ -1086,23 +1108,23 @@ EOF
         public async Task<string> GetNsDockerConfig(Nightscout nightscout, NightscoutServer nsserver)
         {
             List<string> args = new List<string>();
-            if (nightscout.exposedPort > 0)
-            {
-                //外网
-                args.Add($"docker run -m {(nightscout.nsMemory > 0 ? nightscout.nsMemory : 100)}m --cpus=1 --restart=always -p {nightscout.exposedPort}:1337 --name {nightscout.serviceName}");
-            }
-            else
-            {
-                //内网
-                args.Add($"docker run -m {(nightscout.nsMemory > 0 ? nightscout.nsMemory : 100)}m --cpus=1 --restart=always --net mynet --ip {nightscout.instanceIP} --name {nightscout.serviceName}");
-            }
+            args.Add($"docker run -m {(nightscout.nsMemory > 0 ? nightscout.nsMemory : 100)}m --cpus=1 --restart=always -p {nightscout.exposedPort}:1337 --name {nightscout.serviceName}");
             args.Add($"-e TZ=Asia/Shanghai");
             args.Add($"-e NODE_ENV=production");
             args.Add($"-e INSECURE_USE_HTTP='true'");
 
             //数据库链接
             var curNsserverMongoSsh = await _nightscoutServerServices.Dal.QueryById(nsserver.mongoServerId);
-            var connectionMongoString = $"mongodb://{curNsserverMongoSsh.mongoLoginName}:{curNsserverMongoSsh.mongoLoginPassword}@{curNsserverMongoSsh.mongoIp}:{curNsserverMongoSsh.mongoPort}/{nightscout.serviceName}";
+            var connectionMongoString = string.Empty;
+            if (curNsserverMongoSsh.isIntranet)
+            {
+                connectionMongoString = $"mongodb://{curNsserverMongoSsh.mongoLoginName}:{curNsserverMongoSsh.mongoLoginPassword}@{curNsserverMongoSsh.innerMongoIp}:{curNsserverMongoSsh.innerMongoPort}/{nightscout.serviceName}";
+            }
+            else
+            {
+                connectionMongoString = $"mongodb://{curNsserverMongoSsh.mongoLoginName}:{curNsserverMongoSsh.mongoLoginPassword}@{curNsserverMongoSsh.mongoIp}:{curNsserverMongoSsh.mongoPort}/{nightscout.serviceName}";
+            }
+            
 
             args.Add($"-e MONGO_CONNECTION='{connectionMongoString}'");
             args.Add($"-e API_SECRET={nightscout.passwd}");
@@ -1216,17 +1238,20 @@ EOF
         /// <param name="nightscout"></param>
         /// <param name="nsserver"></param>
         /// <returns></returns>
-        public string GetNsWebConfig(Nightscout nightscout, NightscoutServer nsserver)
+        public async Task<string> GetNsWebConfig(Nightscout nightscout, NightscoutServer nsserver)
         {
             var nsInfo = _dicService.GetDicData(NsInfo.KEY).Result;
+
+            //获取核心代理服务器
+            var proxyServer = await _nightscoutServerServices.Dal.QueryById(nsserver.nginxServerId);
 
             return @$"
 server {{
     listen 443 ssl ;
     server_name {nightscout.url} {nightscout.backupurl};
 
-    ssl_certificate ""/etc/nginx/conf.d/{(string.IsNullOrEmpty(nightscout.sslCerName) ? nsInfo.Find(t => NsInfo.cer.Equals(t.code)).content : nightscout.sslCerName)}"";
-    ssl_certificate_key ""/etc/nginx/conf.d/{(string.IsNullOrEmpty(nightscout.sslKeyName) ? nsInfo.Find(t => NsInfo.key.Equals(t.code)).content : nightscout.sslKeyName)}"";
+    ssl_certificate ""/etc/nginx/conf.d/{(string.IsNullOrEmpty(nightscout.sslCerName) ? proxyServer.nginxCer : nightscout.sslCerName)}"";
+    ssl_certificate_key ""/etc/nginx/conf.d/{(string.IsNullOrEmpty(nightscout.sslKeyName) ? proxyServer.nginxKey : nightscout.sslKeyName)}"";
 
     ssl_protocols TLSv1.2 TLSv1.3;
     ssl_ciphers ALL:!DH:!EXPORT:!RC4:+HIGH:+MEDIUM:!eNULL;
@@ -1241,7 +1266,7 @@ server {{
         proxy_set_header Connection $connection_upgrade;
         proxy_redirect off;
         proxy_http_version 1.1;
-        proxy_pass http://{(nightscout.exposedPort > 0 ? nsserver.serverIp : nightscout.instanceIP)}:{(nightscout.exposedPort > 0 ? nightscout.exposedPort : 1337)};
+        proxy_pass http://{(nsserver.isIntranet? nsserver.innerServerIp: nsserver.serverIp)}:{nightscout.exposedPort};
     }}
     
 }}

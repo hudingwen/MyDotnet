@@ -103,15 +103,76 @@ namespace MyDotnet.Domain.Entity.Ns
         /// </summary>
         public long nginxServerId { get; set; }
         /// <summary>
-        /// 网关节点服务器id(ssh)(暂未启用)
+        /// 服务器指标数据端口
         /// </summary>
-        public int nodeExportPort { get; set; } 
+        public int nodeExportPort { get; set; }
         /// <summary>
         /// 内存占用百分比
         /// </summary>
         [SugarColumn(IsIgnore = true)]
         public double memory { get; set; }
+
+
+        /// <summary>
+        /// 是否内网环境
+        /// </summary>
+        public bool isIntranet { get; set; }
+
+
+        /// <summary>
+        /// 内网服务器地址
+        /// </summary>
+        public string innerServerIp { get; set; }
+
+        /// <summary>
+        /// 内网服务器端口
+        /// </summary>
+        public int innerServerPort { get; set; }
+
+        /// <summary>
+        /// 内网MongoDB数据库
+        /// </summary>
+        public string innerMongoIp { get; set; }
+
+        /// <summary>
+        /// 内网MongoDB端口
+        /// </summary>
+        public int innerMongoPort { get; set; }
+        /// <summary>
+        /// 内网服务器指标数据端口
+        /// </summary>
+        public int InnerNodeExportPort { get; set; }
+
+        /// <summary>
+        /// nginx域名模板
+        /// </summary>
+        public string nginxUrlTemplate { get; set; }
+
+        /// <summary>
+        /// nginx泛域名
+        /// </summary>
+        public string nginxUrlAll { get; set; }
+        /// <summary>
+        /// nginx证书cer
+        /// </summary>
+        public string nginxCer { get; set; }
+        /// <summary>
+        /// nginx证书key
+        /// </summary>
+        public string nginxKey { get; set; }
+        /// <summary>
+        /// nginx代理访问ns目录
+        /// </summary>
+        public string nginxProxyDic { get; set; }
+
         
+
+
+
+
+
+
+
 
 
     }

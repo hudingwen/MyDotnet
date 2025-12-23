@@ -38,21 +38,21 @@ namespace MyDotnet.Tasks.QuartzJob
             if (jobid > 0)
             {
                 //重启docker服务
-                var master = (await _nightscoutServerServices.Dal.Query(t => t.isNginx == true)).FirstOrDefault();
-                if (master != null)
-                {
-                    using (var sshMasterClient = new SshClient(master.serverIp, master.serverPort, master.serverLoginName, master.serverLoginPassword))
-                    {
-                        sshMasterClient.Connect();
-                        using (var cmdMaster = sshMasterClient.CreateCommand(""))
-                        {
-                            JobDataMap data = context.JobDetail.JobDataMap;
-                            string pars = data.GetString("JobParam");
-                            var resMaster = cmdMaster.Execute(pars);
-                        }
-                        sshMasterClient.Disconnect();
-                    }
-                }
+                //var master = (await _nightscoutServerServices.Dal.Query(t => t.isNginx == true)).FirstOrDefault();
+                //if (master != null)
+                //{
+                //    using (var sshMasterClient = new SshClient(master.serverIp, master.serverPort, master.serverLoginName, master.serverLoginPassword))
+                //    {
+                //        sshMasterClient.Connect();
+                //        using (var cmdMaster = sshMasterClient.CreateCommand(""))
+                //        {
+                //            JobDataMap data = context.JobDetail.JobDataMap;
+                //            string pars = data.GetString("JobParam");
+                //            var resMaster = cmdMaster.Execute(pars);
+                //        }
+                //        sshMasterClient.Disconnect();
+                //    }
+                //}
             }
         }
     }

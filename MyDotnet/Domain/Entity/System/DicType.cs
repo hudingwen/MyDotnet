@@ -34,6 +34,16 @@ namespace MyDotnet.Domain.Entity.System
         [SugarColumn(Length = 100, IsNullable = true)]
         public string content3 { set; get; }
         /// <summary>
+        /// 字典内容4
+        /// </summary>
+        [SugarColumn(Length = 100, IsNullable = true)]
+        public string content4 { set; get; }
+        /// <summary>
+        /// 字典内容5
+        /// </summary>
+        [SugarColumn(Length = 100, IsNullable = true)]
+        public string content5 { set; get; }
+        /// <summary>
         /// 字典描述
         /// </summary>
         [SugarColumn(Length = 100, IsNullable = true)]
