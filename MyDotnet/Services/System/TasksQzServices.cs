@@ -130,7 +130,6 @@ namespace MyDotnet.Services.System
             var model = await Dal.QueryById(jobId);
             if (model != null)
             {
-                _unitOfWorkManage.BeginTran();
                 data.success = await Dal.Delete(model);
                 try
                 {
@@ -147,17 +146,12 @@ namespace MyDotnet.Services.System
                     }
 
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-                    throw;
-                }
-                finally
-                {
-                    if (data.success)
-                        _unitOfWorkManage.CommitTran();
-                    else
-                        _unitOfWorkManage.RollbackTran();
-                }
+                    data.msg = ex.Message;
+                    data.success = false;
+                    LogHelper.logApp.Error("内存任务停止异常", ex);
+                } 
             }
             else
             {

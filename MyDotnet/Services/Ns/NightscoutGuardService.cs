@@ -348,6 +348,7 @@ namespace MyDotnet.Services.Ns
             {
                 var i = await _baseRepositoryUser.DeleteById(user.Id);
                 var task = (await _tasksQzServices.Dal.Query(t => t.ResourceId == user.Id)).FirstOrDefault();
+
                 if (task != null)
                 {
                     await _tasksQzServices.DeleteTask(task.Id);
