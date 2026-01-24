@@ -278,7 +278,7 @@ namespace MyDotnet.Controllers.Ns
             foreach (var item in data.data)
             {
                 var server = setvers.Find(t => t.Id == item.serverId);
-                item.instanceIP = server.serverIp;
+                item.instanceIP = server.isIntranet?server.innerServerIp:server.serverIp;
             }
 
             var nsInfo = await _dictService.GetDicData(NsInfo.KEY);
@@ -436,7 +436,7 @@ namespace MyDotnet.Controllers.Ns
                     }
                     nsserver.curExposedPort += 1;
                     request.exposedPort = nsserver.curExposedPort;
-                    request.instanceIP = nsserver.serverIp;
+                    request.instanceIP = nsserver.isIntranet ? nsserver.innerServerIp : nsserver.serverIp;
 
                     //不填写自动生成
                     var padName = curSerial.ObjToString().PadLeft(3, '0');
@@ -572,7 +572,7 @@ namespace MyDotnet.Controllers.Ns
                 }
                 nsserver.curExposedPort += 1;
                 request.exposedPort = nsserver.curExposedPort;
-                request.instanceIP = nsserver.serverIp;
+                request.instanceIP = nsserver.isIntranet ? nsserver.innerServerIp : nsserver.serverIp;
 
                 var check2 = await CheckData(request);
                 if (!check2.success)
