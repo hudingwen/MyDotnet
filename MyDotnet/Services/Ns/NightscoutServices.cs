@@ -549,6 +549,9 @@ namespace MyDotnet.Services.Ns
                                         }
                                     };
                             var result = database.RunCommand<BsonDocument>(command);
+
+
+                            sb.AppendLine($"创建mongo用户:{(result == null ? "" : result.ToJson())}");
                         }
                         catch (Exception ex)
                         {
@@ -571,6 +574,9 @@ namespace MyDotnet.Services.Ns
                                 .Set("mills", timestamp)
                                 .Set("startDate", date.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"));
                             var updateRes = collection.UpdateOne(filter, update);
+
+
+                            sb.AppendLine($"创建mongo数据库:"); 
                         }
                         catch (Exception ex)
                         {
@@ -738,6 +744,7 @@ namespace MyDotnet.Services.Ns
                 try
                 {
                     client.DropDatabase(nightscout.serviceName);
+                    sb.AppendLine($"删除mongo数据库:");
                 }
                 catch (Exception ex)
                 {
