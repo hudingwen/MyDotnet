@@ -335,6 +335,7 @@ namespace MyDotnet.Services.Ns
             //{
             //    throw new ServiceException("无需修改!");
             //}
+            await Task.CompletedTask;
 
         }
     
@@ -551,7 +552,7 @@ namespace MyDotnet.Services.Ns
                         }
                         catch (Exception ex)
                         {
-                            sb.Append($"创建用户失败:{ex.Message}");
+                            sb.AppendLine($"创建用户失败:{ex.Message}");
                         }
 
                         //初始化数据库
@@ -573,12 +574,14 @@ namespace MyDotnet.Services.Ns
                         }
                         catch (Exception ex)
                         {
-                            sb.Append($"创建初始化数据失败:{ex.Message}");
+                            sb.AppendLine($"创建初始化数据失败:{ex.Message}");
                         }
                     }
 
                     sshClient.Disconnect();
                 }
+
+
                 log.success = true;
             }
             catch (Exception ex)
@@ -616,30 +619,13 @@ namespace MyDotnet.Services.Ns
 
                 using (var sshClient = new SshClient(nsserver.serverIp, nsserver.serverPort, nsserver.serverLoginName, nsserver.serverLoginPassword))
                 {
+                    //停止实例
                     //创建SSH
                     //sshClient.Connect();
                     ConnectWithRetry(sshClient);
                     using (var cmd = sshClient.CreateCommand(""))
                     {
-                        //刷新nginx
-                        var master = await _nightscoutServerServices.Dal.QueryById(nsserver.nginxServerId);
-                        if (master != null)
-                        {
-                            using (var sshMasterClient = new SshClient(master.serverIp, master.serverPort, master.serverLoginName, master.serverLoginPassword))
-                            {
-                                //sshMasterClient.Connect();
-                                ConnectWithRetry(sshMasterClient);
-                                using (var cmdMaster = sshMasterClient.CreateCommand(""))
-                                {
-                                    await StopNginxNs(nightscout,nsserver, sb, cmdMaster);
-                                }
-                                sshMasterClient.Disconnect();
-                            }
-                        }
-                        else
-                        {
-                            sb.AppendLine("没有找到nginx服务器");
-                        }
+                       
                         //停止实例
                         var res = cmd.Execute($"docker stop {nightscout.serviceName}");
                         sb.AppendLine($"停止实例:{res}");
@@ -649,6 +635,27 @@ namespace MyDotnet.Services.Ns
                         sb.AppendLine($"删除实例:{res}");
                     }
                     sshClient.Disconnect();
+
+
+                    //刷新nginx
+                    var master = await _nightscoutServerServices.Dal.QueryById(nsserver.nginxServerId);
+                    if (master != null)
+                    {
+                        using (var sshMasterClient = new SshClient(master.serverIp, master.serverPort, master.serverLoginName, master.serverLoginPassword))
+                        {
+                            //sshMasterClient.Connect();
+                            ConnectWithRetry(sshMasterClient);
+                            using (var cmdMaster = sshMasterClient.CreateCommand(""))
+                            {
+                                await StopNginxNs(nightscout, nsserver, sb, cmdMaster);
+                            }
+                            sshMasterClient.Disconnect();
+                        }
+                    }
+                    else
+                    {
+                        sb.AppendLine("没有找到nginx服务器");
+                    }
                 }
                 log.success = true;
             }
@@ -721,7 +728,7 @@ namespace MyDotnet.Services.Ns
                 try
                 {
                     var delUserInfo = database.RunCommand<BsonDocument>(deleteUserCommand);
-                    sb.AppendLine(delUserInfo == null ? "" : delUserInfo.ToJson());
+                    sb.AppendLine($"删除mongo用户:{(delUserInfo == null ? "" : delUserInfo.ToJson())}");
                 }
                 catch (Exception ex)
                 {
@@ -768,7 +775,7 @@ namespace MyDotnet.Services.Ns
             NightscoutLog log = new NightscoutLog();
             try
             {
-                //备份
+                //备份原服务器数据
                 var curNsserverMongoSsh = await _nightscoutServerServices.Dal.QueryById(oldnsserver.mongoServerId);
                 using (var sshClient = new SshClient(curNsserverMongoSsh.serverIp, curNsserverMongoSsh.serverPort, curNsserverMongoSsh.serverLoginName, curNsserverMongoSsh.serverLoginPassword))
                 {
@@ -779,48 +786,49 @@ namespace MyDotnet.Services.Ns
                         //docker备份
                         var res = cmd.Execute($"docker exec -t mongoserver mongodump -u={curNsserverMongoSsh.mongoLoginName} -p={curNsserverMongoSsh.mongoLoginPassword} --db {nightscout.serviceName} -o /data/backup");
                         //宿主机打包
-                        res = cmd.Execute($"zip -j -q -r /root/mongo/backup/{nightscout.serviceName}.zip /root/mongo/backup/{nightscout.serviceName}/*");
-                        //拷贝宿主文件到当前程序下
-                        using (var scpClient = new ScpClient(sshClient.ConnectionInfo))
-                        {
-                            var localPath = Path.Combine(_env.ContentRootPath, $"{nightscout.serviceName}.zip");
-                            //scpClient.Connect();
-                            ConnectWithRetry(scpClient);
-                            scpClient.Download($"/root/mongo/backup/{nightscout.serviceName}.zip", new FileInfo(localPath));
-                            scpClient.Disconnect();
-                        }
-
+                        res = cmd.Execute($"zip -j -q -r /root/mongo/backup/{nightscout.serviceName}.zip /root/mongo/backup/{nightscout.serviceName}/*"); 
                     }
                     sshClient.Disconnect();
-                    sb.Append("备份完成");
+                    sb.AppendLine("备份完成");
+                } 
+                //拷贝宿主文件到当前程序下
+                using (var scpClient = new ScpClient(curNsserverMongoSsh.serverIp, curNsserverMongoSsh.serverPort, curNsserverMongoSsh.serverLoginName, curNsserverMongoSsh.serverLoginPassword))
+                {
+                    var localPath = Path.Combine(_env.ContentRootPath, $"{nightscout.serviceName}.zip");
+                    //scpClient.Connect();
+                    ConnectWithRetry(scpClient);
+                    scpClient.Download($"/root/mongo/backup/{nightscout.serviceName}.zip", new FileInfo(localPath));
+                    scpClient.Disconnect();
+                    sb.AppendLine("下载完成");
                 }
+
                 //还原
                 curNsserverMongoSsh = await _nightscoutServerServices.Dal.QueryById(newnsserver.mongoServerId);
+                //上传新服务器
+                using (var scpClient = new ScpClient(curNsserverMongoSsh.serverIp, curNsserverMongoSsh.serverPort, curNsserverMongoSsh.serverLoginName, curNsserverMongoSsh.serverLoginPassword))
+                {
+                    var localPath = Path.Combine(_env.ContentRootPath, $"{nightscout.serviceName}.zip");
+                    //scpClient.Connect();
+                    ConnectWithRetry(scpClient);
+                    scpClient.Upload(new FileInfo(localPath), $"/root/mongo/backup/{nightscout.serviceName}.zip");
+                    scpClient.Disconnect();
+                    FileHelper.FileDel(localPath);
+                    sb.AppendLine("上传完成");
+                }
+                //解压数据并还原到数据库中
                 using (var sshClient = new SshClient(curNsserverMongoSsh.serverIp, curNsserverMongoSsh.serverPort, curNsserverMongoSsh.serverLoginName, curNsserverMongoSsh.serverLoginPassword))
                 {
                     //sshClient.Connect();
                     ConnectWithRetry(sshClient);
                     using (var cmd = sshClient.CreateCommand(""))
                     {
-                        //拷贝到另一台服务器上
-                        using (var scpClient = new ScpClient(sshClient.ConnectionInfo))
-                        {
-                            var localPath = Path.Combine(_env.ContentRootPath, $"{nightscout.serviceName}.zip");
-                            //scpClient.Connect();
-                            ConnectWithRetry(scpClient);
-                            scpClient.Upload(new FileInfo(localPath), $"/root/mongo/backup/{nightscout.serviceName}.zip");
-                            scpClient.Disconnect();
-                            FileHelper.FileDel(localPath);
-                        }
+                       
                         //解压
-                        var res = cmd.Execute($"unzip -o -d /root/mongo/backup/{nightscout.serviceName} /root/mongo/backup/{nightscout.serviceName}.zip");
-
-
+                        var res = cmd.Execute($"unzip -o -d /root/mongo/backup/{nightscout.serviceName} /root/mongo/backup/{nightscout.serviceName}.zip");  
                         //创建用户
                         var grantConnectionMongoString = $"mongodb://{curNsserverMongoSsh.mongoLoginName}:{curNsserverMongoSsh.mongoLoginPassword}@{curNsserverMongoSsh.mongoIp}:{curNsserverMongoSsh.mongoPort}";
                         var client = new MongoClient(grantConnectionMongoString);
-
-
+                         
                         var database = client.GetDatabase(nightscout.serviceName);
 
                         try
@@ -845,7 +853,7 @@ namespace MyDotnet.Services.Ns
 
                         //还原
                         res = cmd.Execute($"docker exec -t mongoserver mongorestore -u={curNsserverMongoSsh.mongoLoginName} -p={curNsserverMongoSsh.mongoLoginPassword} -d {nightscout.serviceName} /data/backup/{nightscout.serviceName}");
-                        sb.Append("还原完成");
+                        sb.AppendLine("还原完成");
                     }
                     sshClient.Disconnect();
                 }
@@ -883,12 +891,7 @@ namespace MyDotnet.Services.Ns
                 StringBuilder sb = new StringBuilder();
                 try
                 {
-
-                    //获取nginx启动配置
-                    string webConfig = await GetNsWebConfig(nightscout, nsserver);
-
-
-
+                    //启动实例
                     using (var sshClient = new SshClient(nsserver.serverIp, nsserver.serverPort, nsserver.serverLoginName, nsserver.serverLoginPassword))
                     {
                         //创建SSH
@@ -897,8 +900,6 @@ namespace MyDotnet.Services.Ns
 
                         using (var cmd = sshClient.CreateCommand(""))
                         {
-
-
                             //停止实例
                             var res = cmd.Execute($"docker stop {nightscout.serviceName}");
                             sb.AppendLine($"停止实例:{res}");
@@ -912,30 +913,33 @@ namespace MyDotnet.Services.Ns
                             res = cmd.Execute(cmdStr);
                             sb.AppendLine($"启动实例:{res}");
 
-                            //刷新nginx
-                            //var master = (await _nightscoutServerServices.Dal.Query(t => t.isNginx == true)).FirstOrDefault();
-                            var master = await _nightscoutServerServices.Dal.QueryById(nsserver.nginxServerId);
-                            if (master != null)
-                            {
-                                using (var sshMasterClient = new SshClient(master.serverIp, master.serverPort, master.serverLoginName, master.serverLoginPassword))
-                                {
-                                    //sshMasterClient.Connect();
-                                    ConnectWithRetry(sshMasterClient);
-                                    using (var cmdMaster = sshMasterClient.CreateCommand(""))
-                                    {
-                                        await StartNginxNs(nightscout,nsserver, sb, webConfig, cmdMaster);
-                                    }
-                                    sshMasterClient.Disconnect();
-                                }
-                            }
-                            else
-                            {
-                                sb.AppendLine("没有找到nginx服务器");
-                            }
+                            
                         }
-
                         sshClient.Disconnect();
                     }
+
+                    //获取nginx启动配置
+                    string webConfig = await GetNsWebConfig(nightscout, nsserver);
+                    //刷新nginx
+                    var master = await _nightscoutServerServices.Dal.QueryById(nsserver.nginxServerId);
+                    if (master != null)
+                    {
+                        using (var sshMasterClient = new SshClient(master.serverIp, master.serverPort, master.serverLoginName, master.serverLoginPassword))
+                        {
+                            //sshMasterClient.Connect();
+                            ConnectWithRetry(sshMasterClient);
+                            using (var cmdMaster = sshMasterClient.CreateCommand(""))
+                            {
+                                await StartNginxNs(nightscout, nsserver, sb, webConfig, cmdMaster);
+                            }
+                            sshMasterClient.Disconnect();
+                        }
+                    }
+                    else
+                    {
+                        sb.AppendLine("没有找到nginx服务器");
+                    }
+
                     log.success = true;
                 }
                 catch (Exception ex)
