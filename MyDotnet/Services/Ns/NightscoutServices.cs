@@ -454,16 +454,16 @@ namespace MyDotnet.Services.Ns
                 var obj2 = JsonHelper.JsonToObj<CFMessageInfo>(txt);
                 if (obj2.success)
                 {
-                    log.content = "删除解析成功";
+                    log.content = "域名切换:删除解析成功";
                 }
                 else
                 {
-                    log.content = "删除解析失败";
+                    log.content = "域名切换:删除解析失败";
                 }
             }
             else
             {
-                log.content = "没有要删除的解析";
+                log.content = "域名切换:没有要删除的解析";
             }
             log.pid = nightscout.Id;
             log.success = obj.success;
@@ -863,7 +863,11 @@ namespace MyDotnet.Services.Ns
                         sb.AppendLine("还原完成");
                     }
                     sshClient.Disconnect();
+
                 }
+                //日志记录成功
+                log.success = true;
+                //标识迁移完成
                 return true;
             }
             catch (Exception ex)
