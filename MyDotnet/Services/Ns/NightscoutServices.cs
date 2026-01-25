@@ -398,11 +398,11 @@ namespace MyDotnet.Services.Ns
                     var obj = JsonHelper.JsonToObj<CFMessageInfo>(txt);
                     if (obj.success)
                     {
-                        log.content = "添加解析成功";
+                        log.content = "域名切换:添加解析成功";
                     }
                     else
                     {
-                        log.content = "添加解析失败";
+                        log.content = "域名切换:添加解析失败";
                     }
                     log.pid = nightscout.Id;
                     log.success = obj.success;
@@ -410,12 +410,12 @@ namespace MyDotnet.Services.Ns
                 }
                 else
                 {
-                    log.content = "添加默认解析";
+                    log.content = "域名切换:添加默认解析";
                 }
             }
             else
             {
-                log.content = "添加默认解析";
+                log.content = "域名切换:添加默认解析";
             }
             try
             {
