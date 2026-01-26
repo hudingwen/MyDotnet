@@ -39,8 +39,13 @@ namespace MyDotnet.Domain.Entity.System
         /// <summary>
         /// 任务描述
         /// </summary>
-        [SugarColumn(Length = 2000, IsNullable = true)]
-        public string Remark { get; set; }
+        [SugarColumn(IsNullable = true)]
+        public string Remark { get; set; } 
+        /// <summary>
+        /// 前十条运行日志记录
+        /// </summary>
+        [SugarColumn(IsNullable = true)]
+        public string Logs { get; set; }
         /// <summary>
         /// 执行次数
         /// </summary>

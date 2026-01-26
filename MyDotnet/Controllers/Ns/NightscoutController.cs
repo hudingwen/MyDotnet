@@ -532,6 +532,9 @@ namespace MyDotnet.Controllers.Ns
             var old = await _nightscoutServices.Dal.QueryById(request.Id);
             var nsserver = await _nightscoutServerServices.Dal.QueryById(request.serverId);
 
+            //TODO
+            //切换域名和服务器能否访问的域名进行匹配 比如国内域名实例不能部署到国外 国外域名不能部署到国内服务器
+
             data.success = await _nightscoutServices.Dal.Update(request);
             if (data.success)
             {
@@ -555,6 +558,7 @@ namespace MyDotnet.Controllers.Ns
                     await _nightscoutServices.ResolveDomain(request, nsserver);
                 }
             }
+
 
             
             if (!request.serverId.Equals(old.serverId))

@@ -1,4 +1,5 @@
-﻿using MyDotnet.Config;
+﻿using AppStoreConnect.Model;
+using MyDotnet.Config;
 using MyDotnet.Domain.Attr;
 using MyDotnet.Domain.Dto.Ns;
 using MyDotnet.Domain.Dto.System;
@@ -136,9 +137,23 @@ namespace MyDotnet.Tasks.QuartzJob
                         //获取监护用户
                         var users = await _nightscoutGuardService.Dal.Query(t=>t.gid == account.Id & t.Enabled == true);
 
-                        foreach (var user in users)
+                        foreach (var userTemp in users)
                         {
                             //开启下一次获取血糖任务
+                            var user = userTemp;
+
+                            //添加新用户逻辑判断是否存在监护用户被删除的情况，但是任务还在轮询中
+                            var temp = await _nightscoutGuardService.Dal.QueryById(user.Id);
+                            if (temp == null)
+                            {
+                                //跳过不存在的监护任务
+                                continue;
+                            }
+                            else
+                            { 
+                                //更新最新数据
+                                user = temp;
+                            }
 
                             //查找任务(监护用户id作为任务id,一个用户只有一个任务)
                             var userTask = (await _tasksQzServices.Dal.Query(t => t.ResourceId == user.Id)).FirstOrDefault();
@@ -150,6 +165,7 @@ namespace MyDotnet.Tasks.QuartzJob
                             {
                                 if (nightscout.endTime > DateTime.Now && nightscout.isStop == false)
                                 {
+                                   
 
                                     userTask = new TasksQz();
                                     //创建任务信息
@@ -182,7 +198,7 @@ namespace MyDotnet.Tasks.QuartzJob
                                 var isRunnig = await _schedulerCenter.IsExistScheduleJobAsync(userTask);
                                 if (!isRunnig)
                                 {
-                                    if(nightscout.endTime > DateTime.Now && nightscout.isStop == false)
+                                    if (nightscout.endTime > DateTime.Now && nightscout.isStop == false)
                                     {
                                         //主动运行
                                         userTask.Cron = DateTime.Now.AddSeconds(30).ToString("ss mm HH dd MM ? yyyy");
@@ -195,7 +211,7 @@ namespace MyDotnet.Tasks.QuartzJob
                                     }
                                 }
                                 else
-                                { 
+                                {
                                     TriggerKey triggerKey = new TriggerKey(userTask.Id.ToString(), userTask.JobGroup);
                                     TriggerState triggerState = await _schedulerCenter.GetTriggerState(triggerKey);
 

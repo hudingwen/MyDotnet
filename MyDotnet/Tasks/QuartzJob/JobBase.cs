@@ -68,29 +68,43 @@ namespace MyDotnet.Tasks.QuartzJob
                 jobHistory += $"(耗时:{tasksLog.TotalTime}秒)";
                 if (_tasksQzServices != null)
                 {
-                    var model = await _tasksQzServices.Dal.QueryById(jobid);
-                    if (model != null)
+                    try
                     {
-                        model.RunTimes += 1;
-                        if (!isNowExecute)
+                        var model = await _tasksQzServices.Dal.QueryById(jobid);
+                        if (model != null)
                         {
-                            if (model.TriggerType == 0)
+                            model.RunTimes += 1;
+                            if (!isNowExecute)
                             {
-                                model.CycleHasRunTimes += 1;
-                                if (model.CycleRunTimes != 0 && model.CycleHasRunTimes >= model.CycleRunTimes)
+                                if (model.TriggerType == 0)
                                 {
-                                    model.IsStart = false;//循环完善,当循环任务完成后,停止该任务,防止下次启动再次执行
+                                    model.CycleHasRunTimes += 1;
+                                    if (model.CycleRunTimes != 0 && model.CycleHasRunTimes >= model.CycleRunTimes)
+                                    {
+                                        model.IsStart = false;//循环完善,当循环任务完成后,停止该任务,防止下次启动再次执行
+                                    }
                                 }
-                            } 
+                            }
+                            var separator = "<br>";
+                            // 这里注意数据库字段的长度问题，超过限制，会造成数据库remark不更新问题。
+                            model.Logs = $"{jobHistory}{separator}" + string.Join(separator, StringHelper.GetTopDataBySeparator(model.Logs, separator, 9));
+                            await _tasksQzServices.Dal.Update(model);
                         }
-                        var separator = "<br>";
-                        // 这里注意数据库字段的长度问题，超过限制，会造成数据库remark不更新问题。
-                        model.Remark =
-                            $"{jobHistory}{separator}" + string.Join(separator, StringHelper.GetTopDataBySeparator(model.Remark, separator, 9));
-                        await _tasksQzServices.Dal.Update(model);
+                    }
+                    catch (Exception ex)
+                    {
+                        LogHelper.logApp.Error("更新任务记录异常",ex);
                     }
 
-                    if (_tasksLogServices != null) await _tasksLogServices.Dal.Add(tasksLog);
+                    try
+                    { 
+                        tasksLog.Logs = jobHistory;
+                        if (_tasksLogServices != null) await _tasksLogServices.Dal.Add(tasksLog);
+                    }
+                    catch (Exception ex)
+                    {
+                        LogHelper.logApp.Error("运行日志记录异常",ex);
+                    }
                 }
             }
             Console.Out.WriteLine(jobHistory);

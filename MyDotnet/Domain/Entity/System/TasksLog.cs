@@ -75,6 +75,11 @@ namespace MyDotnet.Domain.Entity.System
         [SugarColumn(IsNullable = true)]
         public DateTime? ModifyTime { get; set; } = DateTime.Now;
         /// <summary>
+        /// 运行日志记录
+        /// </summary>
+        [SugarColumn( IsNullable = true)]
+        public string Logs { get; set; }
+        /// <summary>
         /// 任务名称
         /// </summary>
         [SugarColumn(IsIgnore = true)]
