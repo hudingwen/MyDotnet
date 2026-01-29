@@ -555,6 +555,7 @@ namespace MyDotnet.Services.Ns
                         }
                         catch (Exception ex)
                         {
+                            LogHelper.logApp.Error("创建用户失败", ex);
                             sb.AppendLine($"创建用户失败:{ex.Message}");
                         }
 
@@ -580,6 +581,7 @@ namespace MyDotnet.Services.Ns
                         }
                         catch (Exception ex)
                         {
+                            LogHelper.logApp.Error("创建初始化数据失败", ex);
                             sb.AppendLine($"创建初始化数据失败:{ex.Message}");
                         }
                     }
@@ -669,8 +671,7 @@ namespace MyDotnet.Services.Ns
             {
                 sb.AppendLine($"停止实例错误:{ex.Message}");
                 log.success = false;
-                LogHelper.logApp.Error(ex.Message);
-                LogHelper.logApp.Error(ex.StackTrace);
+                LogHelper.logApp.Error("停止实例错误",ex); 
                 throw;
             }
             finally
@@ -969,8 +970,7 @@ namespace MyDotnet.Services.Ns
                     }
                     catch (Exception ex)
                     {
-                        LogHelper.logSys.Error("ns日志记录失败", ex);
-                        LogHelper.logSys.Error($"ns日志记录失败:{log.content}-{log.pid}");
+                        LogHelper.logSys.Error($"ns日志记录失败：{log.content}-{log.pid}", ex);
                     }
                 }
             }
@@ -1096,8 +1096,7 @@ EOF
                                         }
                                         catch (Exception ex)
                                         {
-                                            LogHelper.logSys.Error("ns日志记录失败", ex);
-                                            LogHelper.logSys.Error($"ns日志记录失败:{log.content}-{log.pid}");
+                                            LogHelper.logSys.Error($"ns日志记录失败：{log.content}-{log.pid}", ex);
                                         }
                                     }
                                 }
