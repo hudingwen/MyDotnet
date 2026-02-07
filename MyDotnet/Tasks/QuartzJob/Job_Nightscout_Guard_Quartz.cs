@@ -127,7 +127,8 @@ namespace MyDotnet.Tasks.QuartzJob
                                     LogHelper.logSys.Error($"推送失败,{ex.Message}", ex);
                                 }
                             }
-                            
+                            account.isEffect = true;
+
                         }
                         else
                         {
