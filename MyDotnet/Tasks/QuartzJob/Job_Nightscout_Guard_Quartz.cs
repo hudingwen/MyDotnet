@@ -132,128 +132,141 @@ namespace MyDotnet.Tasks.QuartzJob
                         else
                         {
                             //失效后重新登录逻辑
-                        }
-
-                        //获取监护用户
-                        var users = await _nightscoutGuardService.Dal.Query(t=>t.gid == account.Id & t.Enabled == true);
-
-                        foreach (var userTemp in users)
-                        {
-                            //开启下一次获取血糖任务
-                            var user = userTemp;
-
-                            //添加新用户逻辑判断是否存在监护用户被删除的情况，但是任务还在轮询中
-                            var temp = await _nightscoutGuardService.Dal.QueryById(user.Id);
-                            if (temp == null)
-                            {
-                                //跳过不存在的监护任务
-                                continue;
-                            }
-                            else
-                            { 
-                                //更新最新数据
-                                user = temp;
-                            }
-
-                            //查找任务(监护用户id作为任务id,一个用户只有一个任务)
-                            var userTask = (await _tasksQzServices.Dal.Query(t => t.ResourceId == user.Id)).FirstOrDefault();
-
-                            var nightscout = await _nightscoutServices.Dal.QueryById(user.nid);
-
-
-                            if (userTask == null)
-                            {
-                                if (nightscout.endTime > DateTime.Now && nightscout.isStop == false)
-                                {
-                                   
-
-                                    userTask = new TasksQz();
-                                    //创建任务信息
-                                    var taskInfo = typeof(Job_Nightscout_Guard_User_Quartz);
-                                    userTask.AssemblyName = taskInfo.Namespace;
-                                    userTask.ClassName = taskInfo.Name;
-                                    //"50 1 9 30 6 ? 2024"
-                                    //10秒后执行任务
-                                    userTask.Cron = DateTime.Now.AddSeconds(30).ToString("ss mm HH dd MM ? yyyy");
-                                    userTask.CycleHasRunTimes = 0;
-                                    userTask.CycleRunTimes = 1;
-                                    userTask.Enabled = true;
-                                    userTask.BeginTime = nightscout.startTime;
-                                    userTask.EndTime = nightscout.endTime;
-                                    userTask.IntervalSecond = 1;
-                                    userTask.JobGroup = "监护用户任务";
-                                    var typeName = accountTypes.Find(t => t.code.Equals(account.guardType));
-                                    userTask.Name = $"{user.name}({user.nidUrl})|{typeName?.name}";
-                                    userTask.TriggerType = 1;
-                                    userTask.IsStart = true;
-                                    userTask.ResourceId = user.Id;
-                                    userTask.DistributeCode = QuartzConfig.guarCode;
-                                    //添加任务
-                                    await _tasksQzServices.Dal.Add(userTask);
-                                    await _schedulerCenter.AddScheduleJobAsync(userTask);
-                                }
-                            }
-                            else
-                            {
-                                var isRunnig = await _schedulerCenter.IsExistScheduleJobAsync(userTask);
-                                if (!isRunnig)
-                                {
-                                    if (nightscout.endTime > DateTime.Now && nightscout.isStop == false)
-                                    {
-                                        //主动运行
-                                        userTask.Cron = DateTime.Now.AddSeconds(30).ToString("ss mm HH dd MM ? yyyy");
-                                        var typeName = accountTypes.Find(t => t.code.Equals(account.guardType));
-                                        userTask.Name = $"{user.name}({user.nidUrl})|{typeName?.name}";
-                                        userTask.BeginTime = nightscout.startTime;
-                                        userTask.EndTime = nightscout.endTime;
-                                        await _tasksQzServices.Dal.Update(userTask);
-                                        await _schedulerCenter.AddScheduleJobAsync(userTask);
-                                    }
-                                }
-                                else
-                                {
-                                    TriggerKey triggerKey = new TriggerKey(userTask.Id.ToString(), userTask.JobGroup);
-                                    TriggerState triggerState = await _schedulerCenter.GetTriggerState(triggerKey);
-
-                                    //某些情况导致需要重新启动
-                                    if (triggerState == TriggerState.Complete)
-                                    {
-                                        if (nightscout.endTime > DateTime.Now)
-                                        {
-
-                                            IJobDetail job = JobBuilder.Create<Job_Nightscout_Guard_User_Quartz>()
-                                            .WithIdentity(userTask.Id.ToString(), userTask.JobGroup)
-                                            .Build();
-                                            // 创建一个新的触发器，新的cron表达式为每分钟执行一次
-                                            ITrigger newTrigger = TriggerBuilder.Create()
-                                                .WithIdentity(userTask.Id.ToString(), userTask.JobGroup)
-                                                .WithCronSchedule(DateTime.Now.AddSeconds(30).ToString("ss mm HH dd MM ? yyyy"))
-                                                .ForJob(job)
-                                                .Build();
-
-                                            // 重新调度任务
-                                            await _schedulerCenter.RescheduleJob(triggerKey, newTrigger);
-                                        }
-                                    }
-                                    else
-                                    {
-
-                                        //过期停止任务
-                                        if (DateTime.Now > nightscout.endTime)
-                                        {
-                                            await _schedulerCenter.StopScheduleJobAsync(userTask);
-                                        }
-                                    }
-                                }
-                            }
-
-                        }
+                            //失效后暂时先不处理 也不更新用户任务
+                            account.isEffect = false;
+                        } 
                     }
                     catch (Exception ex)
                     {
                         LogHelper.logApp.Error($"监护账户异常:{account.name} ", ex);
                     }
                 }
+                //获取监护用户
+
+                var users = await _nightscoutGuardService.Dal.Query(t => t.gid >0 & t.Enabled == true, "id desc");
+                foreach (var userTemp in users)
+                {
+                    var account =  accounts.Find(t=>t.Id == userTemp.gid);
+                    if (account == null) continue;  //用户不存在监护
+                    if (!account.isEffect) continue;  //用户失效后也不监护
+                    try
+                    {
+                        //开启下一次获取血糖任务
+                        var user = userTemp;
+
+                        //添加新用户逻辑判断是否存在监护用户被删除的情况，但是任务还在轮询中
+                        var temp = await _nightscoutGuardService.Dal.QueryById(user.Id);
+                        if (temp == null)
+                        {
+                            //跳过不存在的监护任务
+                            continue;
+                        }
+                        else
+                        {
+                            //更新最新数据
+                            user = temp;
+                        }
+
+                        //查找任务(监护用户id作为任务id,一个用户只有一个任务)
+                        var userTask = (await _tasksQzServices.Dal.Query(t => t.ResourceId == user.Id)).FirstOrDefault();
+
+                        var nightscout = await _nightscoutServices.Dal.QueryById(user.nid);
+
+
+                        if (userTask == null)
+                        {
+                            if (nightscout.endTime > DateTime.Now && nightscout.isStop == false)
+                            {
+
+
+                                userTask = new TasksQz();
+                                //创建任务信息
+                                var taskInfo = typeof(Job_Nightscout_Guard_User_Quartz);
+                                userTask.AssemblyName = taskInfo.Namespace;
+                                userTask.ClassName = taskInfo.Name;
+                                //"50 1 9 30 6 ? 2024"
+                                //10秒后执行任务
+                                userTask.Cron = DateTime.Now.AddSeconds(30).ToString("ss mm HH dd MM ? yyyy");
+                                userTask.CycleHasRunTimes = 0;
+                                userTask.CycleRunTimes = 1;
+                                userTask.Enabled = true;
+                                userTask.BeginTime = nightscout.startTime;
+                                userTask.EndTime = nightscout.endTime;
+                                userTask.IntervalSecond = 1;
+                                userTask.JobGroup = "监护用户任务";
+                                var typeName = accountTypes.Find(t => t.code.Equals(account.guardType));
+                                userTask.Name = $"{user.name}({user.nidUrl})|{typeName?.name}";
+                                userTask.TriggerType = 1;
+                                userTask.IsStart = true;
+                                userTask.ResourceId = user.Id;
+                                userTask.DistributeCode = QuartzConfig.guarCode;
+                                //添加任务
+                                await _tasksQzServices.Dal.Add(userTask);
+                                await _schedulerCenter.AddScheduleJobAsync(userTask);
+                            }
+                        }
+                        else
+                        {
+                            var isRunnig = await _schedulerCenter.IsExistScheduleJobAsync(userTask);
+                            if (!isRunnig)
+                            {
+                                if (nightscout.endTime > DateTime.Now && nightscout.isStop == false)
+                                {
+                                    //主动运行
+                                    userTask.Cron = DateTime.Now.AddSeconds(30).ToString("ss mm HH dd MM ? yyyy");
+                                    var typeName = accountTypes.Find(t => t.code.Equals(account.guardType));
+                                    userTask.Name = $"{user.name}({user.nidUrl})|{typeName?.name}";
+                                    userTask.BeginTime = nightscout.startTime;
+                                    userTask.EndTime = nightscout.endTime;
+                                    await _tasksQzServices.Dal.Update(userTask);
+                                    await _schedulerCenter.AddScheduleJobAsync(userTask);
+                                }
+                            }
+                            else
+                            {
+                                TriggerKey triggerKey = new TriggerKey(userTask.Id.ToString(), userTask.JobGroup);
+                                TriggerState triggerState = await _schedulerCenter.GetTriggerState(triggerKey);
+
+                                //某些情况导致需要重新启动
+                                if (triggerState == TriggerState.Complete)
+                                {
+                                    if (nightscout.endTime > DateTime.Now)
+                                    {
+
+                                        IJobDetail job = JobBuilder.Create<Job_Nightscout_Guard_User_Quartz>()
+                                        .WithIdentity(userTask.Id.ToString(), userTask.JobGroup)
+                                        .Build();
+                                        // 创建一个新的触发器，新的cron表达式为每分钟执行一次
+                                        ITrigger newTrigger = TriggerBuilder.Create()
+                                            .WithIdentity(userTask.Id.ToString(), userTask.JobGroup)
+                                            .WithCronSchedule(DateTime.Now.AddSeconds(30).ToString("ss mm HH dd MM ? yyyy"))
+                                            .ForJob(job)
+                                            .Build();
+
+                                        // 重新调度任务
+                                        await _schedulerCenter.RescheduleJob(triggerKey, newTrigger);
+                                    }
+                                }
+                                else
+                                {
+
+                                    //过期停止任务
+                                    if (DateTime.Now > nightscout.endTime)
+                                    {
+                                        await _schedulerCenter.StopScheduleJobAsync(userTask);
+                                    }
+                                }
+                            }
+                        }
+
+
+                    }
+                    catch (Exception ex)
+                    {
+                        LogHelper.logApp.Error($"监护用户异常:{userTemp.name} ", ex);
+                    }
+                }
+                
 
 
                 
