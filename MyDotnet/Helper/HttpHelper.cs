@@ -1,5 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using MyDotnet.Helper.Dto;
 using Quartz;
+using Renci.SshNet.Sftp;
 using System;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -73,15 +75,22 @@ namespace MyDotnet.Helper
                 httpContent.Dispose();
             }
         }
-        public static async Task<string> SendAsync(HttpRequestMessage request,Dictionary<string,string> responseHeaderDic=null)
+        public static async Task<string> SendAsync(HttpRequestMessage request,Dictionary<string,string> responseHeaderDic=null, HttpResult httpResult = null)
         {
             try
             {
                 using (var response = await httpClient.SendAsync(request))
                 {
-                    var status = response.EnsureSuccessStatusCode();
                     var data = await response.Content.ReadAsStringAsync();
-                    if(responseHeaderDic != null)
+                  
+                    if(httpResult != null)
+                    { 
+                        httpResult.Success = response.IsSuccessStatusCode;
+                        httpResult.Body = data;
+                        httpResult.StatusCode = (int)response.StatusCode;
+                    } 
+                    //var status = response.EnsureSuccessStatusCode();
+                    if (responseHeaderDic != null)
                     {
                         //提取responseHeader所需内容
                         foreach (var key in responseHeaderDic.Keys)

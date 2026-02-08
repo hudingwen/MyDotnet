@@ -16,6 +16,7 @@ using MyDotnet.Domain.Dto.Weitai2;
 using MyDotnet.Domain.Dto.Yapei;
 using MyDotnet.Domain.Entity.Ns;
 using MyDotnet.Helper;
+using MyDotnet.Helper.Dto;
 using MyDotnet.Helper.Ns;
 using MyDotnet.Repository;
 using MyDotnet.Services.System;
@@ -377,7 +378,13 @@ namespace MyDotnet.Services.Ns
                 var request = new HttpRequestMessage(HttpMethod.Post, url);
                 request.Headers.Add("API-SECRET", nightscout.nsToken);
                 request.Content = new StringContent(JsonHelper.ObjToJson(data, false), Encoding.UTF8, "application/json");
-                var res = await HttpHelper.SendAsync(request);
+                var httpResult = new HttpResult();
+                var res = await HttpHelper.SendAsync(request,null, httpResult);
+                if (!httpResult.Success)
+                {
+                    LogHelper.logApp.Error($"血糖推送异常：Code: {httpResult.StatusCode}\r\n{httpResult.Body}");
+                    throw new Exception($"Code: {httpResult.StatusCode} 错误：{httpResult.Body}");
+                }
                 guardUser.refreshTime = DateTimeOffset.FromUnixTimeMilliseconds(data[data.Count - 1].date).UtcDateTime.ToLocalTime();
                 await _baseRepositoryUser.Update(guardUser, t => new { t.refreshTime });
             }
