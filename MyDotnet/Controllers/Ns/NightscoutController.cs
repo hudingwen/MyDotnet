@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Hosting;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
@@ -497,11 +498,11 @@ namespace MyDotnet.Controllers.Ns
                         request.Id = id;
                         data.response = id.ObjToString();
                         data.msg = "添加成功";
+                        //添加解析
+                        await _nightscoutServices.ResolveDomain(request, nsserver);
                         //第一次默认就启动
                         await _nightscoutServices.InitData(request, nsserver);
                         await _nightscoutServices.RunDocker(request, nsserver);
-                        //添加解析
-                        await _nightscoutServices.ResolveDomain(request, nsserver);
                     }
                     else
                     {
@@ -577,6 +578,18 @@ namespace MyDotnet.Controllers.Ns
                 nsserver.curExposedPort += 1;
                 request.exposedPort = nsserver.curExposedPort;
                 request.instanceIP = nsserver.isIntranet ? nsserver.innerServerIp : nsserver.serverIp;
+                //获取核心代理服务器
+                var proxyServer = await _nightscoutServerServices.Dal.QueryById(nsserver.nginxServerId);
+                var oldProxyServer = await _nightscoutServerServices.Dal.QueryById(oldNsserver.nginxServerId);
+                if (!proxyServer.nginxUrlTemplate.Equals(oldProxyServer.nginxUrlTemplate))
+                {
+                    //如果两个服务器的域名不一样就要切换 
+                    var parts = request.url.Split('.'); 
+                    request.url = string.Format(proxyServer.nginxUrlTemplate, parts[0]);
+                }
+                
+                
+
 
                 var check2 = await CheckData(request);
                 if (!check2.success)
@@ -1050,7 +1063,7 @@ namespace MyDotnet.Controllers.Ns
             if(data == null)
             {
                 //缓存穿透
-                data = await _nightscoutServerServices.Dal.Db.Queryable<NightscoutServer>().OrderBy(t=>t.serverName).Select(t => new NightscoutServer { Id = t.Id, serverName = t.serverName, holdCount = t.holdCount }).ToListAsync();
+                data = await _nightscoutServerServices.Dal.Db.Queryable<NightscoutServer>().OrderBy(t=>t.serverName).Select(t => new NightscoutServer { Id = t.Id, serverName = t.serverName, holdCount = t.holdCount, isIntranet = t.isIntranet }).ToListAsync();
                 await _caching.SetAsync(CacheKeyList.allNsServer, data);
             }
 
@@ -1521,7 +1534,7 @@ namespace MyDotnet.Controllers.Ns
             var defaultCDN = await _dictService.GetDic(DicTypeList.defaultCDN);
             var cdnList = await _dictService.GetDicData(CDNList.KEY);
 
-            CDNInfoDto cDNInfoDto = new CDNInfoDto { CDNList = cdnList.Select(t => new NSCDN { key = t.code, name = t.name, type = t.content, value = t.content2 }).ToList(), defaultCDN = defaultCDN.content };
+            CDNInfoDto cDNInfoDto = new CDNInfoDto { CDNList = cdnList.Select(t => new NSCDN { key = t.code, name = t.name, type = t.content, value = t.content2 }).ToList(), defaultCDN = defaultCDN.content,defaultCDN_Inner = defaultCDN.content2 };
             return MessageModel<CDNInfoDto>.Success("获取成功", cDNInfoDto);
         }
         private List<EntriesEntity> HandleSugarList(List<EntriesEntity> sugers, SugarDTO sugarDTO)

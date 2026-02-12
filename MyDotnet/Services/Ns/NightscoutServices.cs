@@ -374,11 +374,11 @@ namespace MyDotnet.Services.Ns
                 var selectCDN = cdnList.Find(t => t.code.Equals(nightscout.cdn));
                 if (nsserver.isIntranet && !"inner".Equals(selectCDN.content4))
                 {
-                    throw new Exception("内网环境不能使用非内网环境");
+                    throw new Exception("内网环境不能使用非内网域名");
                 }
                 if (!nsserver.isIntranet && !"out".Equals(selectCDN.content4))
                 {
-                    throw new Exception("外网环境不能使用非外网环境");
+                    throw new Exception("外网环境不能使用非外网域名");
                 }
                 if (selectCDN != null)
                 {
