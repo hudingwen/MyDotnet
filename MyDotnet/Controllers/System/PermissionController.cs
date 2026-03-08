@@ -203,8 +203,7 @@ namespace MyDotnet.Controllers.System
             {
                 //开启事务
                 try
-                {
-                    var old_rmps = await _roleModulePermissionServices.Dal.Query(d => d.RoleId == assignView.rid);
+                { 
 
                     _unitOfWorkManage.BeginTran();
                     await _permissionServices.Dal.Db.Deleteable<RoleModulePermission>(t => t.RoleId == assignView.rid).ExecuteCommandAsync();
@@ -214,14 +213,13 @@ namespace MyDotnet.Controllers.System
                     var nowTime = _permissionServices.Dal.Db.GetDate();
                     foreach (var item in assignView.pids)
                     {
-                        var moduleid = permissions.Find(p => p.Id == item)?.Mid;
-                        var find_old_rmps = old_rmps.Find(p => p.PermissionId == item);
+                        var moduleid = permissions.Find(p => p.Id == item);
 
                         RoleModulePermission roleModulePermission = new RoleModulePermission()
                         {
                             Enabled = true,
                             RoleId = assignView.rid,
-                            ModuleId = moduleid.Value,
+                            ModuleId = moduleid == null ? 0 : moduleid.Mid,
                             PermissionId = item
                         };
                         new_rmps.Add(roleModulePermission);

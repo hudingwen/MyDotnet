@@ -227,7 +227,7 @@ namespace MyDotnet.Services.Ns
                 }
                 else if ("110".Equals(data.guardType))
                 {
-                    //硅基轻享
+                    //硅基轻享 
                     var loginRes = await GuijiLiteHelper.loginGuiji(data.loginName, data.loginPass);
                     if (!loginRes.success)
                         return MessageModel<bool>.Success($"硅基轻享登录失败:{loginRes.msg}");
@@ -497,6 +497,20 @@ namespace MyDotnet.Services.Ns
                 data.data = users.data.records.Select(t => new ShowKeyValueDto { id = t.id, name = $"{t.followedUserInfo.userName}-{t.followedUserInfo.nickName}" }).ToList();
                 return data;
             }
+            else if ("120".Equals(guardAccount.guardType))
+            {
+                //硅基亲友
+                var users = await GuijiQinyouHelper.getGuijiList(guardAccount.token, page, size);
+                if (!users.success) throw new ServiceException($"获取用户失败:{users.msg}");
+
+                PageModel<ShowKeyValueDto> data = new PageModel<ShowKeyValueDto>();
+
+                data.page = page;
+                data.dataCount = users.data.total;
+                data.size = size;
+                data.data = users.data.records.Select(t => new ShowKeyValueDto { id = t.followRelationId,did = (t.appInfo == null ? "" : t.appInfo.deviceId), name = $"{t.sharerNickName}-{t.sharerRemark}" }).ToList();
+                return data;
+            }
             else if ("600".Equals(guardAccount.guardType))
             {
                 //雅培
@@ -592,6 +606,12 @@ namespace MyDotnet.Services.Ns
                 {
                     //硅基轻享
                     var loginInfo = await GuijiLiteHelper.getMyInfo(account.token);
+                    return loginInfo.success;
+                }
+                else if ("120".Equals(account.guardType))
+                {
+                    //硅基亲友
+                    var loginInfo = await GuijiQinyouHelper.getMyInfo(account.token);
                     return loginInfo.success;
                 }
                 else if ("600".Equals(account.guardType))
@@ -855,6 +875,22 @@ namespace MyDotnet.Services.Ns
                 {
                     //延期
                     ls.Add(new GuardBloodInfo() { time = data.data.followedDeviceGlucoseDataPO.time, blood = data.data.followedDeviceGlucoseDataPO.latestGlucoseValue, trend = GetNsFlag(GetNsFlagForGuiji(data.data.followedDeviceGlucoseDataPO.bloodGlucoseTrend)) });
+                }
+            }
+            else if ("120".Equals(guard.guardType))
+            {
+                //硅基亲友
+                var data = await GuijiQinyouHelper.getUserBlood(guard.token, user.uid,user.did);
+
+                if (data.data.deviceInfo.glucoseInfos != null && data.data.deviceInfo.glucoseInfos.Count > 0 && data.data.deviceInfo.latestTimeFormat == data.data.deviceInfo.glucoseInfos[0].time)
+                {
+                    //正常
+                    ls = data.data.deviceInfo.glucoseInfos.OrderByDescending(t => t.time).ToList().Select(t => new GuardBloodInfo { time = t.time, blood = t.blood, trend = GetNsFlag(GetNsFlagForGuiji(t.s)) }).ToList();
+                }
+                else
+                {
+                    //延期
+                    ls.Add(new GuardBloodInfo() { time = data.data.deviceInfo.latestTimeFormat, blood = data.data.deviceInfo.latestValueFormat, trend = GetNsFlag(GetNsFlagForGuiji(data.data.deviceInfo.latestDataStatus)) });
                 }
             }
             else if ("600".Equals(guard.guardType))

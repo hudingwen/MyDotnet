@@ -42,6 +42,11 @@ namespace MyDotnet.Domain.Entity.Ns
         [SugarColumn(Length = 1000, IsNullable = true)]
         public string uid { get; set; }
         /// <summary>
+        /// 绑定监护用户设备id
+        /// </summary>
+        [SugarColumn(Length = 1000, IsNullable = true)]
+        public string did { get; set; }
+        /// <summary>
         /// 绑定监护用户名称
         /// </summary>
         [SugarColumn(Length = 200, IsNullable = true)]

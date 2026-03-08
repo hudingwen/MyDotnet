@@ -505,6 +505,87 @@ namespace MyDotnet.Tasks.QuartzJob
                         }
                         #endregion
                     }
+                    else if ("120".Equals(account.guardType))
+                    {
+                        //硅基亲友
+                        #region 硅基亲友
+                        var data = await GuijiQinyouHelper.getUserBlood(account.token,user.uid, user.did);
+                        if (data.success)
+                        {
+                            bool isTouchTime = false;
+                            var nextTime = DateTime.Now;
+                            //推送数据
+                            if (data.data.deviceInfo.glucoseInfos != null && data.data.deviceInfo.glucoseInfos.Count > 0 && data.data.deviceInfo.latestTimeFormat == data.data.deviceInfo.glucoseInfos[0].time)
+                            {
+                                //正常
+                                var pushData = data.data.deviceInfo.glucoseInfos.Where(t => t.time > user.refreshTime).OrderBy(t => t.time).ToList();
+                                if (pushData.Count > 0)
+                                {
+                                     
+                                    //推送
+                                    var send = pushData.Select(t => new NsUploadBloodInfo { date = t.t, sgv = t.blood * 18, direction = _nightscoutGuardService.GetNsFlagForGuiji(t.s) }).OrderBy(t => t.date).ToList();
+                                    await _nightscoutGuardService.pushBlood(user, send);
+                                    nextTime = pushData[pushData.Count - 1].time.AddMinutes(5).AddSeconds(2);
+                                    isTouchTime = true;
+                                }
+                            }
+                            else
+                            {
+                                //延期
+                                if (data.data.deviceInfo.latestTimeFormat > user.refreshTime)
+                                {
+                                    //大于上次更新才更新
+                                    //推送
+                                    var send = new List<NsUploadBloodInfo>();
+                                    send.Add(new NsUploadBloodInfo() { date = data.data.deviceInfo.latestTime.ObjToLong(), sgv = data.data.deviceInfo.latestValueFormat * 18, direction = _nightscoutGuardService.GetNsFlagForGuiji(data.data.deviceInfo.latestDataStatus) });
+                                    await _nightscoutGuardService.pushBlood(user, send);
+                                    nextTime = DateTimeOffset.FromUnixTimeMilliseconds(send[send.Count - 1].date).UtcDateTime.ToLocalTime().AddMinutes(5).AddSeconds(2);
+                                    isTouchTime = true;
+                                }
+                            }
+
+
+                            // 更新cron表达式
+                            var scheduler = context.Scheduler;
+                            var jobKey = context.JobDetail.Key;
+
+                            // 假设新的cron表达式是每分钟执行一次
+                            string newCronExpression = string.Empty;
+                            if (isTouchTime)
+                            {
+                                if (DateTime.Now >= nextTime)
+                                {
+                                    //调度时间异常处理
+                                    nextTime = DateTime.Now.AddSeconds(30);
+                                    nextTime = NsBloodErrorStatic.checkErrStatic(jobid, nextTime, isTouchTime);
+                                }
+                                else
+                                {
+                                    NsBloodErrorStatic.errStatic[jobid] = 0;
+                                }
+                                newCronExpression = nextTime.ToString("ss mm HH dd MM ? yyyy");
+                            }
+                            else
+                            {
+                                nextTime = DateTime.Now.AddSeconds(30);
+                                nextTime = NsBloodErrorStatic.checkErrStatic(jobid, nextTime, isTouchTime);
+                                //默认30秒执行一次
+                                newCronExpression = nextTime.ToString("ss mm HH dd MM ? yyyy");
+                            }
+
+                            // 调用方法更新cron表达式
+                            UpdateJobCronExpression(scheduler, jobKey, newCronExpression).Wait();
+
+                            task.Cron = nextTime.ToString("ss mm HH dd MM ? yyyy");
+                            await _tasksQzServices.Dal.Update(task);
+                        }
+                        else
+                        {
+                            error = data.msg;
+                            LogHelper.logApp.Error($"监护用户:{user.name} 监护异常:{data.msg}");
+                        }
+                        #endregion
+                    }
                     else if ("600".Equals(account.guardType))
                     {
                         //雅培
