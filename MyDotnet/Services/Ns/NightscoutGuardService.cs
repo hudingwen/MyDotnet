@@ -561,8 +561,38 @@ namespace MyDotnet.Services.Ns
                     return "NOT COMPUTABLE";
             }
         }
+        public string GetNsFlagForGuijiQinyou(int direction)
+        {
+            switch (direction)
+            {
+                case -4:
+                    return "TripleUp";
+                case -3:
+                    return "DoubleUp";
+                case -2:
+                    return "SingleUp";
+                case -1:
+                    return "FortyFiveUp";
+                case 0:
+                    return "Flat";
+                case 1:
+                    return "FortyFiveDown";
+                case 2:
+                    return "SingleDown";
+                case 3:
+                    return "DoubleDown";
+                case 4:
+                    return "TripleDown";
+                case 1000:
+                    return "NOT COMPUTABLE";
+                case -1000:
+                    return "RATE OUT OF RANGE";
+                default:
+                    return "NOT COMPUTABLE";
+            }
+        }
 
-        
+
         /// <summary>
         /// 检测账户有效性
         /// </summary>
@@ -885,12 +915,12 @@ namespace MyDotnet.Services.Ns
                 if (data.data.deviceInfo.glucoseInfos != null && data.data.deviceInfo.glucoseInfos.Count > 0 && data.data.deviceInfo.latestTimeFormat == data.data.deviceInfo.glucoseInfos[0].time)
                 {
                     //正常
-                    ls = data.data.deviceInfo.glucoseInfos.OrderByDescending(t => t.time).ToList().Select(t => new GuardBloodInfo { time = t.time, blood = t.blood, trend = GetNsFlag(GetNsFlagForGuiji(t.s)) }).ToList();
+                    ls = data.data.deviceInfo.glucoseInfos.OrderByDescending(t => t.time).ToList().Select(t => new GuardBloodInfo { time = t.time, blood = t.blood, trend = GetNsFlag(GetNsFlagForGuijiQinyou(t.s)) }).ToList();
                 }
                 else
                 {
                     //延期
-                    ls.Add(new GuardBloodInfo() { time = data.data.deviceInfo.latestTimeFormat, blood = data.data.deviceInfo.latestValueFormat, trend = GetNsFlag(GetNsFlagForGuiji(data.data.deviceInfo.latestDataStatus)) });
+                    ls.Add(new GuardBloodInfo() { time = data.data.deviceInfo.latestTimeFormat, blood = data.data.deviceInfo.latestValueFormat, trend = GetNsFlag(GetNsFlagForGuijiQinyou(data.data.deviceInfo.latestDataStatus)) });
                 }
             }
             else if ("600".Equals(guard.guardType))
