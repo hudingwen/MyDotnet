@@ -88,41 +88,8 @@ namespace MyDotnet.Services.Ns
                 //添加账户
                 var i = await _baseRepositoryAccount.Add(data);
                 //登录账户
-                if ("100".Equals(data.guardType))
-                {
-                    //硅基
-                    var res = await loginGuardAccount(data);
-                    if (!res.success) throw new ServiceException(res.msg);
-                }else if ("300".Equals(data.guardType))
-                {
-                    //微泰1
-                    var res = await loginGuardAccount(data);
-                    if (!res.success) throw new ServiceException(res.msg);
-                }
-                else if ("400".Equals(data.guardType))
-                {
-                    //微泰1
-                    var res = await loginGuardAccount(data);
-                    if (!res.success) throw new ServiceException(res.msg);
-                }
-                else if ("500".Equals(data.guardType))
-                {
-                    //欧泰
-                    var res = await loginGuardAccount(data);
-                    if (!res.success) throw new ServiceException(res.msg);
-                }
-                else if ("110".Equals(data.guardType))
-                {
-                    //硅基轻享
-                    var res = await loginGuardAccount(data);
-                    if (!res.success) throw new ServiceException(res.msg);
-                }
-                else if ("600".Equals(data.guardType))
-                {
-                    //雅培
-                    var res = await loginGuardAccount(data);
-                    if (!res.success) throw new ServiceException(res.msg);
-                }
+                var res = await loginGuardAccount(data);
+                if (!res.success) throw new ServiceException(res.msg);
                 _unitOfWorkManage.CommitTran();
                 return i;
             }
@@ -140,36 +107,8 @@ namespace MyDotnet.Services.Ns
         /// <returns></returns>
         /// <exception cref="ServiceException"></exception>
         public async Task<MessageModel<bool>> refreshGuardAccount(NightscoutGuardAccount data)
-        {
-            if("100".Equals(data.guardType))
-            {
-                //硅基
-                return await loginGuardAccount(data);
-            }else if ("300".Equals(data.guardType))
-            {
-                //微泰1
-                return await loginGuardAccount(data);
-            }else if("400".Equals(data.guardType))
-            {
-                //微泰2
-                return await loginGuardAccount(data);
-            }
-            else if ("500".Equals(data.guardType))
-            {
-                //欧泰
-                return await loginGuardAccount(data);
-            }
-            else if ("110".Equals(data.guardType))
-            {
-                //硅基轻享
-                return await loginGuardAccount(data);
-            }
-            else if ("600".Equals(data.guardType))
-            {
-                //雅培
-                return await loginGuardAccount(data);
-            }
-            return MessageModel<bool>.Fail("还未实现");
+        { 
+            return await loginGuardAccount(data); 
         }
         /// <summary>
         /// 登录
@@ -186,69 +125,79 @@ namespace MyDotnet.Services.Ns
                     //硅基
                     var loginRes = await GuijiHelper.loginGuiji(data.loginName, data.loginPass);
                     if (!loginRes.success)
-                        return MessageModel<bool>.Success($"硅基登录失败:{loginRes.msg}");
+                        return MessageModel<bool>.Fail($"硅基登录失败:{loginRes.msg}");
                     data.token = loginRes.data.access_token;
                     data.tokenExpire = DateTime.Now.AddSeconds(loginRes.data.expires_in);
                     await _baseRepositoryAccount.Update(data);
-                    return MessageModel<bool>.Success("登录成功");
                 }else if ("300".Equals(data.guardType))
                 {
                     //微泰1
                     var loginRes = await Weitai1Helper.Login(data.loginName, data.loginPass);
                     if (!"100000".Equals(loginRes.info.code))
-                        return MessageModel<bool>.Success($"微泰1登录失败:{loginRes.info.msg}");
+                        return MessageModel<bool>.Fail($"微泰1登录失败:{loginRes.info.msg}");
                     data.token = loginRes.token;
                     data.tokenExpire = loginRes.tokenExpire;
                     await _baseRepositoryAccount.Update(data);
-                    return MessageModel<bool>.Success("登录成功");
                 }
                 else if ("400".Equals(data.guardType))
                 {
                     //微泰2
                     var loginRes = await Weitai2Helper.Login(data.loginName, data.loginPass);
                     if (loginRes.code != 200)
-                        return MessageModel<bool>.Success($"微泰2登录失败:{loginRes.msg}");
+                        return MessageModel<bool>.Fail($"微泰2登录失败:{loginRes.msg}");
                     data.token = loginRes.data.token;
                     data.tokenExpire = loginRes.data.tokenExpire;
                     data.loginId = loginRes.data.userId;
                     await _baseRepositoryAccount.Update(data);
-                    return MessageModel<bool>.Success("登录成功");
                 }
                 else if ("500".Equals(data.guardType))
                 {
                     //欧泰
                     var loginRes = await OutaiHelper.Login(data.loginName, data.loginPass);
                     if (loginRes.state != 1)
-                        return MessageModel<bool>.Success($"欧泰登录失败:{loginRes.msg}");
+                        return MessageModel<bool>.Fail($"欧泰登录失败:{loginRes.msg}");
                     data.token = loginRes.token;
                     data.tokenExpire = loginRes.tokenExpire; 
                     await _baseRepositoryAccount.Update(data);
-                    return MessageModel<bool>.Success("登录成功");
                 }
                 else if ("110".Equals(data.guardType))
                 {
                     //硅基轻享 
                     var loginRes = await GuijiLiteHelper.loginGuiji(data.loginName, data.loginPass);
                     if (!loginRes.success)
-                        return MessageModel<bool>.Success($"硅基轻享登录失败:{loginRes.msg}");
+                        return MessageModel<bool>.Fail($"硅基轻享登录失败:{loginRes.msg}");
                     data.token = loginRes.data.access_token;
                     data.tokenExpire = DateTime.Now.AddSeconds(loginRes.data.expires_in);
                     await _baseRepositoryAccount.Update(data);
-                    return MessageModel<bool>.Success("登录成功");
+                }
+                else if ("120".Equals(data.guardType))
+                {
+                    //硅基亲友
+                    var loginRes = await GuijiQinyouHelper.loginGuiji(data.loginName, data.loginPass);
+                    if (!loginRes.success)
+                        return MessageModel<bool>.Fail($"硅基亲友登录失败:{loginRes.msg}");
+                    data.token = loginRes.data.token;
+                    data.tokenExpire = DateTime.Now.AddMilliseconds(loginRes.data.expireTime);
+                    await _baseRepositoryAccount.Update(data);
                 }
                 else if ("600".Equals(data.guardType))
                 {
                     //雅培
                     var loginRes = await YapeiHelper.Login(data.loginName, data.loginPass, data.loginArea, data.appVersion);
                     if (loginRes.status != 0)
-                        return MessageModel<bool>.Success($"雅培登录失败:{loginRes.error.message}");
+                        return MessageModel<bool>.Fail($"雅培登录失败:{loginRes.error.message}");
                     data.token = loginRes.data.authTicket.token;
                     data.tokenExpire = loginRes.data.authTicket.tokenExpireTime;
                     data.loginId = loginRes.data.user.id;
                     await _baseRepositoryAccount.Update(data);
-                    return MessageModel<bool>.Success("登录成功");
                 }
-                return MessageModel<bool>.Fail("还未实现");
+                else
+                {
+                    return MessageModel<bool>.Fail("还未实现");
+                }
+
+                return MessageModel<bool>.Success("登录成功");
+
             }
             catch (Exception ex)
             {

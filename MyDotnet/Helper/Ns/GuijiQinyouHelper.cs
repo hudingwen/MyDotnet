@@ -13,13 +13,16 @@ namespace MyDotnet.Helper.Ns
         /// 登录
         /// </summary>
         /// <returns></returns>
-        public static async Task<GuijiQinyouLoginReturnDto> loginGuiji(string json)
+        public static async Task<GuijiQinyouLoginReturnDto> loginGuiji(string name,string pass)
         {
-            GuijiQinyouLoginReturnDto data = new GuijiQinyouLoginReturnDto();
-            data.success = true;
-            data.data = new GuijiQinyouLoginReturnDtoData();
-            data.data.token = "73b9c019-0658-4e7c-bdb8-6a896297a5d1";
-            data.data.expireTime = 1209600000;
+            GuiQinyouLoginDto loginDto = new GuiQinyouLoginDto();
+            loginDto.phone = name;
+            loginDto.password = MD5Helper.MD5Encrypt32(pass,true);
+            var request = new HttpRequestMessage(HttpMethod.Post, $"https://cxm-api.sisensing.com/cxm-app-sijoy-health/app/identity/password/login");
+            request.Content = new StringContent(JsonHelper.ObjToJson(loginDto), Encoding.UTF8, "application/json");
+            request.Headers.Add("Sib-Agent", "SIJOY_HEALTH_APP&01.02.00.00&iOS&18.7.3&iPhone17,1");
+            var res = await HttpHelper.SendAsync(request);
+            var data = JsonHelper.JsonToObj<GuijiQinyouLoginReturnDto>(res);
             return data;
         }
         /// <summary>
