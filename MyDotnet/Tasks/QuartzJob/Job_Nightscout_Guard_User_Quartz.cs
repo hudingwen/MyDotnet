@@ -99,7 +99,7 @@ namespace MyDotnet.Tasks.QuartzJob
                                     //推送
                                     var send = pushData.Select(t => new NsUploadBloodInfo { date = t.t, sgv = t.v * 18, direction = _nightscoutGuardService.GetNsFlagForGuiji(t.s) }).OrderBy(t => t.date).ToList();
                                     await _nightscoutGuardService.pushBlood(user, send);
-                                    nextTime = pushData[pushData.Count - 1].time.AddMinutes(5).AddSeconds(2);
+                                    nextTime = pushData[pushData.Count - 1].time.AddMinutes(5).AddSeconds(10);
                                     isTouchTime = true;
                                 }
                             }
@@ -113,7 +113,7 @@ namespace MyDotnet.Tasks.QuartzJob
                                     var send = new List<NsUploadBloodInfo>();
                                     send.Add(new NsUploadBloodInfo() { date = data.data.followedDeviceGlucoseDataPO.latestGlucoseTime, sgv = data.data.followedDeviceGlucoseDataPO.latestGlucoseValue * 18, direction = _nightscoutGuardService.GetNsFlagForGuiji(data.data.followedDeviceGlucoseDataPO.bloodGlucoseTrend) });
                                     await _nightscoutGuardService.pushBlood(user, send);
-                                    nextTime = DateTimeOffset.FromUnixTimeMilliseconds(send[send.Count - 1].date).UtcDateTime.ToLocalTime().AddMinutes(5).AddSeconds(2);
+                                    nextTime = DateTimeOffset.FromUnixTimeMilliseconds(send[send.Count - 1].date).UtcDateTime.ToLocalTime().AddMinutes(5).AddSeconds(10);
                                     isTouchTime = true;
                                 }
                             }
@@ -247,7 +247,7 @@ namespace MyDotnet.Tasks.QuartzJob
                                 //推送
                                 var send = pushData.Select(t => new NsUploadBloodInfo { date = (new DateTimeOffset(t.deviceTime).ToUnixTimeMilliseconds()), sgv = t.eventData * 18, direction = t.direction }).OrderBy(t => t.date).ToList();
                                 await _nightscoutGuardService.pushBlood(user, send);
-                                nextTime = pushData[pushData.Count - 1].deviceTime.AddMinutes(5);
+                                nextTime = pushData[pushData.Count - 1].deviceTime.AddMinutes(5).AddSeconds(10);
                                 isTouchTime = true;
                             }
 
@@ -381,7 +381,7 @@ namespace MyDotnet.Tasks.QuartzJob
                                 //推送
                                 var send = pushData.Select(t => new NsUploadBloodInfo { date = (new DateTimeOffset(t.timeFormat).ToUnixTimeMilliseconds()), sgv = t.value * 18, direction = t.direction }).OrderBy(t => t.date).ToList();
                                 await _nightscoutGuardService.pushBlood(user, send);
-                                nextTime = pushData[pushData.Count - 1].timeFormat.AddMinutes(5);
+                                nextTime = pushData[pushData.Count - 1].timeFormat.AddMinutes(5).AddSeconds(10);
                                 isTouchTime = true;
                             }
 
@@ -444,7 +444,7 @@ namespace MyDotnet.Tasks.QuartzJob
                                     //推送
                                     var send = pushData.Select(t => new NsUploadBloodInfo { date = t.t, sgv = t.v * 18, direction = _nightscoutGuardService.GetNsFlagForGuiji(t.s) }).OrderBy(t => t.date).ToList();
                                     await _nightscoutGuardService.pushBlood(user, send);
-                                    nextTime = pushData[pushData.Count - 1].time.AddMinutes(5).AddSeconds(2);
+                                    nextTime = pushData[pushData.Count - 1].time.AddMinutes(5).AddSeconds(10);
                                     isTouchTime = true;
                                 }
                             }
@@ -458,7 +458,7 @@ namespace MyDotnet.Tasks.QuartzJob
                                     var send = new List<NsUploadBloodInfo>();
                                     send.Add(new NsUploadBloodInfo() { date = data.data.followedDeviceGlucoseDataPO.latestGlucoseTime, sgv = data.data.followedDeviceGlucoseDataPO.latestGlucoseValue * 18, direction = _nightscoutGuardService.GetNsFlagForGuiji(data.data.followedDeviceGlucoseDataPO.bloodGlucoseTrend) });
                                     await _nightscoutGuardService.pushBlood(user, send);
-                                    nextTime = DateTimeOffset.FromUnixTimeMilliseconds(send[send.Count - 1].date).UtcDateTime.ToLocalTime().AddMinutes(5).AddSeconds(2);
+                                    nextTime = DateTimeOffset.FromUnixTimeMilliseconds(send[send.Count - 1].date).UtcDateTime.ToLocalTime().AddMinutes(5).AddSeconds(10);
                                     isTouchTime = true;
                                 }
                             }
@@ -525,7 +525,7 @@ namespace MyDotnet.Tasks.QuartzJob
                                     //推送
                                     var send = pushData.Select(t => new NsUploadBloodInfo { date = t.t, sgv = t.blood * 18, direction = _nightscoutGuardService.GetNsFlagForGuijiQinyou(t.s) }).OrderBy(t => t.date).ToList();
                                     await _nightscoutGuardService.pushBlood(user, send);
-                                    nextTime = pushData[pushData.Count - 1].time.AddMinutes(5).AddSeconds(2);
+                                    nextTime = pushData[pushData.Count - 1].time.AddMinutes(5).AddSeconds(45);
                                     isTouchTime = true;
                                 }
                             }
@@ -539,7 +539,7 @@ namespace MyDotnet.Tasks.QuartzJob
                                     var send = new List<NsUploadBloodInfo>();
                                     send.Add(new NsUploadBloodInfo() { date = data.data.deviceInfo.latestTime.ObjToLong(), sgv = data.data.deviceInfo.latestValueFormat * 18, direction = _nightscoutGuardService.GetNsFlagForGuijiQinyou(data.data.deviceInfo.latestDataStatus) });
                                     await _nightscoutGuardService.pushBlood(user, send);
-                                    nextTime = DateTimeOffset.FromUnixTimeMilliseconds(send[send.Count - 1].date).UtcDateTime.ToLocalTime().AddMinutes(5).AddSeconds(2);
+                                    nextTime = DateTimeOffset.FromUnixTimeMilliseconds(send[send.Count - 1].date).UtcDateTime.ToLocalTime().AddMinutes(5).AddSeconds(45);
                                     isTouchTime = true;
                                 }
                             }
@@ -606,7 +606,7 @@ namespace MyDotnet.Tasks.QuartzJob
                                 List<NsUploadBloodInfo> send = new List<NsUploadBloodInfo>();
                                 send.Add(new NsUploadBloodInfo { date = (new DateTimeOffset(data.data.connection.glucoseItem.time).ToUnixTimeMilliseconds()),sgv = ("cn".Equals(account.loginArea) ? data.data.connection.glucoseItem.Value * 18 : data.data.connection.glucoseItem.Value), direction = data.data.connection.glucoseItem.direction });
                                 await _nightscoutGuardService.pushBlood(user, send);
-                                nextTime = data.data.connection.glucoseItem.time.AddMinutes(5);
+                                nextTime = data.data.connection.glucoseItem.time.AddMinutes(5).AddSeconds(10);
                                 isTouchTime = true;
                             }
 
