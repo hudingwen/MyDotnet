@@ -1155,7 +1155,7 @@ namespace MyDotnet.Controllers.Trojan
             try
             {
                 var user = (await _trojanUsersServices.Dal.Query(t => t.passwordshow == id)).FirstOrDefault();
-                if (user == null) throw new Exception("用户不存在");
+                if (user == null) return string.Empty;
 
 
                 //默认服务器
