@@ -21,6 +21,12 @@ namespace MyDotnet.Domain.Entity.System
         /// </summary>
         [SugarColumn(Length = 50, IsNullable = true)]
         public string Code { get; set; }
+
+        /// <summary>
+        /// 组件路径（新版用）
+        /// </summary>
+        [SugarColumn(Length = 255, IsNullable = true)]
+        public string Component { get; set; }
         /// <summary>
         /// 菜单显示名（如用户页、编辑(按钮)、删除(按钮)）
         /// </summary>

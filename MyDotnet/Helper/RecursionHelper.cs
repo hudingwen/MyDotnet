@@ -118,10 +118,13 @@ namespace MyDotnet.Helper
         }
 
 
-        public static void LoopNaviBarAppendChildren(List<NavigationBar> all, NavigationBar curItem)
+        public static void LoopNaviBarAppendChildren(List<NavigationBar> all, NavigationBar curItem,bool showButton = true)
         {
             var subItems = all.Where(ee => ee.pid == curItem.id).ToList();
-
+            if (!showButton)
+            {
+                subItems = subItems.Where(ee => !ee.IsButton).ToList();
+            }
             if (subItems.Count > 0)
             {
                 curItem.children = new List<NavigationBar>();
@@ -135,7 +138,7 @@ namespace MyDotnet.Helper
 
             foreach (var subItem in subItems)
             {
-                LoopNaviBarAppendChildren(all, subItem);
+                LoopNaviBarAppendChildren(all, subItem, showButton);
             }
         }
 

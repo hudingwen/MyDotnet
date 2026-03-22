@@ -9,6 +9,7 @@
         public bool IsHide { get; set; } = false;
         public bool IsButton { get; set; } = false;
         public string path { get; set; }
+        public string component { get; set; }
         public string Func { get; set; }
         public string iconCls { get; set; }
         public NavigationBarMeta meta { get; set; }

@@ -132,40 +132,6 @@ namespace MyDotnet.Controllers.System
         }
 
         /// <summary>
-        /// 查询树形 Table
-        /// </summary>
-        [HttpGet]
-        [AllowAnonymous]
-        public async Task<MessageModel<List<Permission>>> GetTreeTable()
-        {
-
-           
-
-            List<Permission> permissions = new List<Permission>();
-            var apiList = await _moduleServices.Dal.Query(d => d.IsDeleted == false);
-
-
-            var permissionsList = await _permissionServices.Dal.Query(d => d.IsDeleted == false);
-
-           
-
-            Permission rootRoot = new Permission
-            {
-                Id = 0,
-                Pid = 0,
-                Name = "根节点"
-            };
-
-            permissionsList = permissionsList.OrderBy(d => d.OrderSort).ToList();
-
-
-            RecursionHelper.LoopToAppendChildren(permissionsList, rootRoot, 0, apiList);
-
-
-            return Success(rootRoot.children, "获取成功");
-        }
-
-        /// <summary>
         /// 添加一个菜单
         /// </summary>
         /// <param name="permission"></param>
@@ -241,9 +207,40 @@ namespace MyDotnet.Controllers.System
             }
         }
 
-
         /// <summary>
-        /// 获取菜单树
+        /// 获取菜单树（菜单模块用）
+        /// </summary>
+        [HttpGet]
+        public async Task<MessageModel<List<Permission>>> GetTreeTable()
+        {
+
+
+
+            List<Permission> permissions = new List<Permission>();
+            var apiList = await _moduleServices.Dal.Query(d => d.IsDeleted == false);
+
+
+            var permissionsList = await _permissionServices.Dal.Query(d => d.IsDeleted == false);
+
+
+
+            Permission rootRoot = new Permission
+            {
+                Id = 0,
+                Pid = 0,
+                Name = "根节点"
+            };
+
+            permissionsList = permissionsList.OrderBy(d => d.OrderSort).ToList();
+
+
+            RecursionHelper.LoopToAppendChildren(permissionsList, rootRoot, 0, apiList);
+
+
+            return Success(rootRoot.children, "获取成功");
+        }
+        /// <summary>
+        /// 获取菜单树（角色模块用）
         /// </summary>
         /// <param name="pid"></param>
         /// <param name="needbtn"></param>
@@ -289,25 +286,30 @@ namespace MyDotnet.Controllers.System
         }
 
         /// <summary>
-        /// 获取路由树
+        /// 获取自己的菜单
         /// </summary>
-        /// <param name="uid"></param>
         /// <returns></returns>
         [HttpGet]
-        [AllowAnonymous]
-        public async Task<MessageModel<NavigationBar>> GetNavigationBar(long uid)
+        [Authorize]
+        //[AllowAnonymous]
+        public async Task<MessageModel<NavigationBar>> GetNavigationBar()
         {
 
+            AspNetUser curUser;
+            using (var serviceScope = AppHelper.appService.CreateScope())
+            {
+                var services = serviceScope.ServiceProvider;
+                curUser = services.GetRequiredService<AspNetUser>();
+            }
+            long uid = curUser.ID;
             var data = new MessageModel<NavigationBar>();
-
-            long uidInHttpcontext1 = 0;
+             
             var roleIds = new List<long>();
-
-            uidInHttpcontext1 = (JWTHelper.SerializeJwtStr(_httpContext.HttpContext.Request.Headers["Authorization"].ObjToString().Replace("Bearer ", ""))?.Uid).ObjToLong();
+             
             roleIds = (await _userRoleServices.Dal.Query(d => d.IsDeleted == false && d.UserId == uid)).Select(d => d.RoleId.ObjToLong()).Distinct().ToList();
 
 
-            if (uid > 0 && uid == uidInHttpcontext1)
+            if (uid > 0)
             {
 
                 NavigationBar rootRoot = new NavigationBar()
@@ -338,6 +340,7 @@ namespace MyDotnet.Controllers.System
                                                    pid = child.Pid,
                                                    order = child.OrderSort,
                                                    path = child.Code,
+                                                   component = child.Component,
                                                    iconCls = child.Icon,
                                                    Func = child.Func,
                                                    IsHide = child.IsHide.ObjToBool(),
@@ -354,7 +357,7 @@ namespace MyDotnet.Controllers.System
 
 
                         permissionTrees = permissionTrees.OrderBy(d => d.order).ToList();
-                        RecursionHelper.LoopNaviBarAppendChildren(permissionTrees, rootRoot);
+                        RecursionHelper.LoopNaviBarAppendChildren(permissionTrees, rootRoot,false);
 
                     }
                 }
@@ -365,69 +368,7 @@ namespace MyDotnet.Controllers.System
                 data.msg = "获取成功";
             }
             return data;
-        }
-
-        /// <summary>
-        /// 获取路由树
-        /// </summary>
-        /// <param name="uid"></param>
-        /// <returns></returns>
-        [HttpGet]
-        [AllowAnonymous]
-        public async Task<MessageModel<List<NavigationBarPro>>> GetNavigationBarPro(long uid)
-        {
-            var data = new MessageModel<List<NavigationBarPro>>();
-
-            long uidInHttpcontext1 = 0;
-            var roleIds = new List<long>();
-
-            // jwt
-            uidInHttpcontext1 = (JWTHelper.SerializeJwtStr(_httpContext.HttpContext.Request.Headers["Authorization"].ObjToString().Replace("Bearer ", ""))?.Uid).ObjToLong();
-            roleIds = (await _userRoleServices.Dal.Query(d => d.IsDeleted == false && d.UserId == uid)).Select(d => d.RoleId.ObjToLong()).Distinct().ToList();
-
-            if (uid > 0 && uid == uidInHttpcontext1)
-            {
-                if (roleIds.Any())
-                {
-                    var pids = (await _roleModulePermissionServices.Dal.Query(d => d.IsDeleted == false && roleIds.Contains(d.RoleId)))
-                                    .Select(d => d.PermissionId.ObjToLong()).Distinct();
-                    if (pids.Any())
-                    {
-                        var rolePermissionMoudles = (await _permissionServices.Dal.Query(d => pids.Contains(d.Id) && d.IsButton == false)).OrderBy(c => c.OrderSort);
-                        var permissionTrees = (from item in rolePermissionMoudles
-                                               where item.IsDeleted == false
-                                               orderby item.Id
-                                               select new NavigationBarPro
-                                               {
-                                                   id = item.Id,
-                                                   name = item.Name,
-                                                   parentId = item.Pid,
-                                                   order = item.OrderSort,
-                                                   path = item.Code == "-" ? "-" : item.Code == "/" ? "/dashboard/workplace" : item.Code,
-                                                   component = item.Pid == 0 ? item.Code == "/" ? "dashboard/Workplace" : "RouteView" : item.Code?.TrimStart('/'),
-                                                   iconCls = item.Icon,
-                                                   Func = item.Func,
-                                                   IsHide = item.IsHide.ObjToBool(),
-                                                   IsButton = item.IsButton.ObjToBool(),
-                                                   meta = new NavigationBarMetaPro
-                                                   {
-                                                       show = true,
-                                                       title = item.Name,
-                                                       icon = "user"//item.Icon
-                                                   }
-                                               }).ToList();
-
-                        permissionTrees = permissionTrees.OrderBy(d => d.order).ToList();
-
-
-                        data.success = true;
-                        data.response = permissionTrees;
-                        data.msg = "获取成功";
-                    }
-                }
-            }
-            return data;
-        }
+        } 
 
         /// <summary>
         /// 通过角色获取菜单
@@ -435,7 +376,6 @@ namespace MyDotnet.Controllers.System
         /// <param name="rid"></param>
         /// <returns></returns>
         [HttpGet]
-        [AllowAnonymous]
         public async Task<MessageModel<AssignShow>> GetPermissionIdByRoleId(long rid = 0)
         {
             //var data = new MessageModel<AssignShow>();
