@@ -18,6 +18,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 
 namespace MyDotnet.Controllers.Base
@@ -149,7 +150,76 @@ namespace MyDotnet.Controllers.Base
         [AllowAnonymous]
         public async Task<object> MyTest()
         {
-            return null;
+            var client = new HttpClient();
+
+            var dto = new  
+            {
+                question = "现在累计有多少订单了",
+                chat_id = "2"
+            };
+
+            var json = JsonSerializer.Serialize(dto);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+            client.DefaultRequestHeaders.Add("x-sqlbot-ask-token", "sk eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY2Nlc3Nfa2V5IjoidUItc3k3SEZKMUhiRmN5WkptaUU3QSJ9.WYHU9a7L_7KALuAPApEjzN6Xoc-UO0brufOlymK5L_8");
+
+            var response = await client.PostAsync(
+                "http://192.168.31.21:8000/api/v1/chat/question",
+                content
+            );
+
+            var result = await response.Content.ReadAsStringAsync();
+            return result;
+        }
+        [HttpGet]
+        [AllowAnonymous]
+        public async Task<object> MyTest2()
+        {
+            var client = new HttpClient();
+            client.DefaultRequestHeaders.Add("x-sqlbot-ask-token", "sk eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY2Nlc3Nfa2V5IjoidUItc3k3SEZKMUhiRmN5WkptaUU3QSJ9.WYHU9a7L_7KALuAPApEjzN6Xoc-UO0brufOlymK5L_8");
+
+            var dto = new
+            {
+                question = "现在累计有多少订单了",
+                chat_id = "2"
+            };
+            var url = "http://192.168.31.21:8000/api/v1/chat/question";
+            var json = JsonSerializer.Serialize(dto);
+            var request = new HttpRequestMessage(HttpMethod.Post, url)
+            {
+                Content = new StringContent(json, Encoding.UTF8, "application/json")
+            };
+
+            var response = await client.SendAsync(
+                request,
+                HttpCompletionOption.ResponseHeadersRead
+            );
+
+            // 确保成功
+            response.EnsureSuccessStatusCode();
+
+            // 拿到流
+            await using var stream = await response.Content.ReadAsStreamAsync();
+            using var reader = new StreamReader(stream, Encoding.UTF8);
+
+            // 一行一行读
+            while (!reader.EndOfStream)
+            {
+                var line = await reader.ReadLineAsync();
+
+                if (string.IsNullOrWhiteSpace(line))
+                    continue;
+
+                // SSE 规范：data: xxx
+                if (line.StartsWith("data:"))
+                {
+                    var data = line.Substring(5).Trim();
+                     
+
+                    Console.WriteLine("收到一段数据：" + data);
+                }
+            }
+            return "OK";
         }
 
     } 
