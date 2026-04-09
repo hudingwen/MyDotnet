@@ -1,12 +1,14 @@
 ﻿using AppStoreConnect.Model;
 using MyDotnet.Config;
 using MyDotnet.Domain.Attr;
+using MyDotnet.Domain.Dto.GuijiLite;
 using MyDotnet.Domain.Dto.Ns;
 using MyDotnet.Domain.Dto.System;
 using MyDotnet.Domain.Dto.WeChat;
 using MyDotnet.Domain.Entity.Ns;
 using MyDotnet.Domain.Entity.System;
 using MyDotnet.Helper;
+using MyDotnet.Helper.Ns;
 using MyDotnet.Repository;
 using MyDotnet.Services;
 using MyDotnet.Services.Ns;
@@ -129,6 +131,22 @@ namespace MyDotnet.Tasks.QuartzJob
                             }
                             account.isEffect = true;
 
+                            //硅基亲友-需要检测设备是否是最新的
+                            if ("120".Equals(account.guardType))
+                            {
+                                
+                                var guardInfo = await GuijiQinyouHelper.getGuijiList(account.token,1,9999);
+                                if (guardInfo.success && guardInfo.data!= null)
+                                {
+                                    account.guardList = guardInfo.data.records;
+                                }
+                                else
+                                {
+                                    account.guardList = new List<GuijiQinyouFollowDtoDataRecord>();
+                                }
+                                
+                            }
+
                         }
                         else
                         {
@@ -173,6 +191,22 @@ namespace MyDotnet.Tasks.QuartzJob
 
                         var nightscout = await _nightscoutServices.Dal.QueryById(user.nid);
 
+
+                        //硅基亲友-需要检测设备是否是最新的
+                        if ("120".Equals(account.guardType))
+                        {
+                            var findNewUser = account.guardList.Find(t => t.followRelationId.Equals(user.uid));
+                            if (findNewUser != null)
+                            {
+                                if (!string.IsNullOrEmpty(findNewUser.appInfo?.deviceId) && !string.IsNullOrEmpty(user.did)  && !user.did.Equals(findNewUser.appInfo?.deviceId))
+                                {
+                                    //设备id需要更新
+                                    user.did = findNewUser.appInfo?.deviceId;
+                                    await _nightscoutGuardService.Dal.Update(user, t => new { t.did });
+                                } 
+                            }
+
+                        }
 
                         if (userTask == null)
                         {

@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+﻿ 
 using System;
 using System.Collections.Generic;
 
@@ -44,32 +44,7 @@ namespace MyDotnet.Domain.Dto.System
         {
             return new PageModel<TOut>(page, dataCount, size, default);
         }
-
-
-        public PageModel<TOut> ConvertTo<TOut>(IMapper mapper)
-        {
-            var model = ConvertTo<TOut>();
-
-            if (data != null)
-            {
-                model.data = mapper.Map<List<TOut>>(data);
-            }
-
-            return model;
-        }
-
-
-        public PageModel<TOut> ConvertTo<TOut>(IMapper mapper, Action<IMappingOperationOptions> options)
-        {
-            var model = ConvertTo<TOut>();
-            if (data != null)
-            {
-                model.data = mapper.Map<List<TOut>>(data, options);
-            }
-
-            return model;
-
-        }
+         
 
     }
 

@@ -1,4 +1,5 @@
-﻿using MyDotnet.Domain.Entity.Base;
+﻿using MyDotnet.Domain.Dto.GuijiLite;
+using MyDotnet.Domain.Entity.Base;
 using SqlSugar;
 
 namespace MyDotnet.Domain.Entity.Ns
@@ -61,5 +62,13 @@ namespace MyDotnet.Domain.Entity.Ns
         /// </summary>
         [SugarColumn(IsIgnore = true)]
         public bool isEffect { get; set; }
+
+
+
+        /// <summary>
+        /// 监护用户列表
+        /// </summary>
+        [SugarColumn(IsIgnore = true)]
+        public List<GuijiQinyouFollowDtoDataRecord> guardList { get; set; }
     }
 }

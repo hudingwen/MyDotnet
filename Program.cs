@@ -72,9 +72,7 @@ namespace MyDotnet
             //日志开启
             builder.SetLog4Net();
             //Swagger开启
-            builder.SetSwagger();
-            //实体映射
-            builder.SetAutoMapper();
+            builder.SetSwagger(); 
             //权限开启
             builder.SetAuth();
             //数据开启

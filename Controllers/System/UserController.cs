@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+﻿ 
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -26,8 +26,7 @@ namespace MyDotnet.Controllers.System
         public UserRoleServices _userRoleServices;
         public RoleServices _roleServices;
         public BaseServices<Department> _departmentServices;
-        public AspNetUser _user;
-        public IMapper _mapper;
+        public AspNetUser _user; 
         public IHttpContextAccessor _httpContext;
         public DicService _dictService;
 
@@ -37,8 +36,7 @@ namespace MyDotnet.Controllers.System
             , RoleServices roleServices
             , BaseServices<Department> departmentServices
             , BaseServices<UserGoogleAuthenticator> userGoogleAuthService
-            , AspNetUser user
-            , IMapper mapper
+            , AspNetUser user 
             , IHttpContextAccessor httpContext
             , DicService dictService
             )
@@ -49,7 +47,6 @@ namespace MyDotnet.Controllers.System
             _roleServices = roleServices;
             _departmentServices = departmentServices;
             _user = user;
-            _mapper = mapper;
             _httpContext = httpContext;
             _userGoogleAuthService = userGoogleAuthService;
             _dictService = dictService;
